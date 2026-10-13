@@ -198,7 +198,7 @@ function createWindow() {
     minHeight: 560,
     backgroundColor: '#14161a',
     titleBarStyle: 'hiddenInset',
-    title: 'Multiterminal App',
+    title: 'Multiterminal',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

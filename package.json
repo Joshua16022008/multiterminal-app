@@ -1,8 +1,8 @@
 {
   "name": "multiterminal-app",
-  "productName": "Multiterminal App",
+  "productName": "Multiterminal",
   "version": "0.1.0",
-  "description": "Multiterminal App: Projekte in der Seitenleiste, pro Projekt bis zu zehn echte Terminals mit eigenem Mini-Browser.",
+  "description": "Multiterminal: Projekte in der Seitenleiste, pro Projekt echte Terminals im Raster mit eigenem Mini-Browser.",
   "private": true,
   "main": "src/main/main.js",
   "scripts": {

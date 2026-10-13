@@ -15,7 +15,7 @@ Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt
 Version 0.1.0 läuft als Entwicklungsstart (`npm start`) und als gebaute `Multiterminal App.app` unter `dist/`. Geprüft, noch nicht von Joshua abgenommen.
 
 ## Nächster Schritt
-Joshua testet das Diktat mit echtem Mikrofon in der gebauten App (macOS fragt einmalig nach der Mikrofonfreigabe).
+Joshua nutzt die App aus dem Dock und testet das Diktat mit echtem Mikrofon. Flüsterflow-Integration ruht, solange Joshua dort selbst arbeitet. Nach Änderungen: `npm run build`, dann die App nach `/Applications` kopieren.
 
 ## Aktive Aufgaben
 - Keine offenen Aufgaben aus der Prüfung; Änderungswünsche von Joshua abwarten.
@@ -40,6 +40,7 @@ Joshua testet das Diktat mit echtem Mikrofon in der gebauten App (macOS fragt ei
 - GitHub-Anbindung (13.10.2026): `gh` 2.102.0 nach `~/.local/bin` installiert, angemeldet als Joshua16022008. 77 Tests grün. An der laufenden App geprüft: Menü „Ordner wählen…/Von GitHub…“, Repo-Liste mit 13 Repos und Suche, vorhandenes Repo ohne Klonen als Projekt hinzugefügt, Git-Zeile (Branch, offene Änderungen), Sync meldet „Alles aktuell“. Echtes Klonen über den Dienst in einen Testordner geprüft, nicht über den Dialog. Pull/Push/auseinandergelaufene Stände nur in den automatischen Tests geprüft.
 - Raster (13.10.2026): ab drei Terminals immer drei Spalten, zwei Reihen sichtbar, darunter scrollen; Obergrenze 30. Mit acht Terminals an der laufenden App geprüft.
 - Diktat über Flüsterflow (13.10.2026): neuer Dienst `fluesterflow/server.py` im Flüsterflow-Projekt; Mikro-Knopf je Kachel, Schalter „Live-Diktat“, Abbrechen. Lautlos mit erzeugter Sprachdatei an der laufenden App geprüft: am Stück, live mit Endkorrektur, zweites Mikro währenddessen abgewiesen, Abbrechen. 82 Tests grün. Nicht geprüft: echtes Mikrofon und macOS-Mikrofonfreigabe der gebauten App.
+- Name und Icon (13.10.2026): App heißt „Multiterminal“, Icon `assets/icon.icns` (Quelle `assets/icon.svg`). Installiert unter `/Applications/Multiterminal.app`, im Dock abgelegt; Daten von „Multiterminal App“ nach `~/Library/Application Support/Multiterminal` umgezogen. Start aus /Applications geprüft.
 - Nicht geprüft: Tastenkürzel ⌘T/⌘W per echtem Tastendruck (nur die Menübefehle dahinter), native Dialoge selbst, Codex und Kimi Code gestartet.
 
 ## Verbindungen

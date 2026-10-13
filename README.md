@@ -1,6 +1,6 @@
-# Multiterminal App
+# Multiterminal
 
-Die Multiterminal App ist eine Desktop-Anwendung für macOS. Projekte stehen in einer Seitenleiste. Es gibt beliebig viele Projekte und pro Projekt bis zu 30 echte Terminals im Dreier-Raster (ab der dritten Reihe wird gescrollt), und jedes Terminal hat einen eigenen Mini-Browser. So lassen sich Claude Code, Codex, Kimi Code und andere Terminal-Agenten nebeneinander betreiben.
+Die Multiterminal ist eine Desktop-Anwendung für macOS. Projekte stehen in einer Seitenleiste. Es gibt beliebig viele Projekte und pro Projekt bis zu 30 echte Terminals im Dreier-Raster (ab der dritten Reihe wird gescrollt), und jedes Terminal hat einen eigenen Mini-Browser. So lassen sich Claude Code, Codex, Kimi Code und andere Terminal-Agenten nebeneinander betreiben.
 
 ## Funktionen
 
@@ -49,3 +49,7 @@ Electron, node-pty, xterm.js
 ## Diktat
 
 Der Mikro-Knopf in jeder Kachel nimmt über Flüsterflow auf (lokal, Projektordner `Flüsterflow` daneben) und tippt den Text in dieses Terminal, ohne Enter. Der Schalter „Live-Diktat“ oben rechts lässt den Text schon beim Sprechen erscheinen. Das Sprachmodell wird beim ersten Diktat geladen.
+
+## Installieren
+
+`npm run build` erzeugt `dist/Multiterminal-darwin-arm64/Multiterminal.app`. Zum Aktualisieren die App beenden und mit `ditto "dist/Multiterminal-darwin-arm64/Multiterminal.app" /Applications/Multiterminal.app` ersetzen.

@@ -1,10 +1,10 @@
 'use strict';
-// Packages the app into dist/Multiterminal App-darwin-<arch>/Multiterminal App.app
+// Packages the app into dist/Multiterminal-darwin-<arch>/Multiterminal.app
 const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
-const APP_NAME = 'Multiterminal App';
+const APP_NAME = 'Multiterminal';
 
 function findAllFiles(dir, name, out = [], depth = 0) {
   if (depth > 10 || !fs.existsSync(dir)) return out;
@@ -23,6 +23,7 @@ async function main() {
   const appPaths = await packager({
     dir: ROOT,
     name: APP_NAME,
+    icon: path.join(ROOT, 'assets', 'icon.icns'),
     out: path.join(ROOT, 'dist'),
     platform: 'darwin',
     arch: process.arch,
