@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multiterminal</title>
+  <link rel="stylesheet" href="../../node_modules/@xterm/xterm/css/xterm.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="side-top drag"></div>
+      <div class="side-head">
+        <span class="side-title">Projekte</span>
+        <button id="add-project" class="btn-small" title="Projektordner hinzufügen">+ Projekt</button>
+      </div>
+      <ul id="project-list"></ul>
+      <p id="side-empty" class="hint" hidden>Noch keine Projekte. Füge einen Ordner hinzu, um Terminals zu starten.</p>
+    </aside>
+
+    <main id="main">
+      <header id="topbar" class="drag">
+        <h1 id="ws-title"></h1>
+        <span id="counter" class="counter"></span>
+        <span class="spacer"></span>
+        <div id="ws-actions">
+          <div class="split">
+            <button id="btn-plus" class="btn-primary split-main" title="Neues Terminal">+</button>
+            <button id="btn-menu" class="btn-primary split-arrow" title="Schnellstart-Menü">▾</button>
+          </div>
+          <button id="btn-progress" class="btn-small" title="PROGRESS.md anzeigen">📋 Fortschritt</button>
+        </div>
+      </header>
+      <div id="content">
+        <div id="grids"></div>
+        <aside id="progress-panel" hidden></aside>
+        <div id="empty-main" hidden>
+          <p>Kein Projekt ausgewählt.</p>
+          <button id="empty-add" class="btn-primary">+ Projekt hinzufügen</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="menu" class="menu" hidden></div>
+  <div id="modal" class="modal" hidden></div>
+  <div id="notices"></div>
+
+  <script src="../../node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="../../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+  <script src="../../node_modules/@xterm/addon-web-links/lib/addon-web-links.js"></script>
+  <script src="../../node_modules/@xterm/addon-serialize/lib/addon-serialize.js"></script>
+  <script src="layout.js"></script>
+  <script src="terminal-pane.js"></script>
+  <script src="progress-panel.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
