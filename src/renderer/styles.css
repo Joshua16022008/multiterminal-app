@@ -1,7 +1,7 @@
-:root {
+:root { color-scheme: dark;
   --bg: #14161a; --bg-side: #101216; --bg-2: #1a1d23; --bg-3: #22262e;
   --border: #262a32; --text: #d4d7dd; --dim: #8a909c; --accent: #6aa3ff; --accent-bg: #2b4a7d;
-  --ok: #7fc98f; --err: #e06c75;
+  --ok: #7fc98f; --err: #e06c75; --warn: #e5c07b;
   --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   --mono: "SF Mono", Menlo, Monaco, "Courier New", monospace;
 }
@@ -22,7 +22,7 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .side-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 10px 8px 14px; }
 .side-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); }
 #project-list { list-style: none; margin: 0; padding: 0 6px; overflow-y: auto; flex: 1; }
-.proj { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; cursor: pointer; color: var(--dim); }
+.proj { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; cursor: pointer; color: var(--dim); }
 .proj:hover { background: var(--bg-2); }
 .proj.active { background: var(--bg-3); color: var(--text); }
 .proj-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -113,3 +113,36 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .notice { padding: 8px 12px; border-radius: 6px; background: var(--bg-3); border: 1px solid var(--border); border-left: 3px solid var(--err); font-size: 12px; cursor: pointer; word-break: break-word; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
 .notice.info { border-left-color: var(--accent); }
 .notice.ok { border-left-color: var(--ok); }
+
+/* Git-Status in der Sidebar */
+.proj-git { flex: 1 0 100%; display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 11px; line-height: 16px; color: var(--dim); }
+.git-branch { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.git-ind { flex: none; font-variant-numeric: tabular-nums; }
+.git-ind.changes { color: var(--warn); }
+.git-ind.ahead { color: var(--accent); }
+.git-ind.behind { color: var(--ok); }
+.proj-sync { display: inline-block; flex: none; visibility: hidden; border: 0; background: none; color: var(--dim); padding: 0 3px; font-size: 13px; line-height: 16px; }
+.proj:hover .proj-sync, .proj.active .proj-sync, .proj-sync.busy { visibility: visible; }
+.proj-sync:hover { color: var(--accent); }
+.proj-sync.busy { color: var(--accent); cursor: progress; animation: gh-spin 1s linear infinite; }
+@keyframes gh-spin { to { transform: rotate(360deg); } }
+
+/* GitHub-Dialog */
+.modal .gh-dialog { width: 560px; max-width: calc(100vw - 32px); max-height: calc(100vh - 64px); display: flex; flex-direction: column; gap: 8px; padding: 16px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; }
+.gh-user { margin: 0; font-size: 12px; color: var(--dim); }
+.gh-list { flex: 1; min-height: 120px; max-height: 50vh; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+.gh-list.disabled { opacity: .5; pointer-events: none; }
+.gh-row { padding: 6px 10px; cursor: pointer; border-bottom: 1px solid var(--border); }
+.gh-row:last-child { border-bottom: 0; }
+.gh-row.hi { background: var(--bg-3); }
+.gh-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.gh-repo { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.gh-owner, .gh-date { color: var(--dim); font-size: 11px; white-space: nowrap; }
+.gh-tag { flex: none; font-size: 10px; padding: 0 6px; border-radius: 8px; border: 1px solid var(--border); color: var(--dim); }
+.gh-tag.local { color: var(--ok); border-color: var(--ok); }
+.gh-tag.proj { color: var(--accent); border-color: var(--accent); }
+.gh-desc { margin-top: 1px; font-size: 12px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gh-note { margin: 0; padding: 8px 10px; font-size: 12px; color: var(--dim); line-height: 1.5; }
+.gh-note.err { color: var(--err); }
+.gh-note.busy { color: var(--accent); }
+.notice.warn { border-left-color: var(--warn); }

@@ -155,18 +155,37 @@
     renderSidebar();
     D.progressPanel.refresh();
     scheduleSave();
+    if (project) D.git.onSelect(project);
   }
 
-  async function addProject() {
-    const p = await guard(() => api.projects.add());
+  function adoptProject(p) {
     if (!p) return;
     if (!S.projects.some((x) => x.id === p.id)) S.projects.push(p);
     selectProject(p.id);
   }
 
+  async function addProject() { adoptProject(await guard(() => api.projects.add())); }
+
+  function addFromGithub() { D.openGithubPicker({ projects: () => S.projects, onPicked: adoptProject }); }
+
+  /* Kleines Menü unter einem Knopf: Ordner wählen oder von GitHub. */
+  function openAddMenu(btn) {
+    const m = $('menu');
+    if (!m.hidden && m.dataset.owner === btn.id) { closeMenu(); return; }
+    m.replaceChildren(
+      h('div', { class: 'menu-item', text: 'Ordner wählen…', onclick: () => { closeMenu(); addProject(); } }),
+      h('div', { class: 'menu-item', text: 'Von GitHub…', onclick: () => { closeMenu(); addFromGithub(); } }));
+    m.dataset.owner = btn.id;
+    const r = btn.getBoundingClientRect();
+    m.hidden = false;
+    m.style.top = r.bottom + 4 + 'px';
+    m.style.left = Math.max(8, Math.min(r.left, window.innerWidth - m.offsetWidth - 8)) + 'px';
+  }
+
   async function removeProject(p) {
     const ok = await guard(() => api.projects.remove(p.id));
     if (!ok) return;
+    D.git.forget(p.id);
     for (const pane of panesOf(p.id)) pane.disposeQuiet();
     S.panes.delete(p.id);
     const g = S.grids.get(p.id);
@@ -213,6 +232,8 @@
         nameEl,
         h('span', { class: 'proj-count' + (running ? ' live' : ''), text: String(running), title: `${running} laufende Terminals` }),
         h('button', { class: 'proj-x', text: '✕', title: 'Projekt entfernen', onclick: (e) => { e.stopPropagation(); removeProject(p); } }));
+      const gitLine = D.git.line(p);
+      if (gitLine) li.append(gitLine);
       ul.append(li);
     }
   }
@@ -235,7 +256,8 @@
   function closeMenu() { $('menu').hidden = true; }
   function openMenu() {
     const m = $('menu');
-    if (!m.hidden) { closeMenu(); return; }
+    if (!m.hidden && m.dataset.owner === 'btn-menu') { closeMenu(); return; }
+    m.dataset.owner = 'btn-menu';
     m.replaceChildren();
     for (const pr of S.presets) {
       const row = h('div', { class: 'menu-item', title: pr.command },
@@ -283,7 +305,7 @@
       const pr = await guard(() => api.presets.add({ label: l, command: c, resumeCommand: r || null }));
       if (pr) { S.presets.push(pr); notify(`Schnellstart „${pr.label}“ hinzugefügt.`, 'ok'); close(); }
     });
-    modal.addEventListener('mousedown', (e) => { if (e.target === modal) close(); });
+    modal.onmousedown = (e) => { if (e.target === modal) close(); };
     modal.onkeydown = (e) => { if (e.key === 'Escape') close(); };
     modal.replaceChildren(form);
     modal.hidden = false;
@@ -306,12 +328,13 @@
       getActivePane: activePane,
       onClose: () => { $('btn-progress').classList.toggle('on', D.progressPanel.toggle(false)); },
     });
-    $('add-project').onclick = addProject;
-    $('empty-add').onclick = addProject;
+    $('add-project').onclick = (e) => { e.stopPropagation(); openAddMenu($('add-project')); };
+    $('empty-add').onclick = (e) => { e.stopPropagation(); openAddMenu($('empty-add')); };
+    D.git.init({ projects: () => S.projects, activeId: () => S.activeId, render: renderSidebar });
     $('btn-plus').onclick = () => newTerminal(S.activeId, null);
     $('btn-menu').onclick = (e) => { e.stopPropagation(); openMenu(); };
     $('btn-progress').onclick = () => { $('btn-progress').classList.toggle('on', D.progressPanel.toggle()); };
-    document.addEventListener('mousedown', (e) => { if (!e.target.closest('#menu, #btn-menu')) closeMenu(); });
+    document.addEventListener('mousedown', (e) => { if (!e.target.closest('#menu, #btn-menu, #add-project, #empty-add')) closeMenu(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
 
     /* Globale Terminal-Ereignisse, Zuordnung per id */
@@ -344,6 +367,7 @@
     const first = S.projects.some((p) => p.id === wanted) ? wanted : (S.projects[0] ? S.projects[0].id : null);
     selectProject(first);
     renderSidebar();
+    D.git.start();
   }
 
   init().catch((e) => notify('Start fehlgeschlagen: ' + D.errText(e)));

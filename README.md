@@ -41,3 +41,7 @@ Electron, node-pty, xterm.js
 - `src/renderer`: Oberfläche im Fenster, Terminal-Kacheln und Layout
 - `tests`: automatische Tests mit `node:test`
 - `scripts`: Hilfsskripte, etwa für Build und Nachinstallation
+
+## GitHub
+
+Über „+ Projekt → Von GitHub…“ lassen sich eigene Repositories als Projekt hinzufügen (benötigt die GitHub-CLI `gh`, angemeldet mit `gh auth login --web`). Die Seitenleiste zeigt Branch, offene Änderungen und ausstehende Pushes/Pulls; der Sync-Knopf holt neue Änderungen und pusht vorhandene Commits. Committet wird nie automatisch.

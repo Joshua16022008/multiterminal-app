@@ -21,12 +21,13 @@ Joshua probiert die gebaute App aus und nennt Änderungswünsche.
 - Keine offenen Aufgaben aus der Prüfung; Änderungswünsche von Joshua abwarten.
 
 ## Blocker
-- Joshuas zsh fragt in jedem neuen Terminal nach „insecure directories“ (Homebrew gehört Benutzer m4diva, ausgelöst durch Bun-Vervollständigung in `~/.zshrc`). Schnellstarts warten, bis die Frage beantwortet ist. Joshua hat der Änderung an `~/.zshrc` zugestimmt, die automatische Ausführung wurde aber von der Sicherheitsprüfung blockiert; Joshua muss die Zeile selbst einfügen.
+- Keine.
 
 ## Entscheidungen
 - Electron ohne Bundler/Framework; Shells über node-pty als interaktive Login-Shell, damit der normale PATH gilt.
 - Schnellstart-Befehle werden erst getippt, wenn die Shell bereit ist (Bracketed-Paste-Signal).
 - Fortsetzen-Befehle per `--help` geprüft: `claude --continue`, `codex resume --last`, `kimi --continue`.
+- GitHub: Repos über `gh` auflisten/klonen (Ziel: Second-Brain-Projekte-Ordner); Sync holt nur per Fast-Forward und pusht vorhandene Commits, committet nie selbst.
 - Umsetzung verteilt: Kern Opus, UI und Persistenz Sonnet, Kleinteile und Doku Haiku.
 
 ## Nachweise
@@ -36,6 +37,7 @@ Joshua probiert die gebaute App aus und nennt Änderungswünsche.
 - Gebaute App gestartet: Terminals laufen, `claude`, `codex`, `kimi` werden gefunden.
 - Claude Code lief in einer Kachel korrekt dargestellt.
 - Zweite Prüfrunde (13.10.2026) an der laufenden App: Projekt hinzufügen (Ordnerdialog im Test ersetzt), umbenennen, entfernen (Ordner bleibt, Shells beendet); eigener Schnellstart über das Formular angelegt und gestartet; „Fortsetzen“ nach Neustart; Menübefehle Neues Terminal/Terminal schließen; Link-Klick im Terminal öffnet den Mini-Browser; Schließen über das Fenster sichert den Verlauf; wiederhergestellter Verlauf erscheint gedimmt.
+- GitHub-Anbindung (13.10.2026): `gh` 2.102.0 nach `~/.local/bin` installiert, angemeldet als Joshua16022008. 77 Tests grün. An der laufenden App geprüft: Menü „Ordner wählen…/Von GitHub…“, Repo-Liste mit 13 Repos und Suche, vorhandenes Repo ohne Klonen als Projekt hinzugefügt, Git-Zeile (Branch, offene Änderungen), Sync meldet „Alles aktuell“. Echtes Klonen über den Dienst in einen Testordner geprüft, nicht über den Dialog. Pull/Push/auseinandergelaufene Stände nur in den automatischen Tests geprüft.
 - Nicht geprüft: Tastenkürzel ⌘T/⌘W per echtem Tastendruck (nur die Menübefehle dahinter), native Dialoge selbst, Codex und Kimi Code gestartet.
 
 ## Verbindungen
