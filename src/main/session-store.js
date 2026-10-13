@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
-const MAX_TERMINALS = 10;
+const MAX_TERMINALS = 30;
 const MAX_TITLE = 120;
 const MAX_COMMAND = 2000;
 const MAX_URL = 2000;

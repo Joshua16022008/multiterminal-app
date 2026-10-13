@@ -69,9 +69,10 @@
     const g = gridFor(pid);
     const list = panesOf(pid);
     if (list.length) {
-      const { cols, rows } = window.DeckLayout.gridFor(list.length);
+      const { cols, visibleRows } = window.DeckLayout.gridFor(list.length);
       g.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
-      g.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+      // Sichtbare Reihen teilen sich die Höhe; weitere Reihen erreicht man durch Scrollen.
+      g.style.gridAutoRows = `calc((100% - ${(visibleRows - 1) * 6}px) / ${visibleRows})`;
     }
     g.classList.toggle('has-max', list.some((p) => p.maxed));
     if (pid === S.activeId) renderHeader();

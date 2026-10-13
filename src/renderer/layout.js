@@ -3,22 +3,11 @@
 // Grid layout for the terminal tiles of one project.
 // Loaded by the browser via <script> and required from Node tests.
 
-const MAX_TERMINALS = 10;
-
-// Columns and rows per terminal count (index = count).
-const GRIDS = [
-  { cols: 1, rows: 1 }, // 0
-  { cols: 1, rows: 1 }, // 1
-  { cols: 2, rows: 1 }, // 2
-  { cols: 2, rows: 2 }, // 3
-  { cols: 2, rows: 2 }, // 4
-  { cols: 3, rows: 2 }, // 5
-  { cols: 3, rows: 2 }, // 6
-  { cols: 3, rows: 3 }, // 7
-  { cols: 3, rows: 3 }, // 8
-  { cols: 3, rows: 3 }, // 9
-  { cols: 4, rows: 3 }, // 10
-];
+// Safety ceiling, not a design limit: every terminal is a real shell process.
+const MAX_TERMINALS = 30;
+const MAX_COLS = 3;
+// Rows that share the visible height; further rows are reached by scrolling.
+const VISIBLE_ROWS = 2;
 
 function normalizeCount(count) {
   if (typeof count !== 'number' || Number.isNaN(count) || count < 0) return 0;
@@ -26,9 +15,13 @@ function normalizeCount(count) {
   return whole > MAX_TERMINALS ? MAX_TERMINALS : whole;
 }
 
+// One or two terminals sit side by side; from three on the grid is always
+// three wide and grows downwards.
 function gridFor(count) {
-  const grid = GRIDS[normalizeCount(count)];
-  return { cols: grid.cols, rows: grid.rows };
+  const n = Math.max(normalizeCount(count), 1);
+  const cols = Math.min(n, MAX_COLS);
+  const rows = Math.ceil(n / cols);
+  return { cols, rows, visibleRows: Math.min(rows, VISIBLE_ROWS) };
 }
 
 const api = { MAX_TERMINALS, gridFor };

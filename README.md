@@ -1,11 +1,11 @@
 # Multiterminal App
 
-Die Multiterminal App ist eine Desktop-Anwendung für macOS. Projekte stehen in einer Seitenleiste. Pro Projekt gibt es bis zu zehn echte Terminals, und jedes Terminal hat einen eigenen Mini-Browser. So lassen sich Claude Code, Codex, Kimi Code und andere Terminal-Agenten nebeneinander betreiben.
+Die Multiterminal App ist eine Desktop-Anwendung für macOS. Projekte stehen in einer Seitenleiste. Es gibt beliebig viele Projekte und pro Projekt bis zu 30 echte Terminals im Dreier-Raster (ab der dritten Reihe wird gescrollt), und jedes Terminal hat einen eigenen Mini-Browser. So lassen sich Claude Code, Codex, Kimi Code und andere Terminal-Agenten nebeneinander betreiben.
 
 ## Funktionen
 
 - Projekte in einer Seitenleiste
-- Plus-Knopf legt ein neues Terminal an, bis zu zehn pro Projekt
+- Plus-Knopf legt ein neues Terminal an, bis zu 30 pro Projekt
 - Schnellstarts für Claude Code, Codex, Kimi Code und eigene Befehle
 - Mini-Browser in jeder Terminal-Kachel
 - Layout und Terminal-Ausgabe werden nach einem Neustart wiederhergestellt

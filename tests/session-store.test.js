@@ -86,13 +86,13 @@ test('sanitising on load of a hand-edited file; unknown activeProjectId becomes 
   assert.strictEqual(s.projects.p1.terminals[0].browserOpen, true);
 });
 
-test('caps terminals per project at 10', () => {
+test('caps terminals per project at 30', () => {
   const store = createSessionStore(tmp());
-  const terminals = Array.from({ length: 15 }, (_, i) => term('t' + i));
+  const terminals = Array.from({ length: 35 }, (_, i) => term('t' + i));
   store.save({ version: 1, activeProjectId: null, projects: { p: { terminals } } });
   const loaded = store.load().projects.p.terminals;
-  assert.strictEqual(loaded.length, 10);
-  assert.strictEqual(loaded[9].id, 't9');
+  assert.strictEqual(loaded.length, 30);
+  assert.strictEqual(loaded[29].id, 't29');
 });
 
 test('__proto__ project key does not pollute', () => {

@@ -58,8 +58,8 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 /* Workspace */
 #content { flex: 1; min-height: 0; display: flex; position: relative; }
 #grids { flex: 1; min-width: 0; position: relative; }
-.grid { position: absolute; inset: 0; display: grid; gap: 6px; padding: 6px; }
-.grid.has-max { grid-template-columns: 1fr !important; grid-template-rows: 1fr !important; }
+.grid { position: absolute; inset: 0; display: grid; gap: 6px; padding: 6px; overflow-y: auto; align-content: start; }
+.grid.has-max { grid-template-columns: 1fr !important; grid-auto-rows: 100% !important; overflow: hidden; }
 .grid.has-max .tile:not(.max) { display: none; }
 #empty-main { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; color: var(--dim); }
 

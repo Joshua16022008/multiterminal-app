@@ -3,7 +3,7 @@
 const fs = require('fs');
 const pty = require('node-pty');
 
-const MAX_PER_PROJECT = 10;
+const MAX_PER_PROJECT = 30;
 const ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const MAX_COMMAND_LENGTH = 2000;
 // A quick-start command is typed only once the shell's line editor is ready.

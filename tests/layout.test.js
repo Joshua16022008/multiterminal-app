@@ -4,60 +4,45 @@ const test = require('node:test');
 const assert = require('node:assert');
 const { MAX_TERMINALS, gridFor } = require('../src/renderer/layout.js');
 
-test('MAX_TERMINALS is 10', () => {
-  assert.strictEqual(MAX_TERMINALS, 10);
+test('MAX_TERMINALS is the safety ceiling of 30', () => {
+  assert.strictEqual(MAX_TERMINALS, 30);
 });
 
-test('gridFor returns the expected grid for every count from 0 to 11', () => {
-  const expected = {
-    0: [1, 1],
-    1: [1, 1],
-    2: [2, 1],
-    3: [2, 2],
-    4: [2, 2],
-    5: [3, 2],
-    6: [3, 2],
-    7: [3, 3],
-    8: [3, 3],
-    9: [3, 3],
-    10: [4, 3],
-    11: [4, 3],
-  };
-  for (let count = 0; count <= 11; count++) {
-    const [cols, rows] = expected[count];
-    assert.deepStrictEqual(gridFor(count), { cols, rows }, `count ${count}`);
+test('one or two terminals sit side by side in a single row', () => {
+  assert.deepStrictEqual(gridFor(0), { cols: 1, rows: 1, visibleRows: 1 });
+  assert.deepStrictEqual(gridFor(1), { cols: 1, rows: 1, visibleRows: 1 });
+  assert.deepStrictEqual(gridFor(2), { cols: 2, rows: 1, visibleRows: 1 });
+});
+
+test('from three terminals on the grid is always three wide', () => {
+  const expected = { 3: 1, 4: 2, 6: 2, 7: 3, 9: 3, 10: 4, 12: 4, 15: 5, 30: 10 };
+  for (const [count, rows] of Object.entries(expected)) {
+    const grid = gridFor(Number(count));
+    assert.strictEqual(grid.cols, 3, `cols for ${count}`);
+    assert.strictEqual(grid.rows, rows, `rows for ${count}`);
   }
 });
 
-test('gridFor treats counts above 10 as 10', () => {
-  assert.deepStrictEqual(gridFor(12), { cols: 4, rows: 3 });
-  assert.deepStrictEqual(gridFor(1000), { cols: 4, rows: 3 });
-  assert.deepStrictEqual(gridFor(Infinity), { cols: 4, rows: 3 });
+test('at most two rows share the visible height, the rest scrolls', () => {
+  assert.strictEqual(gridFor(3).visibleRows, 1);
+  assert.strictEqual(gridFor(4).visibleRows, 2);
+  assert.strictEqual(gridFor(6).visibleRows, 2);
+  assert.strictEqual(gridFor(7).visibleRows, 2);
+  assert.strictEqual(gridFor(30).visibleRows, 2);
 });
 
-test('gridFor treats negative numbers, NaN and non-numbers as 0', () => {
-  const zero = { cols: 1, rows: 1 };
-  assert.deepStrictEqual(gridFor(-1), zero);
-  assert.deepStrictEqual(gridFor(-Infinity), zero);
-  assert.deepStrictEqual(gridFor(NaN), zero);
-  assert.deepStrictEqual(gridFor(undefined), zero);
-  assert.deepStrictEqual(gridFor(null), zero);
-  assert.deepStrictEqual(gridFor('5'), zero);
-  assert.deepStrictEqual(gridFor('abc'), zero);
-  assert.deepStrictEqual(gridFor({}), zero);
-  assert.deepStrictEqual(gridFor([3]), zero);
+test('counts above the ceiling are treated as the ceiling', () => {
+  for (const count of [31, 1000, Infinity]) assert.deepStrictEqual(gridFor(count), gridFor(30));
 });
 
-test('gridFor rounds non-integers down', () => {
-  assert.deepStrictEqual(gridFor(2.7), { cols: 2, rows: 1 });
-  assert.deepStrictEqual(gridFor(4.99), { cols: 2, rows: 2 });
-  assert.deepStrictEqual(gridFor(0.5), { cols: 1, rows: 1 });
-  assert.deepStrictEqual(gridFor(9.9), { cols: 3, rows: 3 });
-  assert.deepStrictEqual(gridFor(10.9), { cols: 4, rows: 3 });
+test('negative numbers, NaN and non-numbers are treated as 0', () => {
+  const zero = gridFor(0);
+  for (const bad of [-1, -Infinity, NaN, undefined, null, '5', 'abc', {}, [3]]) {
+    assert.deepStrictEqual(gridFor(bad), zero);
+  }
 });
 
-test('gridFor always returns a fresh object with only cols and rows', () => {
-  const a = gridFor(3);
-  a.cols = 99;
-  assert.deepStrictEqual(gridFor(3), { cols: 2, rows: 2 });
+test('non-integers are rounded down', () => {
+  assert.deepStrictEqual(gridFor(3.9), gridFor(3));
+  assert.deepStrictEqual(gridFor(6.5), gridFor(6));
 });
