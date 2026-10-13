@@ -44,6 +44,17 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .ib.on { color: var(--accent); background: var(--bg-3); }
 .ib.close:hover { color: var(--err); }
 
+/* Diktat */
+.ib.mic.rec { color: #fff; background: var(--err); animation: dict-pulse 1.4s ease-in-out infinite; }
+.ib.mic.busy { color: var(--accent); cursor: progress; }
+.btn-dict-cancel { margin-right: 4px; font-size: 11px; padding: 0 8px; line-height: 18px; border: 1px solid var(--err); border-radius: 9px; background: none; color: var(--err); }
+.btn-dict-cancel:hover { background: var(--err); color: #fff; }
+.tile.dictating { border-color: var(--err); }
+.tile.dictating .tile-head { background: rgba(224, 108, 117, .14); }
+@keyframes dict-pulse { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .ib.mic.rec { animation: none; } }
+#btn-live.on { border-color: var(--accent); color: var(--accent); }
+
 /* Topbar */
 #main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 #topbar { height: 44px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 14px; border-bottom: 1px solid var(--border); }

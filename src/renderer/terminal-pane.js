@@ -95,11 +95,13 @@
     /* DOM */
     const titleEl = h('span', { class: 'tile-title', title: 'Doppelklick zum Umbenennen', text: desc.title, ondblclick: startRename });
     const resumeBtn = h('button', { class: 'btn-resume', hidden: true, onclick: resume });
+    const bMic = h('button', { class: 'ib mic', title: 'Diktieren (Flüsterflow)', text: '🎙', onclick: onMic });
+    const bDictCancel = h('button', { class: 'btn-dict-cancel', hidden: true, title: 'Diktat verwerfen', text: 'Abbrechen', onclick: () => { D.dictation.cancel(); term.focus(); } });
     const bBrowser = h('button', { class: 'ib', title: 'Mini-Browser ein/aus', text: '🌐', onclick: () => setBrowserOpen(!desc.browserOpen) });
     const bSnap = h('button', { class: 'ib', title: 'Snapshot: Terminal-Ausgabe als Datei speichern', text: '💾', onclick: snapshot });
     const bMax = h('button', { class: 'ib', title: 'Maximieren / Wiederherstellen', text: '⤢', onclick: () => { pane.setMax(!pane.maxed); hooks.onMaximize(pane); } });
     const bClose = h('button', { class: 'ib close', title: 'Terminal schließen', text: '✕', onclick: () => hooks.onClose(pane) });
-    const head = h('div', { class: 'tile-head' }, titleEl, resumeBtn, h('span', { class: 'spacer' }), bBrowser, bSnap, bMax, bClose);
+    const head = h('div', { class: 'tile-head' }, titleEl, resumeBtn, h('span', { class: 'spacer' }), bDictCancel, bMic, bBrowser, bSnap, bMax, bClose);
 
     const termEl = h('div', { class: 'term' });
     const exitMsg = h('span', { text: 'beendet' });
@@ -130,6 +132,7 @@
       exitBar.hidden = s !== 'exited';
       if (msg) exitMsg.textContent = msg;
       refreshResume();
+      refreshMic();
       hooks.onStatus(pane);
       requestAnimationFrame(fitNow);
     }
@@ -215,6 +218,38 @@
       term.focus();
     }
     refreshResume();
+
+    /* Diktat: Zustand kommt aus D.dictation, die Kachel spiegelt ihn nur */
+    let dictPhase = 'idle';
+    const MIC_TIPS = {
+      idle: 'Diktieren (Flüsterflow)',
+      starting: 'Diktat startet …',
+      loading: 'Sprachmodell wird geladen – du kannst schon sprechen. Klick zum Stoppen',
+      recording: 'Aufnahme läuft – Klick zum Stoppen',
+      processing: 'Text wird erzeugt …',
+    };
+    function refreshMic() {
+      const rec = dictPhase === 'starting' || dictPhase === 'loading' || dictPhase === 'recording';
+      bMic.classList.toggle('rec', rec);
+      bMic.classList.toggle('busy', dictPhase === 'processing');
+      bMic.textContent = dictPhase === 'processing' ? '⏳' : '🎙';
+      bMic.title = dictPhase === 'idle' && pane.status !== 'running' ? 'Diktieren nicht möglich: Terminal läuft nicht' : MIC_TIPS[dictPhase];
+      bMic.disabled = dictPhase === 'idle' && pane.status !== 'running';
+      bDictCancel.hidden = !rec;
+      el.classList.toggle('dictating', rec);
+      el.classList.toggle('dict-busy', dictPhase === 'processing');
+    }
+    function onMic() {
+      if (pane.status !== 'running' && dictPhase === 'idle') return;
+      if (dictPhase === 'idle') hooks.onActivate(pane, false);
+      D.dictation.click(id);
+      term.focus();
+    }
+    const dictUnregister = D.dictation ? D.dictation.register(id, {
+      title: () => desc.title,
+      update: (phase) => { dictPhase = phase; refreshMic(); },
+    }) : null;
+    refreshMic();
 
     /* Titel umbenennen */
     function startRename() {
@@ -332,6 +367,7 @@
     /* Aufräumen */
     pane.dispose = function () {
       clearTimeout(roTimer);
+      if (dictUnregister) dictUnregister();
       ro.disconnect();
       if (pane.status === 'running' || starting) D.guard(() => api.terminals.kill(id));
       D.guard(() => api.session.deleteScrollback(id));

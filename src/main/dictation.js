@@ -64,6 +64,7 @@ function createDictation({ serviceDir, write, notify, extraArgs = [] }) {
         session = null;
         break;
       case 'cancelled':
+        typeTo(''); // take back what live mode already typed
         report('idle', { cancelled: true });
         session = null;
         break;
@@ -135,7 +136,7 @@ function createDictation({ serviceDir, write, notify, extraArgs = [] }) {
     if (session) send({ cmd: 'stop' });
   }
 
-  // Discards the recording. Text already typed in live mode stays where it is.
+  // Discards the recording and removes what live mode already typed.
   function cancel() {
     if (session) send({ cmd: 'cancel' });
   }

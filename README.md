@@ -45,3 +45,7 @@ Electron, node-pty, xterm.js
 ## GitHub
 
 Über „+ Projekt → Von GitHub…“ lassen sich eigene Repositories als Projekt hinzufügen (benötigt die GitHub-CLI `gh`, angemeldet mit `gh auth login --web`). Die Seitenleiste zeigt Branch, offene Änderungen und ausstehende Pushes/Pulls; der Sync-Knopf holt neue Änderungen und pusht vorhandene Commits. Committet wird nie automatisch.
+
+## Diktat
+
+Der Mikro-Knopf in jeder Kachel nimmt über Flüsterflow auf (lokal, Projektordner `Flüsterflow` daneben) und tippt den Text in dieses Terminal, ohne Enter. Der Schalter „Live-Diktat“ oben rechts lässt den Text schon beim Sprechen erscheinen. Das Sprachmodell wird beim ersten Diktat geladen.
