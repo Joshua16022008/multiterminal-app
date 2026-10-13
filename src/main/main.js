@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { app, BrowserWindow, Menu, dialog, ipcMain, session, shell } = require('electron');
 const { createPtyManager } = require('./pty-manager');
@@ -7,9 +9,14 @@ const { createProjectStore } = require('./project-store');
 const { createPresetStore } = require('./presets');
 const { createSessionStore } = require('./session-store');
 const progressFiles = require('./progress-files');
+const { createGitService } = require('./git-service');
 
 const BROWSER_PARTITION = 'persist:minibrowser';
 const QUIT_FLUSH_TIMEOUT_MS = 2000;
+// New clones go next to the existing projects; a plain folder in the home directory otherwise.
+const SECOND_BRAIN_PROJECTS = path.join(
+  os.homedir(), 'Desktop', 'Second_Brain', 'Arbeit', 'Ai Builds and projekts', 'Claude_code_tasks', 'Projekte',
+);
 
 let mainWindow = null;
 let quitting = false;
@@ -17,6 +24,7 @@ let projects;
 let presets;
 let sessions;
 let ptys;
+let git;
 
 function isWebUrl(url) {
   try {
@@ -122,6 +130,16 @@ function registerIpc() {
   handle('progress:saveSnapshot', (projectId, title, text) => (
     progressFiles.writeSnapshot(requireProject(projectId).path, String(title), String(text))
   ));
+
+  handle('github:status', () => git.githubStatus());
+  handle('github:listRepos', () => git.listRepos());
+  handle('github:clone', async (nameWithOwner) => {
+    const { path: folder } = await git.cloneRepo(String(nameWithOwner));
+    return projects.add({ name: path.basename(folder), path: folder });
+  });
+  handle('git:status', (projectId) => git.status(requireProject(projectId).path));
+  handle('git:pull', (projectId) => git.pull(requireProject(projectId).path));
+  handle('git:sync', (projectId) => git.sync(requireProject(projectId).path));
 
   listen('app:quit-ready', finishQuit);
 }
@@ -235,6 +253,9 @@ if (!app.requestSingleInstanceLock()) {
     projects = createProjectStore(path.join(dataDir, 'projects.json'));
     presets = createPresetStore(path.join(dataDir, 'presets.json'));
     sessions = createSessionStore(path.join(dataDir, 'session'));
+    git = createGitService({
+      cloneDir: fs.existsSync(SECOND_BRAIN_PROJECTS) ? SECOND_BRAIN_PROJECTS : path.join(os.homedir(), 'Multiterminal'),
+    });
     ptys = createPtyManager({
       onData: (id, data) => sendToWindow('terminals:data', id, data),
       onExit: (id, exitCode) => sendToWindow('terminals:exit', id, exitCode),

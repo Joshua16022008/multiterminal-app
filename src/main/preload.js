@@ -40,6 +40,16 @@ contextBridge.exposeInMainWorld('deck', {
     read: (projectId) => ipcRenderer.invoke('progress:read', projectId),
     saveSnapshot: (projectId, title, text) => ipcRenderer.invoke('progress:saveSnapshot', projectId, title, text),
   },
+  github: {
+    status: () => ipcRenderer.invoke('github:status'),
+    listRepos: () => ipcRenderer.invoke('github:listRepos'),
+    clone: (nameWithOwner) => ipcRenderer.invoke('github:clone', nameWithOwner),
+  },
+  git: {
+    status: (projectId) => ipcRenderer.invoke('git:status', projectId),
+    pull: (projectId) => ipcRenderer.invoke('git:pull', projectId),
+    sync: (projectId) => ipcRenderer.invoke('git:sync', projectId),
+  },
   onMenu: (callback) => subscribe('menu:action', callback),
   onBeforeQuit: (callback) => subscribe('app:before-quit', callback),
   quitReady: () => ipcRenderer.send('app:quit-ready'),
