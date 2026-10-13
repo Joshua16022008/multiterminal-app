@@ -18,7 +18,7 @@ Version 0.1.0 läuft als Entwicklungsstart (`npm start`) und als gebaute `Multit
 Joshua probiert die gebaute App aus und nennt Änderungswünsche.
 
 ## Aktive Aufgaben
-- Offen aus der Prüfung: wiederhergestellter Verlauf ist nicht ausgegraut; Schließen über den roten Fensterknopf nicht separat geprüft (⌘Q/Beenden geprüft).
+- Keine offenen Aufgaben aus der Prüfung; Änderungswünsche von Joshua abwarten.
 
 ## Blocker
 - Joshuas zsh fragt in jedem neuen Terminal nach „insecure directories“ (Homebrew gehört Benutzer m4diva, ausgelöst durch Bun-Vervollständigung in `~/.zshrc`). Schnellstarts warten, bis die Frage beantwortet ist. Joshua hat der Änderung an `~/.zshrc` zugestimmt, die automatische Ausführung wurde aber von der Sicherheitsprüfung blockiert; Joshua muss die Zeile selbst einfügen.
@@ -35,6 +35,8 @@ Joshua probiert die gebaute App aus und nennt Änderungswünsche.
 - Laufende App per Screenshot geprüft: zehn Terminals im Raster, elftes gesperrt; Shell im Projektordner mit vollem PATH; zwei Mini-Browser mit verschiedenen Seiten; Snapshot und PROGRESS.md angelegt; Aufbau, Browser-Adressen und Verlauf nach Neustart zurück; keine verwaisten Shells nach dem Beenden.
 - Gebaute App gestartet: Terminals laufen, `claude`, `codex`, `kimi` werden gefunden.
 - Claude Code lief in einer Kachel korrekt dargestellt.
+- Zweite Prüfrunde (13.10.2026) an der laufenden App: Projekt hinzufügen (Ordnerdialog im Test ersetzt), umbenennen, entfernen (Ordner bleibt, Shells beendet); eigener Schnellstart über das Formular angelegt und gestartet; „Fortsetzen“ nach Neustart; Menübefehle Neues Terminal/Terminal schließen; Link-Klick im Terminal öffnet den Mini-Browser; Schließen über das Fenster sichert den Verlauf; wiederhergestellter Verlauf erscheint gedimmt.
+- Nicht geprüft: Tastenkürzel ⌘T/⌘W per echtem Tastendruck (nur die Menübefehle dahinter), native Dialoge selbst, Codex und Kimi Code gestartet.
 
 ## Verbindungen
 - Ziele:

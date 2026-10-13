@@ -143,7 +143,8 @@
       ro.observe(termWrap);
       if (opts.restored) {
         restored = D.guard(() => api.session.loadScrollback(id)).then((text) => new Promise((res) => {
-          if (text) term.write(text + '\x1b[0m\r\n');
+          // Alter Verlauf ohne seine Farben und gedimmt, damit er sich von der neuen Shell abhebt.
+          if (text) term.write('\x1b[2m' + text.replace(/\x1b\[[0-9;:]*m/g, '') + '\x1b[0m\r\n');
           term.write('\x1b[2m── wiederhergestellt ──\x1b[0m\r\n', res);
         }));
       }
