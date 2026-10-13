@@ -20,6 +20,20 @@ contextBridge.exposeInMainWorld('deck', {
     add: (preset) => ipcRenderer.invoke('presets:add', preset),
     remove: (id) => ipcRenderer.invoke('presets:remove', id),
   },
+  accounts: {
+    list: () => ipcRenderer.invoke('accounts:list'),
+    add: (provider, label) => ipcRenderer.invoke('accounts:add', provider, label),
+    rename: (id, label) => ipcRenderer.invoke('accounts:rename', id, label),
+    setActive: (provider, id) => ipcRenderer.invoke('accounts:setActive', provider, id),
+    remove: (id) => ipcRenderer.invoke('accounts:remove', id),
+    loginCommand: (provider) => ipcRenderer.invoke('accounts:loginCommand', provider),
+  },
+  usage: {
+    list: () => ipcRenderer.invoke('usage:list'),
+    claudeStatus: () => ipcRenderer.invoke('usage:claudeStatus'),
+    claudeEnable: () => ipcRenderer.invoke('usage:claudeEnable'),
+    claudeDisable: () => ipcRenderer.invoke('usage:claudeDisable'),
+  },
   terminals: {
     create: (options) => ipcRenderer.invoke('terminals:create', options),
     write: (id, data) => ipcRenderer.send('terminals:write', id, data),

@@ -7,6 +7,7 @@
   <title>Multiterminal</title>
   <link rel="stylesheet" href="../../node_modules/@xterm/xterm/css/xterm.css">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="usage.css">
 </head>
 <body>
   <div id="app">
@@ -31,11 +32,13 @@
             <button id="btn-menu" class="btn-primary split-arrow" title="Schnellstart-Menü">▾</button>
           </div>
           <button id="btn-live" class="btn-small" aria-pressed="false" title="Live-Diktat: an – Text erscheint schon beim Sprechen; aus – Text erscheint nach dem Stoppen am Stück">Live-Diktat</button>
+          <button id="btn-accounts" class="btn-small" title="Konten der KI-Anbieter verwalten">Konten</button>
           <button id="btn-progress" class="btn-small" title="PROGRESS.md anzeigen">📋 Fortschritt</button>
         </div>
       </header>
       <div id="content">
         <div id="grids"></div>
+        <aside id="accounts-panel" hidden></aside>
         <aside id="progress-panel" hidden></aside>
         <div id="empty-main" hidden>
           <p>Kein Projekt ausgewählt.</p>
@@ -57,6 +60,8 @@
   <script src="dictation.js"></script>
   <script src="terminal-pane.js"></script>
   <script src="progress-panel.js"></script>
+  <script src="usage-view.js"></script>
+  <script src="accounts-panel.js"></script>
   <script src="github-panel.js"></script>
   <script src="app.js"></script>
 </body>

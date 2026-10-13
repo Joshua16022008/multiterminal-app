@@ -1,0 +1,20 @@
+/* Verbrauchsanzeige je Konto (usage-view.js). */
+.usage-row { padding: 8px 10px; border-bottom: 1px solid var(--border); font-family: var(--ui); font-size: 12px; color: var(--text); }
+.usage-row.usage-stale { opacity: 0.55; }
+.usage-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.usage-title { font-weight: 600; }
+.usage-plan { color: var(--dim); font-size: 11px; }
+.usage-window { display: grid; grid-template-columns: 64px 1fr 44px auto; align-items: center; gap: 8px; margin: 3px 0; }
+.usage-label { color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.usage-bar { height: 6px; border-radius: 3px; background: var(--bg-3); overflow: hidden; }
+.usage-fill { height: 100%; border-radius: 3px; background: var(--ok); }
+.usage-bar.usage-warn .usage-fill { background: var(--warn); }
+.usage-bar.usage-high .usage-fill { background: var(--err); }
+.usage-percent { text-align: right; font-family: var(--mono); font-size: 11px; }
+.usage-reset { color: var(--dim); font-size: 11px; white-space: nowrap; }
+.usage-note { color: var(--dim); font-size: 11px; margin-top: 2px; }
+
+/* Im Konten-Panel steht der Name schon in der Kontozeile. */
+.acct-row .usage-row { padding: 4px 2px 2px; border-bottom: 0; }
+.usage-setup { margin: 4px 0 8px; }
+.usage-setup p { margin: 0 0 6px; padding: 0; }

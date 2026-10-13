@@ -30,7 +30,9 @@ function isValidCommand(command) {
 
 // The shell must look like a normal terminal session, not like a child of
 // whatever launched the app (Electron, or an agent session during development).
-function shellEnv() {
+// extraEnv adds or overrides variables; a null value removes one, so an
+// inherited CLAUDE_CONFIG_DIR cannot leak into a terminal using the default account.
+function shellEnv(extraEnv) {
   const env = {};
   for (const [key, value] of Object.entries(process.env)) {
     if (value === undefined) continue;
@@ -41,6 +43,12 @@ function shellEnv() {
   env.COLORTERM = 'truecolor';
   env.TERM_PROGRAM = 'MultiterminalApp';
   if (!env.LANG) env.LANG = 'de_DE.UTF-8';
+  if (extraEnv && typeof extraEnv === 'object') {
+    for (const [key, value] of Object.entries(extraEnv)) {
+      if (value === null || value === undefined) delete env[key];
+      else if (typeof value === 'string') env[key] = value;
+    }
+  }
   return env;
 }
 
@@ -55,7 +63,7 @@ function createPtyManager({ onData, onExit }) {
     return count;
   }
 
-  function create({ id, projectId, cwd, cols, rows, command }) {
+  function create({ id, projectId, cwd, cols, rows, command, extraEnv }) {
     if (!ID_PATTERN.test(String(id))) return { ok: false, error: 'Ungültige Terminal-ID.' };
     if (terminals.has(id)) return { ok: false, error: 'Dieses Terminal läuft bereits.' };
     if (countFor(projectId) >= MAX_PER_PROJECT) {
@@ -82,7 +90,7 @@ function createPtyManager({ onData, onExit }) {
         cols: clampSize(cols, 80),
         rows: clampSize(rows, 24),
         cwd,
-        env: shellEnv(),
+        env: shellEnv(extraEnv),
       });
     } catch (error) {
       return { ok: false, error: `Shell konnte nicht gestartet werden: ${error.message}` };
@@ -162,4 +170,4 @@ function createPtyManager({ onData, onExit }) {
   return { create, write, resize, kill, killProject, killAll, countFor };
 }
 
-module.exports = { createPtyManager, MAX_PER_PROJECT };
+module.exports = { createPtyManager, shellEnv, MAX_PER_PROJECT };

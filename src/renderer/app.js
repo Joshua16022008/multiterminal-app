@@ -12,6 +12,7 @@
     grids: new Map(),       // projectId -> grid element
     activeByProject: {},    // projectId -> paneId
     editing: false,
+    accounts: [],           // Anbieter mit Konten (accounts.list)
   });
   const $ = (id) => document.getElementById(id);
   const panesOf = (pid) => S.panes.get(pid) || [];
@@ -52,8 +53,37 @@
       syncGrid(pane.project.id);
     },
     onStatus: () => { renderSidebar(); },
+    accountLabel: (desc) => accountLabel(desc),
     presetLabel: (desc) => { const p = S.presets.find((x) => x.id === desc.presetId); return p ? p.label : desc.command || ''; },
   };
+
+  /* ---------- Konten ---------- */
+  const PRESET_PROVIDER = { claude: 'claude', codex: 'codex' };
+  const providerOf = (key) => S.accounts.find((p) => p.provider === key) || null;
+  /* Zeigt sich nur, wenn der Anbieter mehr als das Standardkonto kennt. */
+  const multi = (p) => !!p && (p.accounts.length > 1 || p.accounts.some((a) => !a.builtin));
+  function accountLabel(desc) {
+    const p = providerOf(PRESET_PROVIDER[desc.presetId]);
+    if (!multi(p)) return null;
+    const id = desc.accounts && desc.accounts[p.provider];
+    const acc = id && p.accounts.find((a) => a.id === id);
+    return acc ? acc.label : null;
+  }
+  function activeAccount(presetId) {
+    const p = providerOf(PRESET_PROVIDER[presetId]);
+    return multi(p) ? p.accounts.find((a) => a.active) || null : null;
+  }
+  function onAccountsChanged(list) {
+    S.accounts = list || [];
+    for (const l of S.panes.values()) for (const p of l) p.refreshAccount();
+  }
+  async function loadAccounts() { onAccountsChanged(await guard(() => api.accounts.list(), [])); }
+  /* Anmelde-Terminal im aktuellen Projekt, fest an das gewählte Konto gebunden. */
+  function openLogin(provider, acc, command) {
+    if (!activeProject()) return 'Zum Anmelden zuerst ein Projekt öffnen.';
+    const pane = newTerminal(S.activeId, { id: null, label: `Anmeldung: ${acc.label}`, command }, { [provider]: acc.id });
+    return pane ? true : 'Das Terminal konnte nicht geöffnet werden (Obergrenze erreicht?).';
+  }
 
   function gridFor(pid) {
     let g = S.grids.get(pid);
@@ -80,6 +110,7 @@
   }
 
   function addPane(project, desc, opts) {
+    if (!Number.isInteger(desc.color)) desc.color = nextColor(project.id);
     const pane = D.createPane(desc, project, hooks, opts);
     if (!S.panes.has(project.id)) S.panes.set(project.id, []);
     S.panes.get(project.id).push(pane);
@@ -88,12 +119,22 @@
     return pane;
   }
 
+  // Kleinste Farbe, die im Projekt noch nicht vergeben ist; sind alle vergeben, reihum.
+  function nextColor(pid) {
+    const n = D.TILE_HUES.length;
+    const used = new Map();
+    for (const p of panesOf(pid)) used.set(p.desc.color % n, (used.get(p.desc.color % n) || 0) + 1);
+    let best = 0;
+    for (let i = 0; i < n; i++) if ((used.get(i) || 0) < (used.get(best) || 0)) best = i;
+    return best;
+  }
+
   function nextTitle(pid) {
     const used = new Set(panesOf(pid).map((p) => p.desc.title));
     for (let i = 1; ; i++) if (!used.has('Terminal ' + i)) return 'Terminal ' + i;
   }
 
-  function newTerminal(pid, preset) {
+  function newTerminal(pid, preset, accounts) {
     const project = S.projects.find((p) => p.id === pid);
     if (!project) { notify('Zuerst ein Projekt auswählen.'); return null; }
     if (panesOf(pid).length >= MAX) { notify(`Maximal ${MAX} Terminals pro Projekt.`); return null; }
@@ -104,6 +145,9 @@
       command: preset ? preset.command : null,
       resumeCommand: preset ? preset.resumeCommand || null : null,
       browserUrl: null, browserOpen: false,
+      accounts: accounts || undefined,
+      // Anmelde-Terminals (Vorgabe ohne id) behalten ihren Namen
+      titleLocked: preset && !preset.id ? true : undefined,
     };
     const pane = addPane(project, desc, { restored: false, runCommand: !!preset });
     setActive(pane, false);
@@ -263,6 +307,7 @@
     for (const pr of S.presets) {
       const row = h('div', { class: 'menu-item', title: pr.command },
         h('span', { class: 'grow', text: pr.label }),
+        activeAccount(pr.id) ? h('span', { class: 'acct-chip', title: 'Aktives Konto', text: activeAccount(pr.id).label }) : null,
         h('small', { text: pr.command }));
       row.addEventListener('click', () => { closeMenu(); newTerminal(S.activeId, pr); });
       if (!pr.builtin) {
@@ -320,6 +365,9 @@
       title: typeof d.title === 'string' && d.title ? d.title : 'Terminal',
       presetId: d.presetId || null, command: d.command || null, resumeCommand: d.resumeCommand || null,
       browserUrl: d.browserUrl || null, browserOpen: !!d.browserOpen,
+      accounts: d.accounts && typeof d.accounts === 'object' ? d.accounts : undefined,
+      color: Number.isInteger(d.color) ? d.color : undefined,
+      titleLocked: d.titleLocked === true ? true : undefined,
     };
   }
 
@@ -332,6 +380,12 @@
     $('add-project').onclick = (e) => { e.stopPropagation(); openAddMenu($('add-project')); };
     $('empty-add').onclick = (e) => { e.stopPropagation(); openAddMenu($('empty-add')); };
     D.git.init({ projects: () => S.projects, activeId: () => S.activeId, render: renderSidebar });
+    D.accountsPanel.init({
+      onClose: () => { $('btn-accounts').classList.toggle('on', D.accountsPanel.toggle(false)); },
+      onChange: onAccountsChanged,
+      onLogin: openLogin,
+    });
+    $('btn-accounts').onclick = () => { $('btn-accounts').classList.toggle('on', D.accountsPanel.toggle()); };
     $('btn-plus').onclick = () => newTerminal(S.activeId, null);
     $('btn-menu').onclick = (e) => { e.stopPropagation(); openMenu(); };
     $('btn-progress').onclick = () => { $('btn-progress').classList.toggle('on', D.progressPanel.toggle()); };
@@ -359,6 +413,7 @@
     ]);
     S.projects = projects || [];
     S.presets = presets || [];
+    await loadAccounts();
     const saved = (session && session.projects) || {};
     for (const p of S.projects) {
       const terms = (saved[p.id] && Array.isArray(saved[p.id].terminals)) ? saved[p.id].terminals.slice(0, MAX) : [];

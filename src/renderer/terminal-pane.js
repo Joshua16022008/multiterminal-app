@@ -68,6 +68,44 @@
     brightBlue: '#78bdf8', brightMagenta: '#d68ae9', brightCyan: '#6bc7d3', brightWhite: '#e6e9ef',
   };
 
+  /* Matte, dunkle Kachelfarben: gleiche Helligkeit und Sättigung, nur der Farbton wechselt.
+     Reihenfolge so gewählt, dass benachbarte Kacheln gut unterscheidbar sind. */
+  function hsl(h, s, l) {
+    s /= 100; l /= 100;
+    const k = (n) => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    return '#' + [f(0), f(8), f(4)].map((x) => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+  }
+  D.TILE_HUES = [215, 150, 285, 35, 180, 345, 75, 250, 15, 120, 315, 200];
+  D.tileColor = function (index) {
+    const hue = D.TILE_HUES[((index % D.TILE_HUES.length) + D.TILE_HUES.length) % D.TILE_HUES.length];
+    return { bg: hsl(hue, 26, 13), head: hsl(hue, 24, 18), edge: hsl(hue, 22, 27) };
+  };
+
+  /* Kurzer Kachelname aus dem ersten Prompt: Füllwörter weg, höchstens fünf Wörter. */
+  const STOP = new Set(('bitte kannst könntest du mir mal doch noch auch ich möchte will würde würdest hätte gerne gern ' +
+    'einen eine einem einer eines der die das den dem des ein und oder aber dass damit für von mit zu zum zur im in ist sind ' +
+    'wir uns mein meine meinen meinem hier jetzt dann wie was wo kann muss soll sollen machen mach hilf hilfe ' +
+    'please can could you me my the a an to of for and or is are with this that it i want would like help').split(' '));
+  D.titleFromPrompt = function (raw) {
+    let t = String(raw || '').replace(/\x1b\[[0-9;:?]*[A-Za-z]/g, '').replace(/[`"'“”„*_#>|│╭╮╰╯─]/g, ' ');
+    t = t.replace(/https?:\/\/\S+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!t) return null;
+    // Nur der erste Satz zählt
+    t = t.split(/(?<=[.!?:])\s/)[0];
+    const words = t.split(' ').filter(Boolean);
+    const keep = words.filter((w) => !STOP.has(w.toLowerCase().replace(/[.,;:!?]/g, '')));
+    const pick = (keep.length >= 2 ? keep : words).slice(0, 5).map((w) => w.replace(/[.,;:!?]+$/, ''));
+    let title = pick.join(' ').trim();
+    if (title.length < 3) return null;
+    if (title.length > 32) {
+      const cut = title.slice(0, 31);
+      title = (cut.replace(/\s+\S*$/, '') || cut) + '…';
+    }
+    return title.charAt(0).toUpperCase() + title.slice(1);
+  };
+
   /* ---------- Kachel ---------- */
   /* hooks: onChange, onActivate(pane, focus), onClose, onMaximize, onStatus, presetLabel(desc)
      opts: { restored: bool, runCommand: bool } */
@@ -80,10 +118,11 @@
     let lastCols = 0, lastRows = 0, starting = false;
     let wv = null, wvReady = false;
 
+    const tint = D.tileColor(typeof desc.color === 'number' ? desc.color : 0);
     const term = new Terminal({
       fontFamily: '"SF Mono", Menlo, Monaco, "Courier New", monospace',
       fontSize: 12.5, lineHeight: 1.12, cursorBlink: true, scrollback: 5000,
-      theme: D.xtermTheme, allowProposedApi: true,
+      theme: Object.assign({}, D.xtermTheme, { background: tint.bg, cursorAccent: tint.bg }), allowProposedApi: true,
     });
     const fit = new FitAddon.FitAddon();
     const serializer = new SerializeAddon.SerializeAddon();
@@ -94,6 +133,7 @@
 
     /* DOM */
     const titleEl = h('span', { class: 'tile-title', title: 'Doppelklick zum Umbenennen', text: desc.title, ondblclick: startRename });
+    const acctChip = h('span', { class: 'acct-chip', hidden: true });
     const resumeBtn = h('button', { class: 'btn-resume', hidden: true, onclick: resume });
     const bMic = h('button', { class: 'ib mic', title: 'Diktieren (Flüsterflow)', text: '🎙', onclick: onMic });
     const bDictCancel = h('button', { class: 'btn-dict-cancel', hidden: true, title: 'Diktat verwerfen', text: 'Abbrechen', onclick: () => { D.dictation.cancel(); term.focus(); } });
@@ -101,7 +141,7 @@
     const bSnap = h('button', { class: 'ib', title: 'Snapshot: Terminal-Ausgabe als Datei speichern', text: '💾', onclick: snapshot });
     const bMax = h('button', { class: 'ib', title: 'Maximieren / Wiederherstellen', text: '⤢', onclick: () => { pane.setMax(!pane.maxed); hooks.onMaximize(pane); } });
     const bClose = h('button', { class: 'ib close', title: 'Terminal schließen', text: '✕', onclick: () => hooks.onClose(pane) });
-    const head = h('div', { class: 'tile-head' }, titleEl, resumeBtn, h('span', { class: 'spacer' }), bDictCancel, bMic, bBrowser, bSnap, bMax, bClose);
+    const head = h('div', { class: 'tile-head' }, titleEl, acctChip, resumeBtn, h('span', { class: 'spacer' }), bDictCancel, bMic, bBrowser, bSnap, bMax, bClose);
 
     const termEl = h('div', { class: 'term' });
     const exitMsg = h('span', { text: 'beendet' });
@@ -109,6 +149,9 @@
     const termWrap = h('div', { class: 'term-wrap' }, termEl, exitBar);
     const body = h('div', { class: 'tile-body' }, termWrap);
     const el = h('div', { class: 'tile' }, head, body);
+    el.style.setProperty('--tile-bg', tint.bg);
+    el.style.setProperty('--tile-head', tint.head);
+    el.style.setProperty('--tile-edge', tint.edge);
     pane.el = el;
 
     el.addEventListener('mousedown', (e) => hooks.onActivate(pane, !e.target.closest('input, webview, .btn-resume, .exit-bar button')), true);
@@ -142,7 +185,11 @@
     pane.mount = function (parent) {
       parent.append(el);
       term.open(termEl);
-      term.onData((d) => { if (pane.status === 'running') api.terminals.write(id, d); });
+      term.onData((d) => {
+        if (pane.status !== 'running') return;
+        api.terminals.write(id, d);
+        if (!desc.titleLocked && d.indexOf('\r') !== -1) setTimeout(autoTitle, 0);
+      });
       ro.observe(termWrap);
       if (opts.restored) {
         restored = D.guard(() => api.session.loadScrollback(id)).then((text) => new Promise((res) => {
@@ -162,12 +209,21 @@
       fitNow();
       const command = pendingCommand;
       pendingCommand = null;
-      const r = await D.guard(() => api.terminals.create({ id, projectId: project.id, cols: term.cols, rows: term.rows, command: command || null }));
+      const r = await D.guard(() => api.terminals.create({ id, projectId: project.id, cols: term.cols, rows: term.rows, command: command || null, accountOverrides: desc.accounts || undefined }));
       starting = false;
       if (!r || !r.ok) {
         if (r && r.error) D.notify('Terminal konnte nicht gestartet werden: ' + r.error);
         setStatus('exited', 'nicht gestartet');
         return false;
+      }
+      if (r.accounts) {
+        // Die Antwort nennt die tatsächlich geltenden Konten: gesetzte Overrides bleiben,
+        // und ein inzwischen entferntes Konto wird durch das aktive ersetzt
+        let changed = false;
+        desc.accounts = desc.accounts || {};
+        for (const a of r.accounts) if (desc.accounts[a.provider] !== a.id) { desc.accounts[a.provider] = a.id; changed = true; }
+        if (changed) hooks.onChange();
+        pane.refreshAccount();
       }
       lastCols = term.cols; lastRows = term.rows;
       setStatus('running');
@@ -185,6 +241,15 @@
       if (desc.browserOpen) setBrowserOpen(true, null, true);
       start();
     };
+
+    /* Konto-Chip: nur für Schnellstarts claude/codex und nur, wenn der Anbieter mehrere Konten hat */
+    pane.refreshAccount = function () {
+      const label = hooks.accountLabel ? hooks.accountLabel(desc) : null;
+      acctChip.hidden = !label;
+      acctChip.textContent = label || '';
+      acctChip.title = label ? 'Konto: ' + label : '';
+    };
+    pane.refreshAccount();
 
     pane.write = (data) => term.write(data);
     pane.handleExit = function (code) {
@@ -251,6 +316,35 @@
     }) : null;
     refreshMic();
 
+    /* Name aus dem ersten Prompt. Gelesen wird die Zeile unter dem Cursor beim Enter, nicht nur
+       die Tastatureingabe, damit auch Diktat und Einfügen zählen (die schreibt der Hauptprozess).
+       Eine Shell ohne Agent wird ignoriert, bis ein Agent-CLI gestartet wurde. */
+    const AGENT_CLI = /^(claude|codex|kimi|gemini|opencode|aider)(\s|$)/i;
+    let agentSeen = !!desc.command;
+    function cursorLine() {
+      const b = term.buffer.active;
+      const l = b.getLine(b.baseY + b.cursorY);
+      return l ? l.translateToString(true) : '';
+    }
+    function autoTitle() {
+      if (desc.titleLocked || pane.status !== 'running') return;
+      // Eingabezeile des Agenten: Rahmen und Prompt-Zeichen vorn entfernen
+      let line = cursorLine().replace(/[│┃║]/g, ' ').replace(/^[\s>❯$%#›»]+/, '').trim();
+      if (!line || /^\d+[.)]\s/.test(line) || /^(\/|!)/.test(line)) return;
+      if (!agentSeen) {
+        if (!AGENT_CLI.test(line)) return;
+        agentSeen = true;
+        line = line.replace(AGENT_CLI, '').replace(/(^|\s)-{1,2}[\w-]+(=\S+)?/g, ' ').trim();
+        if (!line) return;
+      }
+      const t = D.titleFromPrompt(line);
+      if (!t) return;
+      desc.title = t;
+      desc.titleLocked = true;
+      titleEl.textContent = t;
+      hooks.onChange();
+    }
+
     /* Titel umbenennen */
     function startRename() {
       const input = h('input', { class: 'tile-title-edit', value: desc.title });
@@ -261,7 +355,7 @@
         if (done) return;
         done = true;
         const v = input.value.trim();
-        if (ok && v && v !== desc.title) { desc.title = v; titleEl.textContent = v; hooks.onChange(); }
+        if (ok && v && v !== desc.title) { desc.title = v; desc.titleLocked = true; titleEl.textContent = v; hooks.onChange(); }
         input.replaceWith(titleEl);
         term.focus();
       };

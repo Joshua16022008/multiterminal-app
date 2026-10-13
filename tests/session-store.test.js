@@ -12,7 +12,7 @@ function tmp() {
 const empty = { version: 1, activeProjectId: null, projects: {} };
 const term = (id, extra = {}) => ({
   id, title: 'T ' + id, presetId: null, command: null, resumeCommand: null,
-  browserUrl: null, browserOpen: false, ...extra,
+  browserUrl: null, browserOpen: false, accounts: {}, ...extra,
 });
 
 test('load returns empty session when file is missing', () => {
@@ -148,4 +148,33 @@ test('pruneScrollback removes unknown ids and returns the count', () => {
   assert.strictEqual(store.loadScrollback('c'), null);
   assert.strictEqual(store.pruneScrollback([]), 1);
   assert.strictEqual(store.pruneScrollback([]), 0);
+});
+
+test('accounts per terminal are kept, invalid entries dropped', () => {
+  const store = createSessionStore(tmp());
+  const saved = store.save({
+    version: 1,
+    activeProjectId: null,
+    projects: { p1: { terminals: [
+      term('a', { accounts: { claude: 'claude-1a2b3c4d', codex: 'bad id!', 'x y': 'ok' } }),
+      term('b', { accounts: 'nope' }),
+    ] } },
+  });
+  assert.deepStrictEqual(saved.projects.p1.terminals[0].accounts, { claude: 'claude-1a2b3c4d' });
+  assert.deepStrictEqual(saved.projects.p1.terminals[1].accounts, {});
+  assert.deepStrictEqual(store.load(), saved);
+});
+
+test('terminal color and titleLocked survive a round trip, bad values are dropped', () => {
+  const dir = tmp();
+  const store = createSessionStore(dir);
+  store.save({ version: 1, activeProjectId: null, projects: { p1: { terminals: [
+    term('a', { color: 3, titleLocked: true }),
+    term('b', { color: 99, titleLocked: 'yes' }),
+  ] } } });
+  const [a, b] = store.load().projects.p1.terminals;
+  assert.strictEqual(a.color, 3);
+  assert.strictEqual(a.titleLocked, true);
+  assert.ok(!('color' in b));
+  assert.ok(!('titleLocked' in b));
 });

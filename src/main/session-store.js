@@ -25,10 +25,21 @@ function optString(v, max) {
   return typeof v === 'string' && v.length <= max ? v : null;
 }
 
+// Account ids the terminal ran with, { provider: accountId }, so a resumed
+// terminal starts with the same config folder (sessions live there).
+function sanitizeAccounts(v) {
+  const out = {};
+  if (!isPlainObject(v)) return out;
+  for (const provider of Object.keys(v)) {
+    if (validId(provider) && validId(v[provider])) out[provider] = v[provider];
+  }
+  return out;
+}
+
 function sanitizeTerminal(t) {
   if (!isPlainObject(t) || !validId(t.id)) return null;
   const title = typeof t.title === 'string' ? t.title.slice(0, MAX_TITLE) : '';
-  return {
+  const out = {
     id: t.id,
     title,
     presetId: validId(t.presetId) ? t.presetId : null,
@@ -36,7 +47,12 @@ function sanitizeTerminal(t) {
     resumeCommand: optString(t.resumeCommand, MAX_COMMAND),
     browserUrl: optString(t.browserUrl, MAX_URL),
     browserOpen: t.browserOpen === true,
+    accounts: sanitizeAccounts(t.accounts),
   };
+  // Optional: Farbindex der Kachel und "Name steht fest" (aus erstem Prompt oder von Hand)
+  if (Number.isInteger(t.color) && t.color >= 0 && t.color < 64) out.color = t.color;
+  if (t.titleLocked === true) out.titleLocked = true;
+  return out;
 }
 
 function sanitizeSession(raw) {

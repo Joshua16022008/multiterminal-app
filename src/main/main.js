@@ -8,6 +8,9 @@ const { createPtyManager } = require('./pty-manager');
 const { createProjectStore } = require('./project-store');
 const { createPresetStore } = require('./presets');
 const { createSessionStore } = require('./session-store');
+const { createAccountStore } = require('./account-store');
+const { createUsageService } = require('./usage-service');
+const { createUsageSetup } = require('./usage-setup');
 const progressFiles = require('./progress-files');
 const { createGitService } = require('./git-service');
 const { createDictation } = require('./dictation');
@@ -23,6 +26,9 @@ let mainWindow = null;
 let quitting = false;
 let projects;
 let presets;
+let accounts;
+let usage;
+let usageSetup;
 let sessions;
 let ptys;
 let git;
@@ -101,12 +107,39 @@ function registerIpc() {
   handle('presets:remove', (id) => presets.remove(String(id)));
 
   handle('terminals:create', (options) => {
-    const { id, projectId, cols, rows, command } = options || {};
+    const { id, projectId, cols, rows, command, accountOverrides } = options || {};
     const project = projects.get(String(projectId));
     if (!project) return { ok: false, error: 'Projekt nicht gefunden.' };
     // The working directory always comes from the stored project, never from the page.
-    return ptys.create({ id, projectId: project.id, cwd: project.path, cols, rows, command });
+    const { env, accounts: applied } = accounts.envFor(accountOverrides);
+    // Claude Code writes its quota state to a per-account file through the status line script.
+    const claude = applied.find((a) => a.provider === 'claude');
+    const extraEnv = claude ? { ...env, MULTITERMINAL_USAGE_FILE: usage.usageFileFor(claude.id) } : env;
+    const result = ptys.create({ id, projectId: project.id, cwd: project.path, cols, rows, command, extraEnv });
+    return result.ok ? { ...result, accounts: applied } : result;
   });
+  handle('accounts:list', () => accounts.list());
+  handle('accounts:add', (provider, label) => accounts.add({ provider, label }));
+  handle('accounts:rename', (id, label) => accounts.rename(String(id), label));
+  handle('accounts:setActive', (provider, id) => accounts.setActive(provider, String(id)));
+  handle('accounts:remove', async (id) => {
+    const removed = accounts.remove(String(id));
+    if (!removed) return false;
+    // The folder holds the CLI's login and history: to the trash, never deleted for good.
+    try {
+      if (fs.existsSync(removed.folder)) await shell.trashItem(removed.folder);
+    } catch {
+      // The entry is gone either way; the folder can be removed by hand.
+    }
+    return true;
+  });
+  handle('accounts:loginCommand', (provider) => accounts.loginCommand(provider));
+
+  handle('usage:list', () => usage.forAccounts(accounts.list().flatMap((g) => g.accounts)));
+  handle('usage:claudeStatus', () => usageSetup.status());
+  handle('usage:claudeEnable', () => usageSetup.enable());
+  handle('usage:claudeDisable', () => usageSetup.disable());
+
   handle('terminals:kill', (id) => {
     dictation.cancelFor(String(id));
     ptys.kill(id);
@@ -263,6 +296,23 @@ if (!app.requestSingleInstanceLock()) {
     projects = createProjectStore(path.join(dataDir, 'projects.json'));
     presets = createPresetStore(path.join(dataDir, 'presets.json'));
     sessions = createSessionStore(path.join(dataDir, 'session'));
+    accounts = createAccountStore({
+      filePath: path.join(dataDir, 'accounts.json'),
+      profilesDir: path.join(dataDir, 'profiles'),
+    });
+    // The status line script runs outside the app bundle, so it lives in the app's data folder.
+    const usageScript = path.join(dataDir, 'usage-statusline.js');
+    try {
+      fs.copyFileSync(path.join(__dirname, 'usage-statusline.js'), usageScript);
+    } catch (err) {
+      // Without the copy the status line simply cannot be enabled.
+    }
+    usage = createUsageService({ usageDir: path.join(dataDir, 'usage') });
+    usageSetup = createUsageSetup({
+      settingsPath: path.join(os.homedir(), '.claude', 'settings.json'),
+      execPath: process.execPath,
+      scriptPath: usageScript,
+    });
     git = createGitService({
       cloneDir: fs.existsSync(SECOND_BRAIN_PROJECTS) ? SECOND_BRAIN_PROJECTS : path.join(os.homedir(), 'Multiterminal'),
     });
