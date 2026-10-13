@@ -50,6 +50,12 @@ contextBridge.exposeInMainWorld('deck', {
     pull: (projectId) => ipcRenderer.invoke('git:pull', projectId),
     sync: (projectId) => ipcRenderer.invoke('git:sync', projectId),
   },
+  dictation: {
+    start: (terminalId, live) => ipcRenderer.invoke('dictation:start', terminalId, live),
+    stop: () => ipcRenderer.invoke('dictation:stop'),
+    cancel: () => ipcRenderer.invoke('dictation:cancel'),
+    onEvent: (callback) => subscribe('dictation:event', callback),
+  },
   onMenu: (callback) => subscribe('menu:action', callback),
   onBeforeQuit: (callback) => subscribe('app:before-quit', callback),
   quitReady: () => ipcRenderer.send('app:quit-ready'),

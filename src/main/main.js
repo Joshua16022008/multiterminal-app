@@ -10,6 +10,7 @@ const { createPresetStore } = require('./presets');
 const { createSessionStore } = require('./session-store');
 const progressFiles = require('./progress-files');
 const { createGitService } = require('./git-service');
+const { createDictation } = require('./dictation');
 
 const BROWSER_PARTITION = 'persist:minibrowser';
 const QUIT_FLUSH_TIMEOUT_MS = 2000;
@@ -25,6 +26,7 @@ let presets;
 let sessions;
 let ptys;
 let git;
+let dictation;
 
 function isWebUrl(url) {
   try {
@@ -105,7 +107,10 @@ function registerIpc() {
     // The working directory always comes from the stored project, never from the page.
     return ptys.create({ id, projectId: project.id, cwd: project.path, cols, rows, command });
   });
-  handle('terminals:kill', (id) => ptys.kill(id));
+  handle('terminals:kill', (id) => {
+    dictation.cancelFor(String(id));
+    ptys.kill(id);
+  });
   listen('terminals:write', (id, data) => ptys.write(id, data));
   listen('terminals:resize', (id, cols, rows) => ptys.resize(id, cols, rows));
 
@@ -141,12 +146,17 @@ function registerIpc() {
   handle('git:pull', (projectId) => git.pull(requireProject(projectId).path));
   handle('git:sync', (projectId) => git.sync(requireProject(projectId).path));
 
+  handle('dictation:start', (terminalId, live) => dictation.start(terminalId, live));
+  handle('dictation:stop', () => dictation.stop());
+  handle('dictation:cancel', () => dictation.cancel());
+
   listen('app:quit-ready', finishQuit);
 }
 
 function finishQuit() {
   if (quitting) return;
   quitting = true;
+  dictation.shutdown();
   ptys.killAll();
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.destroy();
   app.quit();
@@ -259,6 +269,14 @@ if (!app.requestSingleInstanceLock()) {
     ptys = createPtyManager({
       onData: (id, data) => sendToWindow('terminals:data', id, data),
       onExit: (id, exitCode) => sendToWindow('terminals:exit', id, exitCode),
+    });
+
+    const testAudio = process.env.MULTITERMINAL_DICTATION_TEST_AUDIO;
+    dictation = createDictation({
+      serviceDir: path.join(SECOND_BRAIN_PROJECTS, 'Flüsterflow'),
+      write: (id, data) => ptys.write(id, data),
+      notify: (event) => sendToWindow('dictation:event', event),
+      extraArgs: testAudio ? ['--audio-file', testAudio] : [],
     });
 
     // Websites in a mini browser get no camera, microphone, location etc.

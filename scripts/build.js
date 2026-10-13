@@ -30,6 +30,8 @@ async function main() {
     overwrite: true,
     prune: true, // drops devDependencies (default, stated explicitly)
     appBundleId: 'de.joshua.multiterminal',
+    // Diktat: Flüsterflow nimmt als Kindprozess dieser App über das Mikrofon auf.
+    usageDescription: { Microphone: 'Für das Diktat in ein Terminal (Flüsterflow, lokal auf diesem Mac).' },
     ignore: [
       /^\/dist($|\/)/,
       /^\/tests($|\/)/,
