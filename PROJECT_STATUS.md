@@ -18,12 +18,10 @@ Version 0.1.0 läuft als Entwicklungsstart (`npm start`) und als gebaute `Multit
 Joshua probiert die gebaute App aus und nennt Änderungswünsche.
 
 ## Aktive Aufgaben
-- GitHub-Push nachholen, sobald das Repo existiert; danach als Submodul im Second Brain eintragen.
 - Offen aus der Prüfung: wiederhergestellter Verlauf ist nicht ausgegraut; Schließen über den roten Fensterknopf nicht separat geprüft (⌘Q/Beenden geprüft).
 
 ## Blocker
-- GitHub-Repo `multiterminal-app` muss von Joshua angelegt werden, bevor gepusht werden kann.
-- Joshuas zsh fragt in jedem neuen Terminal nach „insecure directories“ (Homebrew gehört Benutzer m4diva, ausgelöst durch Bun-Vervollständigung in `~/.zshrc`). Schnellstarts warten, bis die Frage beantwortet ist. Entscheidung über Änderung an `~/.zshrc` liegt bei Joshua.
+- Joshuas zsh fragt in jedem neuen Terminal nach „insecure directories“ (Homebrew gehört Benutzer m4diva, ausgelöst durch Bun-Vervollständigung in `~/.zshrc`). Schnellstarts warten, bis die Frage beantwortet ist. Joshua hat der Änderung an `~/.zshrc` zugestimmt, die automatische Ausführung wurde aber von der Sicherheitsprüfung blockiert; Joshua muss die Zeile selbst einfügen.
 
 ## Entscheidungen
 - Electron ohne Bundler/Framework; Shells über node-pty als interaktive Login-Shell, damit der normale PATH gilt.
@@ -32,6 +30,7 @@ Joshua probiert die gebaute App aus und nennt Änderungswünsche.
 - Umsetzung verteilt: Kern Opus, UI und Persistenz Sonnet, Kleinteile und Doku Haiku.
 
 ## Nachweise
+- Auf GitHub gepusht (`Joshua16022008/multiterminal-app`, privat) und als Submodul im Second Brain eingetragen (lokaler Commit c7edd7c).
 - `npm test`: 67 Tests, 67 bestanden (13.10.2026).
 - Laufende App per Screenshot geprüft: zehn Terminals im Raster, elftes gesperrt; Shell im Projektordner mit vollem PATH; zwei Mini-Browser mit verschiedenen Seiten; Snapshot und PROGRESS.md angelegt; Aufbau, Browser-Adressen und Verlauf nach Neustart zurück; keine verwaisten Shells nach dem Beenden.
 - Gebaute App gestartet: Terminals laufen, `claude`, `codex`, `kimi` werden gefunden.
