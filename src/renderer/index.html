@@ -8,6 +8,11 @@
   <link rel="stylesheet" href="../../node_modules/@xterm/xterm/css/xterm.css">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="usage.css">
+  <link rel="stylesheet" href="settings.css">
+  <link rel="stylesheet" href="ports.css">
+  <link rel="stylesheet" href="attachments.css">
+  <link rel="stylesheet" href="worktree.css">
+  <link rel="stylesheet" href="attention.css">
 </head>
 <body>
   <div id="app">
@@ -26,6 +31,9 @@
         <h1 id="ws-title"></h1>
         <span id="counter" class="counter"></span>
         <span class="spacer"></span>
+        <button id="btn-settings" class="btn-small" aria-expanded="false" aria-controls="settings-panel" title="Persönliches Profil und Agent-Einstellungen">Einstellungen</button>
+        <button id="btn-attention" class="btn-small" aria-expanded="false" aria-controls="attention-panel" title="Rückmeldungen der Agenten: wartet auf dich, Antwort fertig, Fehler (⌘J springt zur nächsten)">Rückmeldungen <span id="attention-count" class="attn-badge" hidden></span></button>
+        <button id="btn-ports" class="btn-small" aria-expanded="false" aria-controls="ports-panel" title="Lokale Devserver und lauschende Ports">Ports</button>
         <div id="ws-actions">
           <div class="split">
             <button id="btn-plus" class="btn-primary split-main" title="Neues Terminal">+</button>
@@ -40,6 +48,9 @@
         <div id="grids"></div>
         <aside id="accounts-panel" hidden></aside>
         <aside id="progress-panel" hidden></aside>
+        <aside id="attention-panel" hidden aria-label="Rückmeldungen der Agenten"></aside>
+        <aside id="ports-panel" hidden aria-label="Devserver und Ports"></aside>
+        <section id="settings-panel" hidden aria-label="Einstellungen"></section>
         <div id="empty-main" hidden>
           <p>Kein Projekt ausgewählt.</p>
           <button id="empty-add" class="btn-primary">+ Projekt hinzufügen</button>
@@ -57,12 +68,21 @@
   <script src="../../node_modules/@xterm/addon-web-links/lib/addon-web-links.js"></script>
   <script src="../../node_modules/@xterm/addon-serialize/lib/addon-serialize.js"></script>
   <script src="layout.js"></script>
+  <script src="hotkeys.js"></script>
+  <script src="reorder.js"></script>
+  <script src="browser-view.js"></script>
   <script src="dictation.js"></script>
+  <script src="attention-panel.js"></script>
   <script src="terminal-pane.js"></script>
+  <script src="attachments.js"></script>
+  <script src="prompt-draft.js"></script>
   <script src="progress-panel.js"></script>
   <script src="usage-view.js"></script>
   <script src="accounts-panel.js"></script>
+  <script src="ports-panel.js"></script>
+  <script src="settings-panel.js"></script>
   <script src="github-panel.js"></script>
+  <script src="worktree-picker.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

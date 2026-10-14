@@ -52,6 +52,10 @@ function sanitizeTerminal(t) {
   // Optional: Farbindex der Kachel und "Name steht fest" (aus erstem Prompt oder von Hand)
   if (Number.isInteger(t.color) && t.color >= 0 && t.color < 64) out.color = t.color;
   if (t.titleLocked === true) out.titleLocked = true;
+  // Working copy (F07): only the id is stored, the folder comes from worktrees.json
+  if (validId(t.workspaceId)) out.workspaceId = t.workspaceId;
+  // View mode of the mini browser; the default (both side by side) is not stored
+  if (t.browserMode === 'terminal' || t.browserMode === 'browser') out.browserMode = t.browserMode;
   return out;
 }
 

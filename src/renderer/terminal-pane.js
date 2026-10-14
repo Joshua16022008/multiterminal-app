@@ -117,6 +117,10 @@
     let pendingCommand = opts.runCommand && desc.command ? desc.command : null;
     let lastCols = 0, lastRows = 0, starting = false;
     let wv = null, wvReady = false;
+    // Optional module (browser-view.js): without it the tile keeps the old behaviour.
+    const BV = window.DeckBrowserView || null;
+    const auto = BV ? BV.createAutoOpen() : null;
+    if (auto && desc.browserUrl) auto.setCurrent(desc.browserUrl);
 
     const tint = D.tileColor(typeof desc.color === 'number' ? desc.color : 0);
     const term = new Terminal({
@@ -128,20 +132,46 @@
     const serializer = new SerializeAddon.SerializeAddon();
     term.loadAddon(fit);
     term.loadAddon(serializer);
+    // Ctrl/Cmd+digit jumps between tiles via the app menu; keep xterm from also
+    // sending a control character (e.g. Ctrl+2 -> NUL) to the shell.
+    term.attachCustomKeyEventHandler((e) => !window.DeckHotkeys.isHotkeyEvent(e));
     term.loadAddon(new WebLinksAddon.WebLinksAddon((_e, uri) => openBrowser(uri)));
     pane.term = term;
 
     /* DOM */
+    const numEl = h('span', { class: 'tile-num', title: 'Taste zum Anspringen: Strg/Cmd + diese Ziffer', hidden: true });
     const titleEl = h('span', { class: 'tile-title', title: 'Doppelklick zum Umbenennen', text: desc.title, ondblclick: startRename });
     const acctChip = h('span', { class: 'acct-chip', hidden: true });
+    const wtChip = h('span', { class: 'acct-chip wt-chip', hidden: true });
     const resumeBtn = h('button', { class: 'btn-resume', hidden: true, onclick: resume });
     const bMic = h('button', { class: 'ib mic', title: 'Diktieren (Flüsterflow)', text: '🎙', onclick: onMic });
     const bDictCancel = h('button', { class: 'btn-dict-cancel', hidden: true, title: 'Diktat verwerfen', text: 'Abbrechen', onclick: () => { D.dictation.cancel(); term.focus(); } });
     const bBrowser = h('button', { class: 'ib', title: 'Mini-Browser ein/aus', text: '🌐', onclick: () => setBrowserOpen(!desc.browserOpen) });
+    // View switch (only while the mini browser is open): terminal only / both / browser only
+    const SEG = [['terminal', 'Nur Agent'], ['split', 'Agent und Browser'], ['browser', 'Nur Browser']];
+    const segBtns = SEG.map(([mode, tip]) => h('button', { class: 'seg-btn seg-' + mode, title: tip, 'aria-label': tip, onclick: () => setMode(mode) }));
+    const seg = h('span', { class: 'view-seg', hidden: true }, ...segBtns);
     const bSnap = h('button', { class: 'ib', title: 'Snapshot: Terminal-Ausgabe als Datei speichern', text: '💾', onclick: snapshot });
     const bMax = h('button', { class: 'ib', title: 'Maximieren / Wiederherstellen', text: '⤢', onclick: () => { pane.setMax(!pane.maxed); hooks.onMaximize(pane); } });
     const bClose = h('button', { class: 'ib close', title: 'Terminal schließen', text: '✕', onclick: () => hooks.onClose(pane) });
-    const head = h('div', { class: 'tile-head' }, titleEl, acctChip, resumeBtn, h('span', { class: 'spacer' }), bDictCancel, bMic, bBrowser, bSnap, bMax, bClose);
+    // Agent status dot (F01): shown only while a hook reports a session for this tile.
+    const AT = window.DeckAttention || null;
+    const statusDot = AT ? AT.createStatusDot({ h }) : null;
+    let agentEntry = null;
+    if (statusDot) {
+      // The head is draggable: a drag must never start from the dot.
+      statusDot.el.addEventListener('dragstart', (e) => { e.preventDefault(); e.stopPropagation(); });
+      statusDot.el.addEventListener('mouseenter', () => {
+        if (!agentEntry) return;
+        const info = AT.dotInfo(agentEntry);
+        statusDot.el.title = info.title + ' · ' + AT.relativeTime(agentEntry.observedAt, Date.now());
+      });
+    }
+    pane.setAgentEntry = function (entry) {
+      agentEntry = entry || null;
+      if (statusDot) statusDot.update(agentEntry);
+    };
+    const head = h('div', { class: 'tile-head' }, numEl, titleEl, statusDot ? statusDot.el : null, acctChip, wtChip, resumeBtn, h('span', { class: 'spacer' }), bDictCancel, bMic, seg, bBrowser, bSnap, bMax, bClose);
 
     const termEl = h('div', { class: 'term' });
     const exitMsg = h('span', { text: 'beendet' });
@@ -153,6 +183,7 @@
     el.style.setProperty('--tile-head', tint.head);
     el.style.setProperty('--tile-edge', tint.edge);
     pane.el = el;
+    pane.head = head;
 
     el.addEventListener('mousedown', (e) => hooks.onActivate(pane, !e.target.closest('input, webview, .btn-resume, .exit-bar button')), true);
 
@@ -190,6 +221,8 @@
         api.terminals.write(id, d);
         if (!desc.titleLocked && d.indexOf('\r') !== -1) setTimeout(autoTitle, 0);
       });
+      // Real key presses only (term.onData would also carry terminal replies): answers a waiting agent.
+      term.onKey(() => { if (D.attention) D.attention.userInput(id); });
       ro.observe(termWrap);
       if (opts.restored) {
         restored = D.guard(() => api.session.loadScrollback(id)).then((text) => new Promise((res) => {
@@ -209,7 +242,7 @@
       fitNow();
       const command = pendingCommand;
       pendingCommand = null;
-      const r = await D.guard(() => api.terminals.create({ id, projectId: project.id, cols: term.cols, rows: term.rows, command: command || null, accountOverrides: desc.accounts || undefined }));
+      const r = await D.guard(() => api.terminals.create({ id, projectId: project.id, cols: term.cols, rows: term.rows, command: command || null, accountOverrides: desc.accounts || undefined, workspaceId: desc.workspaceId || undefined }));
       starting = false;
       if (!r || !r.ok) {
         if (r && r.error) D.notify('Terminal konnte nicht gestartet werden: ' + r.error);
@@ -242,6 +275,19 @@
       start();
     };
 
+    /* Arbeitskopie-Chip (F07): Branch und Ordner der getrennten Arbeitskopie, "fehlt" wenn der Ordner weg ist */
+    if (desc.workspaceId && api.worktrees) {
+      wtChip.hidden = false;
+      wtChip.textContent = '⑂ …';
+      D.guard(() => api.worktrees.inspect(desc.workspaceId)).then((i) => {
+        if (!i || !i.ok) { wtChip.textContent = '⑂ unbekannt'; wtChip.classList.add('bad'); return; }
+        const b = i.worktree ? i.worktree.branch : i.branch;
+        wtChip.textContent = '⑂ ' + b + (i.exists ? '' : ' (fehlt)');
+        wtChip.title = 'Arbeitskopie: ' + (i.worktree ? i.worktree.cwd : '') + (i.changes ? ` – ${i.changes} Änderungen` : '');
+        wtChip.classList.toggle('bad', !i.exists);
+      });
+    }
+
     /* Konto-Chip: nur für Schnellstarts claude/codex und nur, wenn der Anbieter mehrere Konten hat */
     pane.refreshAccount = function () {
       const label = hooks.accountLabel ? hooks.accountLabel(desc) : null;
@@ -251,8 +297,17 @@
     };
     pane.refreshAccount();
 
-    pane.write = (data) => term.write(data);
+    if (D.attention) pane.setAgentEntry(D.attention.entryFor(id));
+
+    pane.write = (data) => {
+      term.write(data);
+      // Live output only: restored history is written in mount() and never lands here.
+      const url = auto && auto.feed(data);
+      if (url) autoOpen(url);
+    };
     pane.handleExit = function (code) {
+      const last = auto && auto.flush();
+      if (last) autoOpen(last);
       term.write('\x1b[0m\r\n\x1b[2m[Prozess beendet]\x1b[0m\r\n');
       setStatus('exited', 'beendet' + (typeof code === 'number' ? ' (Code ' + code + ')' : ''));
     };
@@ -279,7 +334,9 @@
       pane.canResume = false;
       refreshResume();
       if (pane.status !== 'running' && !(await start())) return;
-      pane.type(cmd + '\r');
+      // App-own command: the main process may add the profile flag; raw input (pane.type) is never rewritten.
+      if (api.terminals.runBuiltin && pane.status === 'running') api.terminals.runBuiltin(id, cmd);
+      else pane.type(cmd + '\r');
       term.focus();
     }
     refreshResume();
@@ -368,11 +425,20 @@
       el.classList.toggle('max', v);
       bMax.textContent = v ? '⤡' : '⤢';
     };
+    // In "browser only" the terminal is hidden and cannot take the focus.
+    function focusMain() {
+      if (browserOnly() && wv) { try { wv.focus(); } catch (_) {} } else term.focus();
+    }
     pane.setActive = function (v, focus) {
       el.classList.toggle('active', v);
-      if (v && focus) term.focus();
+      if (v && focus) focusMain();
     };
-    pane.focus = () => term.focus();
+    pane.focus = focusMain;
+    // Shown for the first ten tiles only; key is '' for the rest.
+    pane.setNumber = function (key) {
+      numEl.textContent = key;
+      numEl.hidden = !key;
+    };
 
     /* Snapshot / Scrollback */
     pane.plainText = function () {
@@ -393,8 +459,11 @@
     pane.serialize = () => serializer.serialize({ scrollback: 1500 });
 
     /* Mini-Browser */
-    let browser, addr, bBack, bFwd;
+    let browser, addr, bBack, bFwd, bToAgent;
+    const modeOf = () => (BV ? BV.normalizeMode(desc.browserMode) : 'split');
+    const browserOnly = () => !!desc.browserOpen && !!browser && modeOf() === 'browser';
     function buildBrowser() {
+      bToAgent = h('button', { class: 'btn-small to-agent', hidden: true, title: 'Zurück zum Agenten (Terminal)', text: '← Agent', onclick: () => { setMode('split'); term.focus(); } });
       bBack = h('button', { class: 'ib', title: 'Zurück', text: '←', disabled: true, onclick: () => { try { wv.goBack(); } catch (_) {} } });
       bFwd = h('button', { class: 'ib', title: 'Vor', text: '→', disabled: true, onclick: () => { try { wv.goForward(); } catch (_) {} } });
       const bReload = h('button', { class: 'ib', title: 'Neu laden', text: '⟳', onclick: () => { try { wv.reload(); } catch (_) {} } });
@@ -403,7 +472,7 @@
       addr.addEventListener('keydown', (e) => { if (e.key === 'Enter') navigate(addr.value); });
       addr.addEventListener('focus', () => addr.select());
       const host = h('div', { class: 'wv-host' });
-      browser = h('div', { class: 'browser' }, h('div', { class: 'browser-bar' }, bBack, bFwd, bReload, addr, bShut), host);
+      browser = h('div', { class: 'browser' }, h('div', { class: 'browser-bar' }, bToAgent, bBack, bFwd, bReload, addr, bShut), host);
       wv = document.createElement('webview');
       wv.setAttribute('partition', 'persist:minibrowser');
       wv.setAttribute('allowpopups', '');
@@ -425,6 +494,7 @@
     }
     function setUrl(u) {
       if (addr && document.activeElement !== addr) addr.value = u;
+      if (auto) auto.setCurrent(u);
       if (desc.browserUrl !== u) { desc.browserUrl = u; hooks.onChange(); }
       updateNav();
     }
@@ -433,33 +503,111 @@
       if (!url) { D.notify('Ungültige Adresse. Erlaubt sind nur http- und https-Adressen.'); return; }
       addr.value = url;
       desc.browserUrl = url;
+      if (auto) auto.setCurrent(url);
       hooks.onChange();
       if (wvReady) { Promise.resolve(wv.loadURL(url)).catch(() => {}); } else { wv.setAttribute('src', url); }
     }
-    function setBrowserOpen(open, url, silent) {
+    // Shows/hides parts of the tile for the stored mode. Nothing is removed from the
+    // DOM, so neither the page nor the shell is restarted by a mode change.
+    function applyView() {
+      const open = !!desc.browserOpen && !!browser;
+      const v = BV ? BV.viewFor(desc.browserMode, open)
+        : { mode: 'split', showTerminal: true, showBrowser: open, classes: open ? ['with-browser'] : [] };
+      for (const c of ['with-browser', 'mode-terminal', 'mode-browser']) body.classList.toggle(c, v.classes.includes(c));
+      seg.hidden = !open;
+      segBtns.forEach((b, i) => b.classList.toggle('on', open && SEG[i][0] === v.mode));
+      if (bToAgent) bToAgent.hidden = !(open && v.mode === 'browser');
+      if (v.showTerminal) requestAnimationFrame(fitNow);
+    }
+    function setMode(mode) {
+      if (!BV) return;
+      const m = BV.normalizeMode(mode);
+      if (desc.browserMode !== m) { desc.browserMode = m; hooks.onChange(); }
+      applyView();
+      if (m === 'browser') { if (wv) { try { wv.focus(); } catch (_) {} } } else term.focus();
+    }
+    // opts.agent: opened/closed by a program, not by the user: no focus change, no "closed on purpose"
+    function setBrowserOpen(open, url, silent, opts) {
+      const byAgent = !!(opts && opts.agent);
       if (open) {
         if (!wv) buildBrowser();
         browser.hidden = false;
-        body.classList.add('with-browser');
+        if (opts && opts.mode && BV && desc.browserMode !== opts.mode) { desc.browserMode = opts.mode; hooks.onChange(); }
         if (url) navigate(url);
         else if (!desc.browserUrl && !silent) addr.focus();
       } else {
         if (browser) browser.hidden = true;
-        body.classList.remove('with-browser');
-        term.focus();
+        if (auto && !byAgent) auto.userClosed();
+        if (!byAgent) term.focus();
       }
-      bBrowser.classList.toggle('on', !!open);
       if (desc.browserOpen !== !!open) { desc.browserOpen = !!open; hooks.onChange(); }
+      bBrowser.classList.toggle('on', !!open);
+      applyView();
     }
     function openBrowser(url) {
       const u = D.normalizeUrl(url);
       if (!u) return;
       setBrowserOpen(true, u);
     }
+    // A local address showed up in the live output: show it next to the terminal,
+    // without taking the keyboard focus away from the shell.
+    function autoOpen(url) {
+      if (pane.disposed) return;
+      setBrowserOpen(true, url, true, { agent: true, mode: 'split' });
+      D.notify('Adresse automatisch im Mini-Browser geöffnet: ' + url, 'info', 3500);
+    }
     if (desc.browserOpen) bBrowser.classList.add('on');
+
+    /* Schnittstelle für die Agentensteuerung aus dem Hauptprozess (Teil B2) */
+    function whenLoaded(timeoutMs) {
+      return new Promise((resolve) => {
+        let timer;
+        const done = (r) => {
+          clearTimeout(timer);
+          wv.removeEventListener('did-finish-load', onOk);
+          wv.removeEventListener('did-fail-load', onFail);
+          resolve(r);
+        };
+        const onOk = () => done({ ok: true, url: safeUrl() });
+        const onFail = (e) => { if (e.isMainFrame && e.errorCode !== -3) done({ ok: false, error: (e.errorDescription || 'Fehler ' + e.errorCode) + ': ' + e.validatedURL }); };
+        timer = setTimeout(() => done({ ok: false, error: 'Zeitüberschreitung beim Laden der Seite.' }), timeoutMs);
+        wv.addEventListener('did-finish-load', onOk);
+        wv.addEventListener('did-fail-load', onFail);
+      });
+    }
+    function safeUrl() { try { return wv.getURL() || desc.browserUrl || ''; } catch (_) { return desc.browserUrl || ''; }}
+    pane.browserApi = {
+      // Opens (building the browser if needed), navigates and resolves when the load finished or failed.
+      async open(raw) {
+        const url = D.normalizeUrl(raw);
+        if (!url) return { ok: false, error: 'Ungültige Adresse. Erlaubt sind nur http- und https-Adressen.' };
+        if (!wv) buildBrowser();
+        const loaded = whenLoaded(20000);
+        // A hidden browser would be pointless for the user watching: show it, keep a "browser only" choice.
+        setBrowserOpen(true, url, true, { agent: true, mode: modeOf() === 'terminal' ? 'split' : undefined });
+        return loaded;
+      },
+      show() {
+        setBrowserOpen(true, null, true, { agent: true, mode: modeOf() === 'terminal' ? 'split' : undefined });
+        return true;
+      },
+      hide() {
+        setBrowserOpen(false, null, true, { agent: true });
+        return true;
+      },
+      isOpen: () => !!desc.browserOpen,
+      // True when the page is actually on screen (open, not hidden by mode, project shown).
+      visible: () => !!wv && wv.offsetWidth > 0 && wv.offsetHeight > 0,
+      webContentsId() {
+        if (!wv || !wvReady) return null;
+        try { return wv.getWebContentsId(); } catch (_) { return null; }
+      },
+      mode: () => modeOf(),
+    };
 
     /* Aufräumen */
     pane.dispose = function () {
+      pane.disposed = true;
       clearTimeout(roTimer);
       if (dictUnregister) dictUnregister();
       ro.disconnect();

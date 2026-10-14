@@ -16,6 +16,20 @@
   });
   const $ = (id) => document.getElementById(id);
   const panesOf = (pid) => S.panes.get(pid) || [];
+
+  /* ---------- Agentenstatus (F01): Zustand kommt gepusht aus dem Hauptprozess ---------- */
+  const A = (D.attention = {
+    entries: new Map(), lastInput: 0,
+    entryFor: (id) => A.entries.get(id) || null,
+    // Nur wenn der Agent wartet; gedrosselt, damit nicht jeder Tastendruck einen IPC-Aufruf auslöst.
+    userInput(id) {
+      const e = A.entries.get(id);
+      const now = Date.now();
+      if (!e || e.state !== 'needs-input' || now - A.lastInput < 300) return;
+      A.lastInput = now;
+      api.agents.userInput(id);
+    },
+  });
   const activeProject = () => S.projects.find((p) => p.id === S.activeId) || null;
   const activePane = () => {
     const list = panesOf(S.activeId);
@@ -105,6 +119,8 @@
       g.style.gridAutoRows = `calc((100% - ${(visibleRows - 1) * 6}px) / ${visibleRows})`;
     }
     g.classList.toggle('has-max', list.some((p) => p.maxed));
+    // Reihenfolge nur per CSS-Platz: Knoten bleiben im DOM stehen (webview lädt sonst neu).
+    list.forEach((p, i) => { p.el.style.order = i; p.setNumber(window.DeckHotkeys.keyForIndex(i)); });
     if (pid === S.activeId) renderHeader();
     renderSidebar();
   }
@@ -115,8 +131,86 @@
     if (!S.panes.has(project.id)) S.panes.set(project.id, []);
     S.panes.get(project.id).push(pane);
     pane.mount(gridFor(project.id));
+    wireDrag(pane);
+    if (D.promptDraft) D.promptDraft.bindPane(pane);
     syncGrid(project.id);
     return pane;
+  }
+
+  /* ---------- Tauschen per Ziehen (HTML5-DnD: im Electron-Fenster zuverlässig, Esc bricht von selbst ab) ---------- */
+  const drag = { src: null, over: null, timer: 0, y: 0 };
+  // Zeigerhöhe fürs Auto-Scrollen und Markierung löschen, sobald der Zeiger keine Kachel mehr trifft (Zwischenraum, Leiste)
+  function onDocDragOver(e) {
+    drag.y = e.clientY;
+    if (!(e.target.closest && e.target.closest('.tile'))) setOver(null);
+  }
+  // Sicherheitsnetz, falls ein dragend ausbleibt: sonst bliebe pointer-events der Terminals aus
+  function onDragAbort(e) { if (e.type === 'mousedown' || e.key === 'Escape') dragEnd(); }
+  function dragEnd() {
+    clearInterval(drag.timer);
+    document.removeEventListener('dragover', onDocDragOver);
+    document.removeEventListener('mousedown', onDragAbort, true);
+    document.removeEventListener('keydown', onDragAbort, true);
+    if (drag.src) drag.src.el.classList.remove('drag-src');
+    if (drag.over) drag.over.el.classList.remove('drop-target');
+    if (drag.src) gridFor(drag.src.project.id).classList.remove('dnd');
+    drag.src = drag.over = null;
+  }
+  function setOver(pane) {
+    if (drag.over === pane) return;
+    if (drag.over) drag.over.el.classList.remove('drop-target');
+    drag.over = pane;
+    if (pane) pane.el.classList.add('drop-target');
+  }
+  function dropSwap(target) {
+    const src = drag.src;
+    const pid = src.project.id;
+    const list = panesOf(pid);
+    const keep = activePane();
+    if (!window.DeckReorder.swapInPlace(list, list.indexOf(src), list.indexOf(target))) return;
+    syncGrid(pid);
+    if (keep) setActive(keep, true);
+    requestAnimationFrame(() => list.forEach((p) => p.refit()));
+    scheduleSave();
+  }
+  function wireDrag(pane) {
+    const head = pane.head;
+    head.draggable = true;
+    head.addEventListener('dragstart', (e) => {
+      // Beim Umbenennen gehört die Maus dem Eingabefeld
+      if (head.querySelector('input') || panesOf(pane.project.id).length < 2 || pane.maxed) { e.preventDefault(); return; }
+      drag.src = pane;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', pane.desc.title);
+      e.dataTransfer.setDragImage(head, 20, 13);
+      // Klasse erst nach dem Start setzen, sonst wird das Ziehbild schon gedimmt
+      setTimeout(() => { if (drag.src === pane) { pane.el.classList.add('drag-src'); gridFor(pane.project.id).classList.add('dnd'); } }, 0);
+      // Auto-Scroll am oberen/unteren Rand (der Browser scrollt beim Ziehen nicht zuverlässig)
+      clearInterval(drag.timer);
+      document.addEventListener('dragover', onDocDragOver);
+      document.addEventListener('mousedown', onDragAbort, true);
+      document.addEventListener('keydown', onDragAbort, true);
+      const g = gridFor(pane.project.id);
+      drag.timer = setInterval(() => {
+        const r = g.getBoundingClientRect();
+        if (drag.y < r.top + 50) g.scrollTop -= 14;
+        else if (drag.y > r.bottom - 50) g.scrollTop += 14;
+      }, 30);
+    });
+    head.addEventListener('dragend', dragEnd);
+    pane.el.addEventListener('dragover', (e) => {
+      if (!drag.src || drag.src.project.id !== pane.project.id) return;
+      drag.y = e.clientY;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      setOver(pane === drag.src ? null : pane);
+    });
+    pane.el.addEventListener('drop', (e) => {
+      if (!drag.src || drag.src.project.id !== pane.project.id) return;
+      e.preventDefault();
+      if (pane !== drag.src) dropSwap(pane);
+      dragEnd();
+    });
   }
 
   // Kleinste Farbe, die im Projekt noch nicht vergeben ist; sind alle vergeben, reihum.
@@ -134,7 +228,7 @@
     for (let i = 1; ; i++) if (!used.has('Terminal ' + i)) return 'Terminal ' + i;
   }
 
-  function newTerminal(pid, preset, accounts) {
+  function newTerminal(pid, preset, accounts, workspace) {
     const project = S.projects.find((p) => p.id === pid);
     if (!project) { notify('Zuerst ein Projekt auswählen.'); return null; }
     if (panesOf(pid).length >= MAX) { notify(`Maximal ${MAX} Terminals pro Projekt.`); return null; }
@@ -146,6 +240,7 @@
       resumeCommand: preset ? preset.resumeCommand || null : null,
       browserUrl: null, browserOpen: false,
       accounts: accounts || undefined,
+      workspaceId: workspace ? workspace.workspaceId : undefined,
       // Anmelde-Terminals (Vorgabe ohne id) behalten ihren Namen
       titleLocked: preset && !preset.id ? true : undefined,
     };
@@ -160,6 +255,31 @@
     const pid = pane.project.id;
     S.activeByProject[pid] = pane.id;
     for (const p of panesOf(pid)) p.setActive(p === pane, p === pane && focus !== false);
+    reportVisible();
+  }
+
+  /* Meldet dem Hauptprozess, welche Kachel man gerade sieht (aktives Projekt, aktive Kachel, kein Einstellungsbereich). */
+  let lastVisibleId;
+  function reportVisible() {
+    const settingsOpen = !$('settings-panel').hidden;
+    const pane = S.activeId && !settingsOpen ? activePane() : null;
+    const id = pane ? pane.id : null;
+    if (id === lastVisibleId && id === null) return;
+    lastVisibleId = id;
+    api.agents.reportVisible(id);
+  }
+
+  // Ctrl/Cmd+1..0 from the menu: focus that tile and scroll it into view.
+  // Also fine while a dialog or rename field is open; the jump just moves focus.
+  function focusTerminalAt(action) {
+    const list = panesOf(S.activeId);
+    const i = window.DeckHotkeys.targetFor(action, list.length);
+    if (i < 0) return;
+    const pane = list[i];
+    for (const p of list) if (p.maxed && p !== pane) { p.setMax(false); }
+    syncGrid(S.activeId);
+    setActive(pane, true);
+    pane.el.scrollIntoView({ block: 'nearest' });
   }
 
   function closePane(pane) {
@@ -198,6 +318,7 @@
     }
     renderHeader();
     renderSidebar();
+    reportVisible();
     D.progressPanel.refresh();
     scheduleSave();
     if (project) D.git.onSelect(project);
@@ -324,6 +445,17 @@
     }
     if (S.presets.length) m.append(h('hr'));
     m.append(h('div', { class: 'menu-item', text: 'Eigenen Befehl hinzufügen…', onclick: () => { closeMenu(); openCustomForm(); } }));
+    if (D.worktreePicker && api.worktrees) {
+      m.append(h('div', {
+        class: 'menu-item', text: 'Terminal in Arbeitskopie…', title: 'Eigener Git-Worktree mit eigenem Branch',
+        onclick: () => {
+          closeMenu();
+          const project = activeProject();
+          if (!project) { notify('Zuerst ein Projekt auswählen.'); return; }
+          D.worktreePicker.open({ project, onChoose: (ws) => newTerminal(project.id, null, undefined, ws || undefined) });
+        },
+      }));
+    }
     const r = $('btn-menu').getBoundingClientRect();
     m.hidden = false;
     m.style.top = r.bottom + 4 + 'px';
@@ -365,7 +497,9 @@
       title: typeof d.title === 'string' && d.title ? d.title : 'Terminal',
       presetId: d.presetId || null, command: d.command || null, resumeCommand: d.resumeCommand || null,
       browserUrl: d.browserUrl || null, browserOpen: !!d.browserOpen,
+      browserMode: d.browserMode === 'terminal' || d.browserMode === 'browser' ? d.browserMode : undefined,
       accounts: d.accounts && typeof d.accounts === 'object' ? d.accounts : undefined,
+      workspaceId: typeof d.workspaceId === 'string' && d.workspaceId ? d.workspaceId : undefined,
       color: Number.isInteger(d.color) ? d.color : undefined,
       titleLocked: d.titleLocked === true ? true : undefined,
     };
@@ -385,6 +519,38 @@
       onChange: onAccountsChanged,
       onLogin: openLogin,
     });
+    function showPorts(force) {
+      const open = D.portsPanel.toggle(force);
+      $('btn-ports').classList.toggle('on', open);
+      $('btn-ports').setAttribute('aria-expanded', String(open));
+      if (open) {
+        showAttention(false);
+        $('btn-accounts').classList.toggle('on', D.accountsPanel.toggle(false));
+        $('btn-progress').classList.toggle('on', D.progressPanel.toggle(false));
+      }
+      return open;
+    }
+    function showSettings(force) {
+      const open = D.settingsPanel.toggle(force);
+      if (open) { showPorts(false); showAttention(false); }
+      $('btn-settings').classList.toggle('on', open);
+      $('btn-settings').setAttribute('aria-expanded', String(open));
+      $('sidebar').inert = open;
+      for (const id of ['grids', 'empty-main', 'progress-panel', 'accounts-panel', 'ws-actions']) $(id).inert = open;
+      if (!open) requestAnimationFrame(() => panesOf(S.activeId).forEach((p) => p.refit()));
+      reportVisible();
+      return open;
+    }
+    D.settingsPanel.init({
+      projectId: () => S.activeId,
+      onClose: () => showSettings(false),
+      onAccounts: () => {
+        if (showSettings(false)) return;
+        $('btn-accounts').classList.toggle('on', D.accountsPanel.toggle(true));
+      },
+    });
+    $('btn-settings').onclick = () => { closeMenu(); showSettings(); };
+    $('btn-ports').onclick = () => { closeMenu(); showSettings(false); showPorts(); };
     $('btn-accounts').onclick = () => { $('btn-accounts').classList.toggle('on', D.accountsPanel.toggle()); };
     $('btn-plus').onclick = () => newTerminal(S.activeId, null);
     $('btn-menu').onclick = (e) => { e.stopPropagation(); openMenu(); };
@@ -394,13 +560,122 @@
 
     /* Globale Terminal-Ereignisse, Zuordnung per id */
     const byId = (id) => { for (const l of S.panes.values()) for (const p of l) if (p.id === id) return p; return null; };
+    function focusPort(entry, focus) {
+      const pane = byId(entry.terminalId);
+      if (!pane || pane.project.id !== entry.projectId || pane.status !== 'running') throw new Error('Die Zielkachel läuft nicht mehr. Bitte aktualisieren.');
+      S.activeByProject[pane.project.id] = pane.id;
+      if (S.activeId !== pane.project.id) selectProject(pane.project.id);
+      for (const p of panesOf(pane.project.id)) if (p.maxed && p !== pane) p.setMax(false);
+      syncGrid(pane.project.id);
+      setActive(pane, focus);
+      pane.el.scrollIntoView({ block: 'nearest' });
+      return pane;
+    }
+    D.portsPanel.init({
+      getLabel: entry => {
+        const pane = byId(entry.terminalId);
+        return pane && pane.project.id === entry.projectId && pane.status === 'running'
+          ? pane.project.name + ' · ' + pane.desc.title : null;
+      },
+      onClose: () => showPorts(false),
+      onJump: entry => { focusPort(entry, true); },
+      onBrowser: async entry => {
+        if (!entry.url) throw new Error('Für diesen Port ist keine HTTP-Adresse verfügbar.');
+        const pane = focusPort(entry, false);
+        const result = await pane.browserApi.open(entry.url);
+        if (result && result.ok === false) throw new Error(result.error || 'HTTP-Adresse konnte nicht geöffnet werden.');
+      },
+    });
+    /* Rückmeldungen der Agenten: Liste, Zähler am Knopf, Sprung zur Kachel */
+    let attSettings = { statusEnabled: false, desktopNotification: false, sound: false };
+    let attList = [];
+    function jumpToPane(pane) {
+      if (!$('settings-panel').hidden) showSettings(false);
+      S.activeByProject[pane.project.id] = pane.id;
+      if (S.activeId !== pane.project.id) selectProject(pane.project.id);
+      for (const p of panesOf(pane.project.id)) if (p.maxed && p !== pane) p.setMax(false);
+      syncGrid(pane.project.id);
+      setActive(pane, true);
+      pane.el.scrollIntoView({ block: 'nearest' });
+    }
+    const attPanel = window.DeckAttention.createAttentionPanel({
+      root: $('attention-panel'), h,
+      getLabel: (entry) => {
+        const pane = byId(entry.terminalId);
+        if (!pane) return null;
+        return { project: pane.project.name, number: panesOf(pane.project.id).indexOf(pane) + 1, name: pane.desc.title };
+      },
+      onJump: (entry) => { const pane = byId(entry.terminalId); if (pane) jumpToPane(pane); },
+      onMarkAllRead: () => { guard(() => api.agents.markAllRead()); },
+      onSettings: async (patch) => {
+        const next = await guard(() => api.agents.setSettings(patch));
+        if (next) { attSettings = next; attPanel.update(attList, attSettings); }
+      },
+    });
+    function applyAgentList(list) {
+      attList = Array.isArray(list) ? list : [];
+      A.entries = new Map(attList.map((e) => [e.terminalId, e]));
+      for (const l of S.panes.values()) for (const p of l) p.setAgentEntry(A.entries.get(p.id) || null);
+      const unread = attList.filter((e) => e.unread).length;
+      const badge = $('attention-count');
+      badge.textContent = String(unread);
+      badge.hidden = unread === 0;
+      attPanel.update(attList, attSettings);
+    }
+    function showAttention(force) {
+      const panel = $('attention-panel');
+      const open = force === undefined ? panel.hidden : Boolean(force);
+      panel.hidden = !open;
+      $('btn-attention').classList.toggle('on', open);
+      $('btn-attention').setAttribute('aria-expanded', String(open));
+      if (open) {
+        showPorts(false);
+        attPanel.update(attList, attSettings);
+      }
+      requestAnimationFrame(() => panesOf(S.activeId).forEach((p) => p.refit()));
+      return open;
+    }
+    $('btn-attention').onclick = () => { closeMenu(); showSettings(false); showAttention(); };
+    function jumpToNextAttention() {
+      const entry = attList.find((e) => e.unread && byId(e.terminalId));
+      if (!entry) { notify('Keine ungelesene Rückmeldung.', 'ok'); return; }
+      jumpToPane(byId(entry.terminalId));
+    }
+    api.agents.onChange(applyAgentList);
+    api.agents.onJump((id) => { const pane = byId(id); if (pane) jumpToPane(pane); });
+    setInterval(() => { if (!$('attention-panel').hidden) attPanel.update(attList, attSettings); }, 30000);
+
+    D.promptDraft = window.DeckPromptDraft.createPromptDraft({
+      document, getPane: byId, host: api.attachments, notify,
+      activatePane: pane => {
+        if (S.activeId !== pane.project.id) selectProject(pane.project.id);
+        setActive(pane, false);
+        pane.el.scrollIntoView({ block: 'nearest' });
+      },
+    });
     api.terminals.onData((id, data) => { const p = byId(id); if (p) p.write(data); });
     api.terminals.onExit((id, code) => { const p = byId(id); if (p) p.handleExit(code); });
+    // Requests of mt-browser from the main process: find the tile by terminal id (any project) and ask its browser API.
+    const BROWSER_OPS = new Set(['open', 'show', 'hide', 'isOpen', 'webContentsId', 'mode', 'visible']);
+    api.browser.onRequest(async ({ reqId, terminalId, op, arg }) => {
+      try {
+        const pane = byId(terminalId);
+        if (!pane || !pane.browserApi) throw new Error('Dieses Terminal gibt es nicht mehr.');
+        if (!BROWSER_OPS.has(op)) throw new Error('Unbekannte Anfrage.');
+        api.browser.respond(reqId, { ok: true, result: await pane.browserApi[op](arg) });
+      } catch (e) {
+        api.browser.respond(reqId, { ok: false, error: D.errText(e) });
+      }
+    });
     api.onMenu((action) => {
-      if (action === 'new-terminal') newTerminal(S.activeId, null);
+      if (action === 'settings') showSettings(true);
+      else if (action === 'new-terminal') newTerminal(S.activeId, null);
       else if (action === 'close-terminal') { const a = activePane(); if (a) closePane(a); }
+      else if (action === 'next-attention') jumpToNextAttention();
+      else focusTerminalAt(action);
     });
     api.onBeforeQuit(async () => {
+      D.portsPanel.dispose();
       try { await saveSessionNow(); await saveAllScrollback(); } finally { api.quitReady(); }
     });
     window.addEventListener('resize', () => panesOf(S.activeId).forEach((p) => p.refit()));
@@ -423,6 +698,8 @@
     const first = S.projects.some((p) => p.id === wanted) ? wanted : (S.projects[0] ? S.projects[0].id : null);
     selectProject(first);
     renderSidebar();
+    attSettings = (await guard(() => api.agents.getSettings(), attSettings)) || attSettings;
+    applyAgentList(await guard(() => api.agents.list(), []));
     D.git.start();
   }
 

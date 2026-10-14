@@ -78,10 +78,18 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .tile { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--tile-bg, var(--bg)); border: 1px solid var(--tile-edge, var(--border)); border-radius: 8px; overflow: hidden; }
 .tile.active { border-color: var(--accent); }
 .tile-head { display: flex; align-items: center; gap: 2px; height: 26px; flex: none; padding: 0 4px 0 10px; background: var(--tile-head, var(--bg-2)); }
-.tile-title { font-size: 12px; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dim); }
+.tile-title { flex: 0 1 auto; min-width: 24px; font-size: 12px; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dim); }
 .tile.active .tile-title { color: var(--text); }
+.tile-num { flex: none; margin-right: 6px; min-width: 14px; padding: 0 3px; border-radius: 3px; font-size: 10px; line-height: 14px; text-align: center; color: var(--dim); background: rgba(255, 255, 255, .07); }
+.tile-num[hidden] { display: none; }
+.tile.active .tile-num { color: var(--text); }
+.tile-head[draggable="true"] { cursor: grab; }
+/* Tauschen per Ziehen am Kachelkopf: Inhalte (xterm, webview) schlucken keine Drag-Ereignisse, die ganze Kachel ist Ziel. */
+.grid.dnd .tile-body { pointer-events: none; }
+.tile.drag-src { opacity: .4; }
+.tile.drop-target { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
 .tile-title-edit { width: 140px; background: var(--bg); border: 1px solid var(--accent); border-radius: 4px; padding: 0 4px; font-size: 12px; outline: none; }
-.btn-resume { margin-left: 8px; font-size: 11px; padding: 0 8px; line-height: 18px; border: 1px solid var(--accent); border-radius: 9px; background: none; color: var(--accent); max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-resume { flex: 0 1 auto; min-width: 0; margin-left: 8px; font-size: 11px; padding: 0 8px; line-height: 18px; border: 1px solid var(--accent); border-radius: 9px; background: none; color: var(--accent); max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .btn-resume:hover { background: var(--accent-bg); color: var(--text); }
 .tile-body { flex: 1; min-height: 0; display: flex; }
 .term-wrap { position: relative; flex: 1 1 0; min-width: 0; }
@@ -90,6 +98,23 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .tile[data-status="exited"] .term { opacity: .6; }
 
 /* Mini-Browser */
+.tile-head .ib, .tile-head .btn-dict-cancel, .view-seg { flex: none; }
+.view-seg { display: inline-flex; gap: 1px; margin: 0 4px; padding: 1px; border-radius: 5px; background: rgba(255, 255, 255, .06); }
+.seg-btn { width: 20px; height: 16px; padding: 0; border: 1px solid transparent; border-radius: 4px; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.seg-btn::before { content: ''; width: 12px; height: 8px; border: 1px solid var(--dim); border-radius: 2px; }
+.seg-terminal::before { background: linear-gradient(90deg, var(--dim) 55%, transparent 55%); }
+.seg-split::before { background: linear-gradient(90deg, var(--dim) 40%, transparent 40% 60%, var(--dim) 60%); }
+.seg-browser::before { background: linear-gradient(90deg, transparent 45%, var(--dim) 45%); }
+.seg-btn:hover { background: var(--bg-3); }
+.seg-btn.on { background: var(--bg-3); border-color: var(--accent); }
+.seg-btn.on::before { border-color: var(--accent); }
+.seg-terminal.on::before { background: linear-gradient(90deg, var(--accent) 55%, transparent 55%); }
+.seg-split.on::before { background: linear-gradient(90deg, var(--accent) 40%, transparent 40% 60%, var(--accent) 60%); }
+.seg-browser.on::before { background: linear-gradient(90deg, transparent 45%, var(--accent) 45%); }
+.to-agent { flex: none; margin-right: 2px; padding: 0 8px; line-height: 18px; font-size: 11px; white-space: nowrap; }
+.tile-body.mode-browser .term-wrap { display: none; }
+.tile-body.mode-browser .browser { border-left: 0; }
+.tile-body.mode-terminal .browser { display: none; }
 .browser { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; border-left: 1px solid var(--border); }
 .browser-bar { display: flex; align-items: center; gap: 2px; padding: 3px 4px; background: var(--bg-2); flex: none; }
 .addr { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 1px 8px; outline: none; font-size: 12px; }
@@ -175,5 +200,5 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .acct-add { display: flex; gap: 6px; margin-top: 4px; }
 .acct-new { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 3px 8px; outline: none; }
 .acct-new:focus { border-color: var(--accent); }
-.acct-chip { flex: none; margin-left: 6px; max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; line-height: 16px; padding: 0 6px; border-radius: 8px; border: 1px solid var(--border); color: var(--dim); }
+.acct-chip { flex: 0 1 auto; min-width: 0; margin-left: 6px; max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; line-height: 16px; padding: 0 6px; border-radius: 8px; border: 1px solid var(--border); color: var(--dim); }
 .menu-item .acct-chip { margin-left: 0; color: var(--accent); border-color: var(--accent); }

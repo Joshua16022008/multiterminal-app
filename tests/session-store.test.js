@@ -178,3 +178,16 @@ test('terminal color and titleLocked survive a round trip, bad values are droppe
   assert.ok(!('color' in b));
   assert.ok(!('titleLocked' in b));
 });
+
+test('browserMode is kept only for the non-default modes', () => {
+  const dir = tmp();
+  fs.writeFileSync(path.join(dir, 'session.json'), JSON.stringify({
+    version: 1, activeProjectId: null,
+    projects: { p1: { terminals: [
+      { id: 'a', browserMode: 'terminal' }, { id: 'b', browserMode: 'browser' },
+      { id: 'c', browserMode: 'split' }, { id: 'd', browserMode: 'bogus' }, { id: 'e' },
+    ] } },
+  }));
+  const modes = createSessionStore(dir).load().projects.p1.terminals.map((t) => t.browserMode);
+  assert.deepStrictEqual(modes, ['terminal', 'browser', undefined, undefined, undefined]);
+});

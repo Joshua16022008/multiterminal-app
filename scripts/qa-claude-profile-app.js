@@ -1,0 +1,94 @@
+'use strict';
+// Real installed renderer/preload/main/PTY, isolated data and a local CLI argument recorder.
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const { app } = require('electron');
+const mainFile = path.resolve(process.argv[2] || path.join(__dirname, '../src/main/main.js'));
+const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mt-claude-app-'));
+const home = path.join(root, 'home'), data = path.join(root, 'data'), project = path.join(root, 'project'), bin = path.join(root, 'bin');
+for (const folder of [home, data, project, bin, path.join(home, '.claude'), path.join(data, 'session')]) fs.mkdirSync(folder, { recursive: true });
+const quote = text => "'" + text.replace(/'/g, "'\\''") + "'";
+const capture = path.join(root, 'cli-args.jsonl');
+const sentinel = path.join(root, 'must-not-execute');
+const profile = '# Claude profile\nPROFILE_ONLY_CLAUDE\nLiteral: "quotes" `backticks` $HOME $(touch ' + quote(sentinel) + ')';
+const native = '# Existing native CLAUDE instructions\nNATIVE_KEEP';
+const nativeFile = path.join(home, '.claude/CLAUDE.md'); fs.writeFileSync(nativeFile, native);
+fs.writeFileSync(path.join(data, 'projects.json'), JSON.stringify([{ id: 'qa-project', name: 'Claude-Profilprüfung', path: project }]));
+fs.writeFileSync(path.join(data, 'session/session.json'), JSON.stringify({ version: 1, activeProjectId: 'qa-project', projects: { 'qa-project': { terminals: [{ id: 'qa-resume', title: 'Claude Fortsetzen', presetId: 'claude', command: 'claude', resumeCommand: 'claude --continue' }] } } }));
+const recorder = path.join(bin, 'capture.js');
+fs.writeFileSync(recorder, "const fs=require('node:fs'); fs.appendFileSync(" + JSON.stringify(capture) + ", JSON.stringify(process.argv.slice(2))+'\\n'); console.log('LOCAL_CLAUDE_QA');");
+fs.writeFileSync(path.join(bin, 'claude'), '#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec ' + quote(process.execPath) + ' ' + quote(recorder) + ' "$@"\n', { mode: 0o755 });
+const testShell = path.join(bin, 'qa-shell');
+fs.writeFileSync(testShell, '#!/bin/sh\nexec /bin/bash --noprofile --norc -i\n', { mode: 0o755 });
+process.env.SHELL = testShell;
+process.env.PATH = bin + path.delimiter + (process.env.PATH || '/usr/bin:/bin');
+os.homedir = () => home;
+app.setName('Claude Profile App QA ' + process.pid); app.setPath('userData', data);
+let win;
+let stage = 'bootstrap';
+const timeout = setTimeout(() => { console.error(JSON.stringify({ error: 'Claude app QA timed out', stage, mainFile, ready: app.isReady() })); app.exit(1); }, 40000);
+const captures = () => fs.existsSync(capture) ? fs.readFileSync(capture, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse) : [];
+app.on('browser-window-created', (_event, window) => {
+  stage = 'window-created';
+  win = window;
+  win.webContents.on('did-fail-load', (_e, code, description) => console.error(JSON.stringify({ error: 'load failed', code, description })));
+  win.webContents.once('did-finish-load', async () => {
+    stage = 'renderer-loaded';
+    const run = code => win.webContents.executeJavaScript(code);
+    const wait = async (fn, label) => {
+      const start = Date.now(); while (!await fn()) { if (Date.now() - start > 6000) throw new Error('Timed out: ' + label); await new Promise(resolve => setTimeout(resolve, 40)); }
+    };
+    const click = (selector, text) => run(`(() => { const e=[...document.querySelectorAll(${JSON.stringify(selector)})].find(x=>x.textContent.trim()===${JSON.stringify(text)}); if(!e)throw new Error('Missing button: '+${JSON.stringify(text)}); e.click(); })()`);
+    const newClaude = async () => { await run("document.getElementById('btn-menu').click()"); await run("document.querySelector('#menu .menu-item[title=claude]').click()"); };
+    let failed = false;
+    try {
+      await wait(() => run("window.DeckApp?.state.activeId === 'qa-project'"), 'project restored');
+      stage = 'project-restored';
+      await run("document.getElementById('btn-settings').click()");
+      await wait(() => run("!!document.querySelector('.settings-editor')"), 'editor');
+      await run(`(() => { const e=document.querySelector('.settings-editor'); e.value=${JSON.stringify(profile)}; e.dispatchEvent(new Event('input',{bubbles:true})); })()`);
+      await click('#settings-panel button', 'Profil speichern');
+      await wait(() => run("document.querySelector('.settings-message')?.textContent === 'Profil gespeichert.'"), 'save');
+      stage = 'profile-saved';
+      assert.equal(await run("document.getElementById('settings-load-at-start').checked"), false);
+      await run("document.getElementById('settings-load-at-start').click()");
+      await wait(() => run("document.getElementById('settings-load-at-start').checked && !document.getElementById('settings-load-at-start').disabled"), 'profile enabled');
+      assert.equal(JSON.parse(fs.readFileSync(path.join(data, 'agent-profile.json'), 'utf8')).claude, true);
+      await run("window.deck.settings.readProfile('claude').then(r=>{if(r.appliesTo!=='start-flag')throw new Error('Profile flag state missing')})");
+      await click('#settings-panel button', 'Schließen');
+      await newClaude();
+      stage = 'new-claude-requested';
+      await wait(() => captures().length === 1, 'built-in Claude start');
+      assert.deepEqual(captures()[0], ['--append-system-prompt', profile]);
+      await wait(() => run("[...document.querySelectorAll('.tile')].some(e=>[...e.querySelectorAll('button')].some(b=>b.textContent==='Fortsetzen'&&!b.hidden))"), 'restored resume button');
+      await run("(() => { const b=[...document.querySelectorAll('.tile button')].find(b=>b.textContent==='Fortsetzen'&&!b.hidden); b.click(); })()");
+      await wait(() => captures().length === 2, 'resume command');
+      stage = 'resume-verified';
+      assert.deepEqual(captures()[1], ['--continue', '--append-system-prompt', profile]);
+      await run("document.getElementById('btn-settings').click()");
+      await wait(() => run("!!document.getElementById('settings-load-at-start')"), 'reopened settings');
+      await run("document.getElementById('settings-load-at-start').click()");
+      await wait(() => run("!document.getElementById('settings-load-at-start').checked && !document.getElementById('settings-load-at-start').disabled"), 'profile disabled');
+      await click('#settings-panel button', 'Schließen');
+      await newClaude();
+      await wait(() => captures().length === 3, 'disabled new start');
+      assert.deepEqual(captures()[2], []);
+      assert.equal(fs.readFileSync(nativeFile, 'utf8'), native); assert.ok(!fs.existsSync(sentinel));
+      assert.equal(JSON.parse(fs.readFileSync(path.join(data, 'agent-profile.json'), 'utf8')).codex, false);
+      assert.equal(JSON.parse(fs.readFileSync(path.join(data, 'agent-profile.json'), 'utf8')).kimi, false);
+      await run("document.getElementById('btn-settings').click()");
+      await wait(() => run("!!document.querySelector('.settings-editor')"), 'screenshot');
+      await run('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())))');
+      fs.writeFileSync(path.join(root, 'claude-profile.png'), (await win.webContents.capturePage()).toPNG());
+      console.log(JSON.stringify({ result: 'passed', productMain: mainFile, checks: ['real installed UI/IPC/PTY', 'profile save and switch persistence', 'new built-in start', 'Fortsetzen button', 'disable restores normal start', 'native CLAUDE.md unchanged', 'literal profile text not executed', 'providers separated'], cli: 'local argument recorder (no provider calls)', screenshot: path.join(root, 'claude-profile.png') }));
+    } catch (error) { failed = true; console.error(error.stack || String(error)); }
+    try { await run("Promise.all([...window.DeckApp.state.panes.values()].flat().map(p=>window.deck.terminals.kill(p.id)))"); } catch {}
+    clearTimeout(timeout);
+    win.close();
+    if (failed) setTimeout(() => app.exit(1), 500);
+  });
+});
+console.log(JSON.stringify({ stage, mainFile }));
+require(mainFile);

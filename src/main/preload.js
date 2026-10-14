@@ -1,6 +1,6 @@
 'use strict';
 
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 function subscribe(channel, callback) {
   const listener = (_event, ...args) => callback(...args);
@@ -9,6 +9,28 @@ function subscribe(channel, callback) {
 }
 
 contextBridge.exposeInMainWorld('deck', {
+  agents: {
+    list: () => ipcRenderer.invoke('agents:list'),
+    onChange: callback => subscribe('agents:changed', callback),
+    onJump: callback => subscribe('agents:jump', callback),
+    markRead: id => ipcRenderer.invoke('agents:markRead', id),
+    markAllRead: () => ipcRenderer.invoke('agents:markAllRead'),
+    getSettings: () => ipcRenderer.invoke('agents:getSettings'),
+    setSettings: patch => ipcRenderer.invoke('agents:setSettings', patch),
+    reportVisible: id => ipcRenderer.send('agents:reportVisible', id),
+    userInput: id => ipcRenderer.send('agents:userInput', id),
+  },
+  ports: {
+    list: () => ipcRenderer.invoke('ports:list'),
+    resolve: id => ipcRenderer.invoke('ports:resolve', id),
+  },
+  attachments: {
+    pathForFile: file => webUtils.getPathForFile(file),
+    pickFiles: () => ipcRenderer.invoke('attachments:pickFiles'),
+    validateFiles: files => ipcRenderer.invoke('attachments:validateFiles', files),
+    saveImage: bytes => ipcRenderer.invoke('attachments:saveImage', bytes),
+    clipboardImage: () => ipcRenderer.invoke('attachments:clipboardImage'),
+  },
   projects: {
     list: () => ipcRenderer.invoke('projects:list'),
     add: () => ipcRenderer.invoke('projects:add'),
@@ -34,9 +56,21 @@ contextBridge.exposeInMainWorld('deck', {
     claudeEnable: () => ipcRenderer.invoke('usage:claudeEnable'),
     claudeDisable: () => ipcRenderer.invoke('usage:claudeDisable'),
   },
+  settings: {
+    overview: (projectId) => ipcRenderer.invoke('settings:overview', projectId),
+    readProfile: (scope) => ipcRenderer.invoke('settings:readProfile', scope),
+    saveProfile: (scope, text, revision) => ipcRenderer.invoke('settings:saveProfile', scope, text, revision),
+    setLoadAtStart: (scope, enabled) => ipcRenderer.invoke('settings:setLoadAtStart', scope, enabled),
+    assignSkill: (provider, id) => ipcRenderer.invoke('settings:assignSkill', provider, id),
+    unassignSkill: (provider, name) => ipcRenderer.invoke('settings:unassignSkill', provider, name),
+    readResource: (id) => ipcRenderer.invoke('settings:readResource', id),
+    openFolder: (scope) => ipcRenderer.invoke('settings:openFolder', scope),
+    reveal: (id) => ipcRenderer.invoke('settings:reveal', id),
+  },
   terminals: {
     create: (options) => ipcRenderer.invoke('terminals:create', options),
     write: (id, data) => ipcRenderer.send('terminals:write', id, data),
+    runBuiltin: (id, command) => ipcRenderer.send('terminals:runBuiltin', id, command),
     resize: (id, cols, rows) => ipcRenderer.send('terminals:resize', id, cols, rows),
     kill: (id) => ipcRenderer.invoke('terminals:kill', id),
     onData: (callback) => subscribe('terminals:data', callback),
@@ -59,6 +93,12 @@ contextBridge.exposeInMainWorld('deck', {
     listRepos: () => ipcRenderer.invoke('github:listRepos'),
     clone: (nameWithOwner) => ipcRenderer.invoke('github:clone', nameWithOwner),
   },
+  worktrees: {
+    list: (projectId) => ipcRenderer.invoke('worktrees:list', projectId),
+    create: (projectId, options) => ipcRenderer.invoke('worktrees:create', projectId, options),
+    inspect: (workspaceId) => ipcRenderer.invoke('worktrees:inspect', workspaceId),
+    remove: (workspaceId) => ipcRenderer.invoke('worktrees:remove', workspaceId),
+  },
   git: {
     status: (projectId) => ipcRenderer.invoke('git:status', projectId),
     pull: (projectId) => ipcRenderer.invoke('git:pull', projectId),
@@ -69,6 +109,11 @@ contextBridge.exposeInMainWorld('deck', {
     stop: () => ipcRenderer.invoke('dictation:stop'),
     cancel: () => ipcRenderer.invoke('dictation:cancel'),
     onEvent: (callback) => subscribe('dictation:event', callback),
+  },
+  // Agent control of the mini browser (mt-browser): the main process asks, the page answers.
+  browser: {
+    onRequest: (callback) => subscribe('browser:request', callback),
+    respond: (reqId, response) => ipcRenderer.send('browser:response', reqId, response),
   },
   onMenu: (callback) => subscribe('menu:action', callback),
   onBeforeQuit: (callback) => subscribe('app:before-quit', callback),

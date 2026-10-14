@@ -1,0 +1,30 @@
+.prompt-draft {
+  box-sizing: border-box;
+  width: min(720px, calc(100vw - 40px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 24px;
+  color: #e5e7eb;
+  background: #1c2027;
+  border: 1px solid #444b58;
+  border-radius: 12px;
+  box-shadow: 0 20px 70px #0009;
+}
+.prompt-draft::backdrop { background: #090b10b8; }
+.prompt-draft h2 { margin: 0 0 10px; font-size: 19px; }
+.prompt-draft-target { color: #b8c9ee; overflow-wrap: anywhere; }
+.prompt-draft-label { display: block; margin-bottom: 7px; }
+.prompt-draft textarea { box-sizing: border-box; width: 100%; resize: vertical; min-height: 100px; padding: 10px; color: inherit; background: #12151b; border: 1px solid #444b58; border-radius: 5px; font: inherit; line-height: 1.5; }
+.prompt-draft textarea:focus { outline: 2px solid #8ab4ff; outline-offset: 1px; }
+.prompt-draft-tools, .prompt-draft-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 14px; }
+.prompt-draft-actions { justify-content: flex-end; }
+.prompt-draft-hint { color: #b0b7c2; font-size: 12px; line-height: 1.5; }
+.prompt-draft-files { list-style: none; padding: 0; margin: 10px 0; max-height: 170px; overflow: auto; }
+.prompt-draft-files li { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid #343b47; }
+.prompt-draft-files span { flex: 1; overflow-wrap: anywhere; font-size: 12px; }
+.prompt-draft-preview-label { font-size: 12px; }
+.prompt-draft-preview { padding: 10px; max-height: 110px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: #c5ccd9; background: #12151b; border-radius: 5px; }
+.prompt-draft-error { color: #ffb4ab; font-size: 13px; }
+.attachment-drop-target { outline: 2px solid #8ab4ff; outline-offset: -3px; }
+.attachment-dragging webview { pointer-events: none; }
+.attachment-drop-target::after { content: 'Dateien hier ablegen'; position: absolute; inset: 40px 12px auto; pointer-events: none; z-index: 8; padding: 16px; text-align: center; color: #e8efff; background: #1a2b49ed; border: 1px dashed #8ab4ff; border-radius: 8px; }

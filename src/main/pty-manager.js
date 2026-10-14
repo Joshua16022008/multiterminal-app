@@ -63,7 +63,7 @@ function createPtyManager({ onData, onExit }) {
     return count;
   }
 
-  function create({ id, projectId, cwd, cols, rows, command, extraEnv }) {
+  function create({ id, projectId, cwd, cols, rows, command, extraEnv, workspaceId }) {
     if (!ID_PATTERN.test(String(id))) return { ok: false, error: 'Ungültige Terminal-ID.' };
     if (terminals.has(id)) return { ok: false, error: 'Dieses Terminal läuft bereits.' };
     if (countFor(projectId) >= MAX_PER_PROJECT) {
@@ -96,7 +96,7 @@ function createPtyManager({ onData, onExit }) {
       return { ok: false, error: `Shell konnte nicht gestartet werden: ${error.message}` };
     }
 
-    const entry = { proc, projectId };
+    const entry = { proc, projectId, cwd, workspaceId };
     terminals.set(id, entry);
 
     let commandTimer = null;
@@ -167,7 +167,15 @@ function createPtyManager({ onData, onExit }) {
     for (const id of [...terminals.keys()]) kill(id);
   }
 
-  return { create, write, resize, kill, killProject, killAll, countFor };
+  // A read-only snapshot of live shell roots for reliable process ancestry checks.
+  function snapshot() {
+    return [...terminals].map(([terminalId, entry]) => ({
+      terminalId, projectId: entry.projectId, pid: entry.proc.pid, cwd: entry.cwd,
+      ...(entry.workspaceId ? { workspaceId: entry.workspaceId } : {}),
+    }));
+  }
+
+  return { create, write, resize, kill, killProject, killAll, countFor, snapshot };
 }
 
 module.exports = { createPtyManager, shellEnv, MAX_PER_PROJECT };
