@@ -14,6 +14,7 @@ const { createUsageSetup } = require('./usage-setup');
 const { createSettingsService } = require('./settings-service');
 const { createHotkeyStore } = require('./hotkey-store');
 const hotkeyModel = require('../renderer/hotkeys');
+const { createWorkspaceTemplateStore } = require('./workspace-template-store'); // F08
 const { createAgentProfile } = require('./agent-profile');
 const progressFiles = require('./progress-files');
 const { createGitService } = require('./git-service');
@@ -45,6 +46,7 @@ let usage;
 let usageSetup;
 let settings;
 let hotkeys;
+let workspaceTemplates; // F08
 let agentProfile;
 let sessions;
 let ptys;
@@ -300,6 +302,11 @@ function registerIpc() {
     sendToWindow('hotkeys:changed', saved);
     return saved;
   });
+  // F08: benannte Aufbauten (nur Vorlagen; gestartet wird im Renderer über die normalen Kachelwege)
+  handle('templates:list', () => workspaceTemplates.list());
+  handle('templates:save', (input) => workspaceTemplates.save(input));
+  handle('templates:delete', (id) => workspaceTemplates.remove(id));
+
   handle('hotkeys:capture', (enabled) => {
     if (typeof enabled !== 'boolean') throw new Error('Ungültiger Aufnahmezustand.');
     mainWindow.webContents.setIgnoreMenuShortcuts(enabled);
@@ -676,6 +683,7 @@ if (!app.requestSingleInstanceLock()) {
     agentProfile = createAgentProfile({ dataDir, readProfile: (scope) => settings.readProfile(scope) });
     settings = createSettingsService({ dataDir, loadsAtStart: (scope) => agentProfile.isEnabled(scope) });
     hotkeys = createHotkeyStore({ filePath: path.join(dataDir, 'hotkeys.json') });
+    workspaceTemplates = createWorkspaceTemplateStore({ filePath: path.join(dataDir, 'workspace-templates.json') }); // F08
     accounts = createAccountStore({
       filePath: path.join(dataDir, 'accounts.json'),
       profilesDir: path.join(dataDir, 'profiles'),

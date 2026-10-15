@@ -406,6 +406,12 @@
     if (activeProject()) {
       items.push(h('hr'),
         h('div', { class: 'menu-item', text: 'Aktives Projekt auf GitHub anlegen…', onclick: () => { closeMenu(); publishActiveProject(); } }));
+      // F08
+      if (D.workspaceTemplates && api.templates) {
+        items.push(h('hr'),
+          h('div', { class: 'menu-item', text: 'Aufbau speichern…', onclick: () => { closeMenu(); D.workspaceTemplates.openSave(); } }),
+          h('div', { class: 'menu-item', text: 'Aufbau starten…', onclick: () => { closeMenu(); D.workspaceTemplates.openList(); } }));
+      }
     }
     m.replaceChildren(...items);
     m.dataset.owner = btn.id;
@@ -483,6 +489,27 @@
     $('btn-menu').disabled = full;
     $('btn-plus').title = full ? tip : 'Neues Terminal' + (hotkeyLabel('new-terminal') ? ' (' + hotkeyLabel('new-terminal') + ')' : '');
     $('btn-menu').title = full ? tip : 'Schnellstart-Menü';
+  }
+
+  /* F08: Kacheln aus einem gespeicherten Aufbau – gleiche Erzeugung wie newTerminal, aber mit gewähltem Startbefehl. */
+  function createTemplateTile(pid, spec) {
+    const project = S.projects.find((p) => p.id === pid);
+    if (!project || panesOf(pid).length >= MAX) return null;
+    const preset = spec.preset || null;
+    const desc = {
+      id: crypto.randomUUID(),
+      title: spec.title || (preset ? preset.label : nextTitle(pid)),
+      presetId: preset ? preset.id : null,
+      command: spec.command || null,
+      resumeCommand: preset ? preset.resumeCommand || null : null,
+      browserUrl: spec.browserUrl || null, browserOpen: !!spec.browserUrl,
+      color: Number.isInteger(spec.color) ? spec.color : undefined,
+      titleLocked: true,
+    };
+    const pane = addPane(project, desc, { restored: false, runCommand: !!spec.run });
+    if (pid === S.activeId) requestAnimationFrame(() => pane.ensureStarted());
+    scheduleSave();
+    return pane;
   }
 
   /* ---------- Plus-Menü ---------- */
@@ -582,6 +609,11 @@
     $('add-project').onclick = (e) => { e.stopPropagation(); openAddMenu($('add-project')); };
     $('empty-add').onclick = (e) => { e.stopPropagation(); openAddMenu($('empty-add')); };
     D.git.init({ projects: () => S.projects, activeId: () => S.activeId, render: renderSidebar });
+    // F08
+    if (D.workspaceTemplates) D.workspaceTemplates.init({
+      getProject: activeProject, getPanes: () => panesOf(S.activeId), getPresets: () => S.presets,
+      max: MAX, createTile: createTemplateTile,
+    });
     D.accountsPanel.init({
       onClose: () => { $('btn-accounts').classList.toggle('on', D.accountsPanel.toggle(false)); },
       onChange: onAccountsChanged,

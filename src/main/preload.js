@@ -15,6 +15,12 @@ contextBridge.exposeInMainWorld('deck', {
     capture: enabled => ipcRenderer.invoke('hotkeys:capture', enabled),
     onChange: callback => subscribe('hotkeys:changed', callback),
   },
+  // F08
+  templates: {
+    list: () => ipcRenderer.invoke('templates:list'),
+    save: input => ipcRenderer.invoke('templates:save', input),
+    delete: id => ipcRenderer.invoke('templates:delete', id),
+  },
   agents: {
     list: () => ipcRenderer.invoke('agents:list'),
     onChange: callback => subscribe('agents:changed', callback),
