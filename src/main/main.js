@@ -536,6 +536,7 @@ function buildMenu() {
         { type: 'separator' },
         ...shortcutItems('command-palette', 'Befehlspalette…'),
         ...shortcutItems('terminal-search', 'Im Terminalverlauf suchen…'),
+        ...shortcutItems('project-manager', 'Projektmanager öffnen'), // PM
         ...jump.hidden,
       ],
     },

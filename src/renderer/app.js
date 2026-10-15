@@ -459,6 +459,12 @@
     input.addEventListener('blur', () => finish(true));
   }
 
+  // PM: Projektmanager-Fenster des Projekts öffnen bzw. fokussieren.
+  function openProjectManager(projectId) {
+    if (!projectId) return;
+    guard(() => api.pm.open(projectId)).then((res) => { if (res && res.ok === false) notify(res.error || 'Projektmanager konnte nicht geöffnet werden.'); });
+  }
+
   function renderSidebar() {
     if (S.editing) return;
     const ul = $('project-list');
@@ -471,6 +477,7 @@
       const li = h('li', { class: 'proj' + (p.id === S.activeId ? ' active' : ''), onclick: () => p.id !== S.activeId && selectProject(p.id) },
         nameEl,
         h('span', { class: 'proj-count' + (running ? ' live' : ''), text: String(running), title: `${running} laufende Terminals` }),
+        h('button', { class: 'proj-pm', text: '◆', title: 'Projektmanager öffnen', 'aria-label': 'Projektmanager öffnen', onclick: (e) => { e.stopPropagation(); openProjectManager(p.id); } }), // PM
         h('button', { class: 'proj-x', text: '✕', title: 'Projekt entfernen', onclick: (e) => { e.stopPropagation(); removeProject(p); } }));
       const gitLine = D.git.line(p);
       if (gitLine) li.append(gitLine);
@@ -859,8 +866,15 @@
       else if (action === 'next-attention') jumpToNextAttention();
       else if (action === 'command-palette') D.commandPalette.toggle(); // F03
       else if (action === 'terminal-search') openTerminalSearch(); // F03
+      else if (action === 'project-manager') openProjectManager(S.activeId); // PM
       else focusTerminalAt(action);
     });
+    // PM: Auftrag des Projektmanagers -> nur Promptvorschau, Einfügen erst nach Klick.
+    $('btn-pm').onclick = () => { closeMenu(); openProjectManager(S.activeId); };
+    const pmSend = window.DeckPmSend.createSendHandler({
+      getPane: byId, getDraft: () => D.promptDraft.get(), openDraft: (opts) => D.promptDraft.open(opts),
+    });
+    api.pm.onSendRequest((req) => { const result = pmSend(req || {}); api.pm.sendResult(req && req.requestId, result); });
     api.hotkeys.onChange(applyHotkeys);
     api.onBeforeQuit(async () => {
       D.portsPanel.dispose();
