@@ -207,3 +207,8 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .acct-new:focus { border-color: var(--accent); }
 .acct-chip { flex: 0 1 auto; min-width: 0; margin-left: 6px; max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; line-height: 16px; padding: 0 6px; border-radius: 8px; border: 1px solid var(--border); color: var(--dim); }
 .menu-item .acct-chip { margin-left: 0; color: var(--accent); border-color: var(--accent); }
+
+/* PM: Projektmanager-Knopf in Seitenleiste und oberer Leiste */
+.proj-pm { visibility: hidden; border: 0; background: none; color: #a98be8; padding: 0 2px; font-size: 11px; }
+.proj:hover .proj-pm, .proj.active .proj-pm { visibility: visible; }
+.proj-pm:hover { color: #e0a458; }

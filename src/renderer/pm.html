@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Projektmanager</title>
+  <link rel="stylesheet" href="../../node_modules/@xterm/xterm/css/xterm.css">
+  <link rel="stylesheet" href="pm.css">
+</head>
+<body>
+  <div id="pm-app">
+    <header id="pm-head" class="drag">
+      <h1 id="pm-title">Projektmanager</h1>
+      <span class="spacer"></span>
+      <button id="pm-refresh" class="pm-btn" title="Lagebild jetzt neu laden">Lagebild aktualisieren</button>
+      <button id="pm-fresh" class="pm-btn" title="Manager-Agent mit einem neuen Gespräch starten (gespeicherte Gesprächs-ID wird verworfen)">Neues Gespräch</button>
+      <button id="pm-restart" class="pm-btn" title="Manager-Agent beenden und neu starten">Neu starten</button>
+    </header>
+    <p id="pm-hint" class="pm-hint">Aufträge des Managers erscheinen als Vorschau in der Zielkachel – nichts wird ohne deine Bestätigung eingefügt.</p>
+    <div id="pm-body">
+      <section id="pm-term-wrap" aria-label="Manager-Agent">
+        <div id="pm-term"></div>
+        <div id="pm-exit" hidden>
+          <p>Der Manager-Agent wurde beendet.</p>
+          <button id="pm-exit-restart" class="pm-btn pm-btn-primary">Neu starten</button>
+          <button id="pm-exit-fresh" class="pm-btn">Neues Gespräch</button>
+        </div>
+      </section>
+      <aside id="pm-situation" aria-label="Lagebild"></aside>
+    </div>
+  </div>
+  <script src="../../node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="../../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+  <script src="pm-view.js"></script>
+  <script src="pm.js"></script>
+</body>
+</html>
