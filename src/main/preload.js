@@ -122,6 +122,9 @@ contextBridge.exposeInMainWorld('deck', {
   browser: {
     onRequest: (callback) => subscribe('browser:request', callback),
     respond: (reqId, response) => ipcRenderer.send('browser:response', reqId, response),
+    // F05: Elementauswahl im Mini-Browser der eigenen Kachel
+    pick: terminalId => ipcRenderer.invoke('browser:pick', terminalId),
+    pickCancel: terminalId => ipcRenderer.invoke('browser:pickCancel', terminalId),
   },
   onMenu: (callback) => subscribe('menu:action', callback),
   onBeforeQuit: (callback) => subscribe('app:before-quit', callback),

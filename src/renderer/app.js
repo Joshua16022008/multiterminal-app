@@ -721,6 +721,10 @@
         pane.el.scrollIntoView({ block: 'nearest' });
       },
     });
+    // F05: Element im Mini-Browser kommentieren -> gemeinsame Promptvorschau
+    if (window.DeckBrowserFeedback) {
+      D.browserFeedback = window.DeckBrowserFeedback.createBrowserFeedback({ document, api: api.browser, getPromptDraft: () => D.promptDraft, notify });
+    }
     api.terminals.onData((id, data) => { const p = byId(id); if (p) p.write(data); });
     api.terminals.onExit((id, code) => { const p = byId(id); if (p) p.handleExit(code); });
     // Requests of mt-browser from the main process: find the tile by terminal id (any project) and ask its browser API.

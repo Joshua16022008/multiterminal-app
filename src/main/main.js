@@ -24,6 +24,7 @@ const { createPortService } = require('./port-service');
 const { createBrowserBridge, MAX_SOCKET_PATH_BYTES } = require('./browser-bridge');
 const { createBrowserControl, createConsoleStore, createRendererLink } = require('./browser-control');
 const mtBrowserCli = require('./mt-browser-cli');
+const { createBrowserFeedback } = require('./browser-feedback'); // F05
 const { createAgentStatusStore, createAgentSettings } = require('./agent-events');
 const { claudeWrapperScript, eventWrapperScript, zdotdirZshenv } = require('./agent-wrapper');
 const attentionLabels = require('../renderer/attention-panel');
@@ -62,6 +63,19 @@ const terminalMeta = new Map(); // terminalId -> { projectId, accountId }
 let visibleTerminal = null;
 let zdotdirPath = null; // ZDOTDIR shim (zsh): brings our bin folder back in front of PATH after the user's startup files
 const browserConsole = createConsoleStore();
+// F05: Auswahlmodus im Kachel-Browser; Seite wie bei mt-browser über die Oberfläche der Kachel gefunden.
+const browserFeedback = createBrowserFeedback({
+  pageOf: async (terminalId) => {
+    const open = await rendererLink.call(terminalId, 'isOpen');
+    const wcId = open ? await rendererLink.call(terminalId, 'webContentsId') : null;
+    if (wcId === null || wcId === undefined) throw new Error('Kein Mini-Browser offen.');
+    const wc = webContents.fromId(wcId);
+    if (!wc || wc.isDestroyed() || !isOurWebview(wc)) throw new Error('Der Mini-Browser dieser Kachel ist nicht erreichbar.');
+    if (!(await rendererLink.call(terminalId, 'visible'))) throw new Error('Der Mini-Browser ist gerade nicht sichtbar.');
+    return wc;
+  },
+  saveImage: (png) => attachments.saveImage(png),
+});
 const rendererLink = createRendererLink({ send: (request) => sendToWindow('browser:request', request) });
 
 function isWebUrl(url) {
@@ -400,6 +414,11 @@ function registerIpc() {
   handle('dictation:start', (terminalId, live) => dictation.start(terminalId, live));
   handle('dictation:stop', () => dictation.stop());
   handle('dictation:cancel', () => dictation.cancel());
+
+  // F05: Element im Mini-Browser der eigenen Kachel markieren; die Oberfläche nennt ihre Kachel-ID.
+  const feedbackId = (id) => { if (typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(id)) throw new Error('Ungültige Kachel.'); return id; };
+  handle('browser:pick', id => browserFeedback.pick(feedbackId(id)));
+  handle('browser:pickCancel', id => browserFeedback.cancel(feedbackId(id)));
 
   listen('browser:response', (reqId, response) => rendererLink.respond(reqId, response));
   listen('app:quit-ready', finishQuit);
