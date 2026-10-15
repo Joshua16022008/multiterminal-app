@@ -12,6 +12,7 @@
     // F03
     { id: 'command-palette', label: 'Befehlspalette' },
     { id: 'terminal-search', label: 'Im Terminalverlauf suchen' },
+    { id: 'project-manager', label: 'Projektmanager öffnen' }, // PM
     ...Array.from({ length: SLOTS }, (_, i) => ({ id: actionFor(i), label: `Terminal ${i + 1}` }))
   ];
   const modifiers = ['Cmd', 'Ctrl', 'Alt', 'Shift'];
@@ -50,6 +51,7 @@
     // F03: Cmd+K / Cmd+F; auf anderen Systemen mit Umschalt, damit Strg+K/Strg+F im Terminal (readline) frei bleiben.
     result['command-palette'] = [platform === 'darwin' ? 'Cmd+K' : 'Ctrl+Shift+P'];
     result['terminal-search'] = [platform === 'darwin' ? 'Cmd+F' : 'Ctrl+Shift+F'];
+    result['project-manager'] = [`${primary}+Shift+O`]; // PM (Cmd+Shift+M ist als reserviert gesperrt)
     for (let i = 0; i < SLOTS; i++) result[actionFor(i)] = platform === 'darwin' ? [`Cmd+${keyForIndex(i)}`, `Ctrl+${keyForIndex(i)}`] : [`Ctrl+${keyForIndex(i)}`];
     return result;
   }

@@ -143,6 +143,12 @@ contextBridge.exposeInMainWorld('deck', {
     pick: terminalId => ipcRenderer.invoke('browser:pick', terminalId),
     pickCancel: terminalId => ipcRenderer.invoke('browser:pickCancel', terminalId),
   },
+  // PM: Projektmanager – Fenster öffnen; Aufträge des Managers kommen als Anfrage und werden als Vorschau gelegt.
+  pm: {
+    open: projectId => ipcRenderer.invoke('pm:openWindow', projectId),
+    onSendRequest: callback => subscribe('pm:sendRequest', callback),
+    sendResult: (requestId, result) => ipcRenderer.send('pm:sendResult', requestId, result),
+  },
   onMenu: (callback) => subscribe('menu:action', callback),
   onBeforeQuit: (callback) => subscribe('app:before-quit', callback),
   quitReady: () => ipcRenderer.send('app:quit-ready'),
