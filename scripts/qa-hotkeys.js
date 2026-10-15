@@ -53,7 +53,7 @@ app.on('browser-window-created', (_event, win) => {
       await click('#settings-panel button', 'Hotkeys speichern');
       await wait("document.querySelector('.settings-message')?.textContent.includes('sofort aktiv')");
     };
-    const open = async () => { await click('#btn-settings'); await click('.settings-tab', 'Hotkeys'); await wait("document.querySelectorAll('.hotkey-row').length===14"); };
+    const open = async () => { await click('#btn-settings'); await click('.settings-tab', 'Hotkeys'); await wait("document.querySelectorAll('.hotkey-row').length===16"); };
     try {
       await wait(`${panes}?.length===2 && ${panes}.every(p=>p.plainText().includes('HOTKEY_QA_READY'))`);
       assert.equal(item('Neues Terminal').accelerator, 'Cmd+T');
@@ -136,7 +136,7 @@ app.on('browser-window-created', (_event, win) => {
       await run('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
       const screenshot = path.join(root, 'hotkeys.png');
       fs.writeFileSync(screenshot, (await win.webContents.capturePage()).toPNG());
-      console.log(JSON.stringify({ result: 'passed', productMain: mainFile, checks: ['14 hotkey actions in real settings tab', 'keyboard capture with menu suppression', 'conflict and reserved key rejection', 'Escape cancels capture', 'draft vs live menu', 'save real IPC and disk', 'live menu descriptors and actions', 'secondary binding removal', 'DOM keys to real PTY: remapped xterm interception and old key release', 'disabled binding', 'renderer reload persistence', 'restore defaults'], limitation: 'Menu actions exercised directly; OS-level physical shortcut dispatch not simulated', screenshot, data }));
+      console.log(JSON.stringify({ result: 'passed', productMain: mainFile, checks: ['16 hotkey actions in real settings tab', 'keyboard capture with menu suppression', 'conflict and reserved key rejection', 'Escape cancels capture', 'draft vs live menu', 'save real IPC and disk', 'live menu descriptors and actions', 'secondary binding removal', 'DOM keys to real PTY: remapped xterm interception and old key release', 'disabled binding', 'renderer reload persistence', 'restore defaults'], limitation: 'Menu actions exercised directly; OS-level physical shortcut dispatch not simulated', screenshot, data }));
       clearTimeout(timer); app.exit(0);
     } catch (error) { clearTimeout(timer); console.error(JSON.stringify({ stage, root })); console.error(error.stack); app.exit(1); }
   });

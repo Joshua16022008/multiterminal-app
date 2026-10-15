@@ -8,7 +8,8 @@ const hotkeys = require('../renderer/hotkeys');
 function createHotkeyStore({ filePath, platform = process.platform }) {
   if (typeof filePath !== 'string' || !filePath) throw new Error('Ein Dateipfad für Tastenkürzel fehlt.');
   let current = hotkeys.defaults(platform);
-  try { current = hotkeys.validate(JSON.parse(fs.readFileSync(filePath, 'utf8')), platform); } catch { /* Missing or corrupt settings use safe defaults. */ }
+  // F03: Neue Aktionen in einer älteren Datei mit Standardwerten ergänzen, statt alle eigenen Belegungen zu verwerfen.
+  try { current = hotkeys.validate({ ...hotkeys.defaults(platform), ...JSON.parse(fs.readFileSync(filePath, 'utf8')) }, platform); } catch { /* Missing or corrupt settings use safe defaults. */ }
   const clone = value => Object.fromEntries(Object.entries(value).map(([id, bindings]) => [id, [...bindings]]));
   return {
     get() { return clone(current); },

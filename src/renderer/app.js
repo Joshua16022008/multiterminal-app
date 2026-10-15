@@ -301,6 +301,7 @@
     if (i < 0) return;
     list.splice(i, 1);
     const wasActive = S.activeByProject[pid] === pane.id;
+    if (D.terminalSearch) D.terminalSearch.forget(pane.id); // F03
     pane.dispose();
     if (wasActive) {
       const next = list[Math.min(i, list.length - 1)];
@@ -732,6 +733,45 @@
       getSource: activePane, getTargets: () => panesOf(S.activeId), getProjectId: () => S.activeId,
       readProgress: (pid) => api.progress.read(pid),
     });
+
+    /* F03: Befehlspalette und Terminalsuche (Module command-palette.js / terminal-search.js) */
+    D.terminalSearch = window.DeckTerminalSearch.create({ document, getPane: byId });
+    const paletteActions = () => [
+      { id: 'new-terminal', label: 'Neues Terminal', run: () => { if (S.activeId) newTerminal(S.activeId, null); else notify('Zuerst ein Projekt auswählen.'); } },
+      { id: 'close-terminal', label: 'Terminal schließen', run: () => { const a = activePane(); if (a) closePane(a); } },
+      { id: 'terminal-search', label: 'Im Terminalverlauf suchen', run: () => openTerminalSearch() },
+      { id: 'next-attention', label: 'Nächste Rückmeldung', run: () => jumpToNextAttention() },
+      { id: 'attention-panel', label: 'Rückmeldungen anzeigen', run: () => { showSettings(false); showAttention(true); } },
+      { id: 'settings', label: 'Einstellungen öffnen', run: () => showSettings(true) },
+    ].map((a) => ({ ...a, hotkey: hotkeyLabel(a.id) }));
+    let paletteReturn = null;
+    D.commandPalette = window.DeckCommandPalette.create({
+      document,
+      getEntries: () => {
+        paletteReturn = activePane();
+        const actions = paletteActions();
+        D.commandPalette.actions = new Map(actions.map((a) => [a.id, a]));
+        return window.DeckCommandPalette.buildEntries({
+          projects: S.projects, panesOf, activeId: S.activeId, actions,
+          presetLabel: (desc) => hooks.presetLabel(desc),
+        });
+      },
+      run: (entry) => {
+        if (entry.kind === 'pane') { const pane = byId(entry.paneId); if (pane) jumpToPane(pane); else notify('Diese Kachel gibt es nicht mehr.'); }
+        else if (entry.kind === 'project') {
+          if (!S.projects.some((p) => p.id === entry.projectId)) { notify('Dieses Projekt gibt es nicht mehr.'); return; }
+          showSettings(false);
+          selectProject(entry.projectId);
+        } else { const a = D.commandPalette.actions.get(entry.actionId); if (a) a.run(); }
+      },
+      restoreFocus: () => { const p = paletteReturn && paletteReturn.project && panesOf(paletteReturn.project.id).includes(paletteReturn) ? paletteReturn : activePane(); if (p) p.focus(); },
+    });
+    function openTerminalSearch() {
+      const pane = activePane();
+      if (!pane) { notify('Keine Kachel zum Durchsuchen aktiv.'); return; }
+      D.terminalSearch.open(pane);
+    }
+
     api.terminals.onData((id, data) => { const p = byId(id); if (p) p.write(data); });
     api.terminals.onExit((id, code) => { const p = byId(id); if (p) p.handleExit(code); });
     // Requests of mt-browser from the main process: find the tile by terminal id (any project) and ask its browser API.
@@ -752,6 +792,8 @@
       else if (action === 'new-terminal') newTerminal(S.activeId, null);
       else if (action === 'close-terminal') { const a = activePane(); if (a) closePane(a); }
       else if (action === 'next-attention') jumpToNextAttention();
+      else if (action === 'command-palette') D.commandPalette.toggle(); // F03
+      else if (action === 'terminal-search') openTerminalSearch(); // F03
       else focusTerminalAt(action);
     });
     api.hotkeys.onChange(applyHotkeys);
