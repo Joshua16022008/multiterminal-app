@@ -622,6 +622,8 @@
     $('btn-plus').onclick = () => newTerminal(S.activeId, null);
     $('btn-menu').onclick = (e) => { e.stopPropagation(); openMenu(); };
     $('btn-progress').onclick = () => { $('btn-progress').classList.toggle('on', D.progressPanel.toggle()); };
+    // F09: Übergabe-Dialog für die aktive Kachel (Einfügen nur über die Promptvorschau)
+    $('btn-handoff').onclick = () => { closeMenu(); D.handoff.open(); };
     document.addEventListener('mousedown', (e) => { if (!e.target.closest('#menu, #btn-menu, #add-project, #empty-add')) closeMenu(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
 
@@ -723,6 +725,12 @@
         setActive(pane, false);
         pane.el.scrollIntoView({ block: 'nearest' });
       },
+    });
+    // F09: Übergabe nutzt die Promptvorschau (F06) und zeigt Quelle sowie Ziel der aktiven Projektkacheln.
+    D.handoff = window.DeckHandoff.createHandoffDialog({
+      document, h: D.h, promptDraft: D.promptDraft, notify,
+      getSource: activePane, getTargets: () => panesOf(S.activeId), getProjectId: () => S.activeId,
+      readProgress: (pid) => api.progress.read(pid),
     });
     api.terminals.onData((id, data) => { const p = byId(id); if (p) p.write(data); });
     api.terminals.onExit((id, code) => { const p = byId(id); if (p) p.handleExit(code); });

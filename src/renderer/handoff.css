@@ -1,0 +1,13 @@
+.handoff { box-sizing: border-box; width: min(640px, calc(100vw - 40px)); max-height: calc(100vh - 48px); overflow: auto; padding: 22px; color: #e5e7eb; background: #1c2027; border: 1px solid #444b58; border-radius: 12px; box-shadow: 0 20px 70px #0009; }
+.handoff::backdrop { background: #090b10b8; }
+.handoff h2 { margin: 0 0 10px; font-size: 19px; }
+.handoff-source { margin: 0 0 4px; color: #b8c9ee; overflow-wrap: anywhere; }
+.handoff-field { display: block; margin-top: 12px; }
+.handoff-field label { display: block; margin-bottom: 5px; font-size: 12px; color: #b0b7c2; }
+.handoff select, .handoff textarea { box-sizing: border-box; width: 100%; padding: 8px; color: inherit; background: #12151b; border: 1px solid #444b58; border-radius: 5px; font: inherit; }
+.handoff textarea { resize: vertical; line-height: 1.45; }
+.handoff select:focus, .handoff textarea:focus { outline: 2px solid #8ab4ff; outline-offset: 1px; }
+.handoff-check { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 13px; }
+.handoff-note { margin: 8px 0 0; font-size: 12px; color: #b0b7c2; }
+.handoff-error { margin: 12px 0 0; font-size: 13px; color: #ffb4ab; }
+.handoff-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 16px; }
