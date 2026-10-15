@@ -170,7 +170,16 @@
     pane.setAgentEntry = function (entry) {
       agentEntry = entry || null;
       if (statusDot) statusDot.update(agentEntry);
+      applyActivity();
     };
+    // Aktivität: Kopfleiste animiert markieren (arbeitet / wartet / inaktiv), Grundlage der Sortierung.
+    pane.activity = () => (window.DeckActivity ? window.DeckActivity.activityOf(agentEntry, pane.status === 'running') : null);
+    function applyActivity() {
+      if (!pane.head) return;
+      const a = pane.activity();
+      if (a) { pane.head.dataset.activity = a; pane.head.dataset.agentState = agentEntry.state; }
+      else { delete pane.head.dataset.activity; delete pane.head.dataset.agentState; }
+    }
     // F10: verknüpfte Second-Brain-Aufgabe (nur Lesen; gespeichert wird die ID)
     const taskLink = window.DeckTaskLink && api.secondBrain
       ? window.DeckTaskLink.createTaskLink({ desc, api, h, onChange: () => hooks.onChange(), focusTerminal: () => term.focus() })
@@ -207,6 +216,7 @@
     function setStatus(s, msg) {
       pane.status = s;
       el.dataset.status = s;
+      applyActivity();
       exitBar.hidden = s !== 'exited';
       if (msg) exitMsg.textContent = msg;
       refreshResume();

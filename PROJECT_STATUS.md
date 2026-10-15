@@ -2,7 +2,7 @@
 schemaVersion: 1
 projectId: multiterminal-app
 state: active
-updatedAt: 2026-10-16T00:21:00+02:00
+updatedAt: 2026-10-16T00:29:00+02:00
 updatedBy: codex
 ---
 
@@ -12,6 +12,10 @@ updatedBy: codex
 Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt bis zu 30 echte Terminals mit eigenem Mini-Browser für parallel laufende Terminal-Agenten bereitstellt.
 
 ## Aktueller Stand
+ACTIVITY-OPUS-20261016-01: Kopfleisten-Animation (arbeitet / wartet / inaktiv) und automatische Sortierung (wartet vorne, arbeitet Mitte, inaktiv hinten; Schalter ⇅) umgesetzt und geprüft, noch nicht gebaut/installiert.
+
+WORKTREE-EXPLAIN-CODEX-20261016-01: Arbeitskopien-Auswahl und Dienst lesend gegen installierte App bestätigt, neuere Menüansicht im vorhandenen Paket-Screenshot geprüft. Startpfad setzt Arbeitsordner/Branchzuordnung, erzeugt noch kein Worktree-Aufgabenpaket. Gemeinsame Startauswahl samt Projekt-/Aufgabenkontext empfohlen; Erklärung, keine Produktumsetzung oder neue Bedienprüfung. Details in `PROGRESS.md`, eigene Bereiche frei; aktive PM-Aufgabe unverändert.
+
 TOPMENU-CODEX-20261016-01: Oben nur Plus und „☰ Menü“; alle bisherigen Optionen einschließlich Schnellstart in einer länglichen ausklappbaren Leiste. Bei schmalen Fenstern Umbruch, Schließen per Aktion/Außenklick/Escape. Selbst geprüft: 463/463 Tests, Build Exit 0, Electron-Menüprüfung gegen Quelle UND Paket, Screenshots visuell geprüft; 71 Quelldateien im Paket bytegleich. Fertiger Build unter `dist/Multiterminal-darwin-arm64/Multiterminal.app`; noch nicht installiert, laufende Nutzer-App unverändert. Bereiche freigegeben, kein technischer Blocker.
 
 INSTALL-20261016-01: Stand `ac547dd` (F02–F10 inkl. F10-A) von Joshua installiert; `/Applications/Multiterminal.app` bytegleich zu `src/` geprüft, Vorversion unter `/Applications/Multiterminal.app.old`.

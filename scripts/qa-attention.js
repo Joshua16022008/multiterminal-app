@@ -291,8 +291,10 @@ app.on('browser-window-created', (_e, win) => {
         await type('a1', `mt-browser open http://127.0.0.1:${srv.address().port}\r`);
         await until(() => run("[...window.DeckApp.state.panes.get('pa')].find(p => p.id === 'a1').desc.browserOpen === true"), 'mt-browser open');
         srv.close();
+        // Nummern folgen der angezeigten Reihenfolge (automatische Sortierung nach Aktivität).
+        const second = await run("[...window.DeckApp.state.panes.get('pa')].find(p => p.el.style.order === '1').id");
         fireMenu('Terminal 2');
-        await until(async () => (await active()).pane === 'a2', 'hotkey Terminal 2');
+        await until(async () => (await active()).pane === second, 'hotkey Terminal 2');
         const swapped = await run(`(() => { const L = window.DeckApp.state.panes.get('pa'); const [p, q] = L; const dt = new DataTransfer(); const mk = (t, el) => el.dispatchEvent(new DragEvent(t, { bubbles: true, cancelable: true, dataTransfer: dt }));
           const d = p.el.querySelector('.attn-dot'); const ev = new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }); d.hidden = false; d.dispatchEvent(ev); const dotBlocked = ev.defaultPrevented;
           mk('dragstart', q.head); mk('dragover', p.el); mk('drop', p.el); mk('dragend', q.head);

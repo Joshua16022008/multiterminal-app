@@ -4,6 +4,8 @@
 
 ## Aktueller Stand
 
+- WORKTREE-EXPLAIN-CODEX-20261016-01: lesender Abgleich abgeschlossen; Arbeitskopien-Auswahl/Dienst installiert vorhanden, Worktree-Aufgabenpaket im Startpfad fehlt. Empfehlung: gemeinsame Startauswahl mit Agent, Arbeitsordner, Branch/Basis und sichtbarem Projekt-/Aufgabenkontext. Keine Produktumsetzung, kein neuer App-/Testlauf.
+
 - TOPMENU-CODEX-20261016-01: Obere Optionen in ausklappbarer horizontaler Leiste; nur Plus und Menü direkt sichtbar. 463/463 Tests, Build und Electron-Menüprüfung gegen Quelle/Paket grün; 71 Quelldateien im Paket bytegleich. Fertiges Paket unter `dist/Multiterminal-darwin-arm64/Multiterminal.app`, noch nicht installiert; eigene Reservierungen frei.
 
 - RESUME-NEWPROJ-20261015-01: Projektplanung gegen installierte `/Applications`-Module am 15.10.2026 um 13:55 selbst geprüft, Electron-QA Exit 0 / `passed`; Screenshot selbst geprüft. Agentwahl, drei lokale Fake-Agenten über echte PTYs, Git-Anlage, Abbruch und Duplikatschutz bestanden. Installation/Hotkey-Abschluss durch zuständige INSTALL-Sitzung inzwischen dokumentiert; keine erneute Installation nötig. Physische Bedienabnahme bleibt offen.
@@ -28,6 +30,16 @@
 
 Neue Ergebniseinträge oben ergänzen; bestehende Einträge erhalten. Ungeprüfte Umsetzung ausdrücklich als solche kennzeichnen.
 
+### 16.10.2026, 00:29 +02:00 – WORKTREE-EXPLAIN-CODEX-20261016-01: Worktrees, Startauswahl und Kontext
+
+- Agent/Sitzung: Codex `/root`, Joshuas Erklärungsauftrag; Checkout `main`, Ausgangs-HEAD `7f1a839`. Fremde `.claude/`- und Koordinationsänderungen erhalten, aktive PM-Integration nicht berührt.
+- Auftrag/Status: lesende Bestandsprüfung abgeschlossen, Erklärung und Ausbauvorschlag vorbereitet. Produktumsetzung nicht aus der Frage abgeleitet. Geändert: ausschließlich eigene gezielte Einträge in den drei Koordinationsdateien.
+- Aktuelle Nachweise: `worktree-picker.js`, `worktree-service.js`, `app.js`, `main.js` selbst gelesen; Worktree-Dienst, Picker und Main im installierten Bundle per SHA-256 bytegleich zur Quelle. Installiertes `app.js` wegen neuerer Menüänderung abweichend, dessen Arbeitskopien-Menühandler separat gelesen: `newTerminal(project.id, null, undefined, ws)` startet eine Shell im gewählten Worktree. Neuerer Paket-Screenshot `.../mt-topbar-qa-IbzACG/menu-open.png` selbst visuell geprüft; kein Live-GUI-Test dieser Sitzung. Offizielle Git-Worktree-Dokumentation über gstack `/browse` geöffnet/gelesen: https://git-scm.com/docs/git-worktree.
+- Befund: Worktree enthält den ausgecheckten Projektstand und nutzt separaten Ordner/Branch; uncommittete Änderungen des Projektordners werden nicht übernommen. Startpfad übergibt `workspaceId` und setzt `cwd`, erzeugt dabei kein eigenes Projekt-/Aufgabenpaket. Worktree ist keine technische Schreibsperre und trennt keine Ports/Datenbanken. Spätere Integration und Konfliktprüfung bleiben nötig.
+- Empfehlung: ein gemeinsamer Startdialog für Agent, Projektordner/eigene/vorhandene Arbeitskopie, Branch/Basis und konkrete Aufgabe; sichtbarer Startkontext mit Projektziel, Regeln, Basisstand, Arbeitsordner, Zuständigkeit und Abnahmekriterien. Versionierte Projektdokumente aus dem Arbeitsstand verwenden, aktuelle zentrale Zuständigkeiten ausdrücklich anbinden; keine automatischen Merges oder Übernahme offener Hauptordner-Änderungen. Gemeinsame Dateien weiterhin koordinieren.
+- Tatsächliche Prüfgrenzen: kein `npm test`, Build, neuer Electron-/Providerlauf, Git-Mutation oder Austausch/Beenden der laufenden App; bisherige F07-QA bleibt historischer Nachweis. Keine Unteragenten für die eng zusammenhängende Erklärung nötig. Keine neue Routine/Automation oder Memory-Änderung; eigene Reservierungen frei.
+- Nächste Aktion dieses Auftrags: gemeinsamen Terminalstart mit Arbeitskopien-Auswahl und sichtbarem Kontextpaket als eigenes Umsetzungspaket abstimmen. Bestehender nächster Projektschritt erhalten.
+
 ### 16.10.2026, 00:21 +02:00 – TOPMENU-CODEX-20261016-01: Optionen in ausklappbarer Leiste
 
 - Agent/Sitzung: Codex `/root`, Joshuas Menüauftrag; Checkout `main`, Ausgangs-HEAD `0ab6506`, anfangs sauber.
@@ -38,6 +50,16 @@ Neue Ergebniseinträge oben ergänzen; bestehende Einträge erhalten. Ungeprüft
 - Electron-Prüfung: `node_modules/.bin/electron scripts/qa-topbar.js` sowie derselbe Aufruf mit `dist/Multiterminal-darwin-arm64/Multiterminal.app/Contents/Resources/app/src/main/main.js` jeweils Exit 0/`passed`. Echte Renderer/Preload/IPC mit isolierten Daten und lokalem Terminal-Fixture, keine Anbieteraufrufe. Native Electron-Mausereignisse für Menü und Aktionen, Escape/Fokus, Außenklick, Umschalten, alle neun Optionen, Plus erzeugt Kachel, Schnellstart/Custom-Formular, schmale Ansicht und globale Optionen ohne Projekt bestanden; keine Rendererfehler. Breite/schmale Quell-Screenshots und breite Paketansicht selbst visuell geprüft. Belege: `/var/folders/dz/mbg87p4x3pbf1v207rr8f1t80000gp/T/mt-topbar-qa-I47ysQ/` (Quelle), `.../mt-topbar-qa-IbzACG/` (Paket), `/tmp/multiterminal-topmenu-tests-20261016.log`, `/tmp/multiterminal-topmenu-build-20261016.log`.
 - Offen/Blocker: kein technischer Blocker. Physische Bedienabnahme und Installation offen; laufende Nutzer-App/Terminals unverändert. Kein Commit/Push, keine externen Nachrichten, keine Provideraufrufe. Alle eigenen Reservierungen freigegeben.
 - Nächste Aktion: geprüften Menüleisten-Build bei nächster freigegebener App-Aktualisierung installieren.
+
+### 16.10.2026 – ACTIVITY-OPUS-20261016-01: Aktivitätsanimation in der Kopfleiste und automatische Sortierung (geprüft, Bedienabnahme offen)
+
+- Agent/Sitzung: Claude Code (Opus 5.5), Wunsch von Joshua.
+- Änderung: neu `src/renderer/activity.js` (Zuordnung Agentenstatus → arbeitet / wartet / inaktiv, stabile Sortierung). Kopfleiste je Kachel per `data-activity`: arbeitet = durchlaufender Lichtstreifen (Akzent), wartet = warm pulsierende Leiste mit leuchtender Linie (Fehler rot), inaktiv = langsam atmende graue Linie; ohne Agent unmarkiert; „Bewegung reduzieren“ zeigt statische Varianten (`attention.css`). Wartet = Freigabe/Frage, Fehler oder ungesehene fertige Antwort; inaktiv = bereit oder gesehene Antwort.
+- Sortierung: Anzeige-Reihenfolge wartet → arbeitet → inaktiv/ohne Agent; innerhalb der Gruppen bleibt die manuelle (gespeicherte) Reihenfolge. Kachelnummern und ⌘1…⌘0 folgen der Anzeige. Umsortieren 0,7 s verzögert. Schalter ⇅ in der Kopfleiste (Standard an, im Browser-Speicher gemerkt). Grundlage ist der Agentenstatus (F01, „Rückmeldungen“ eingeschaltet); Codex/Kimi liefern keinen Status und bleiben unsortiert hinten.
+- Dateien: `src/renderer/activity.js`, `attention.css`, `terminal-pane.js`, `app.js`, `index.html`, `tests/activity.test.js`, `scripts/qa-activity.js`; `scripts/qa-attention.js` erwartet ⌘2 jetzt an der angezeigten zweiten Kachel.
+- Prüfung: `npm test` 467/467; neu `qa-activity` (echte mt-event-Ereignisse, Markierungen mit eigener Animation, Sortierung, Nummern, Schalter, Umsortieren bei Wechsel) bestanden, Screenshot selbst angesehen; Regression qa-attention, qa-hotkeys, qa-search, qa-templates, qa-task-link, qa-diff, qa-handoff, qa-resume, qa-attachments, qa-ports, qa-browser-feedback, qa-project-planning bestanden.
+- Grenzen: Drag & Drop über Gruppengrenzen ändert bei eingeschalteter Sortierung nur die gespeicherte Reihenfolge, sichtbar erst nach Statuswechsel oder mit ⇅ aus. Nicht gebaut/installiert.
+- Nächste Aktion: Joshua entscheidet über Build/Installation.
 
 ### 15.10.2026 – F10A-OPUS-20261015-01: Kachel mit Second-Brain-Aufgabe verknüpfen (geprüft, Bedienabnahme offen)
 

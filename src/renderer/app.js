@@ -117,9 +117,37 @@
     }
     return g;
   }
+  /* Automatische Sortierung nach Aktivität: wartet -> arbeitet -> inaktiv/ohne Agent.
+     Die manuelle Reihenfolge (panesOf) bleibt gespeichert und ordnet innerhalb jeder Gruppe. */
+  let autoSort = true;
+  try { autoSort = localStorage.getItem('mt.autoSort') !== 'off'; } catch (_) { /* Standard: an */ }
+  function displayList(pid) {
+    const list = panesOf(pid);
+    return autoSort && window.DeckActivity ? window.DeckActivity.sortByActivity(list, (p) => p.activity && p.activity()) : list;
+  }
+  const lastOrder = new Map();
+  let resortTimer = null;
+  function scheduleResort() {
+    clearTimeout(resortTimer);
+    resortTimer = setTimeout(() => {
+      for (const pid of S.panes.keys()) {
+        const sig = displayList(pid).map((p) => p.id).join(',');
+        if (lastOrder.get(pid) !== sig) syncGrid(pid);
+      }
+    }, 700); // kurz warten, damit schnelle Statuswechsel nicht hin und her springen
+  }
+  function setAutoSort(on) {
+    autoSort = Boolean(on);
+    try { localStorage.setItem('mt.autoSort', autoSort ? 'on' : 'off'); } catch (_) { /* nur diese Sitzung */ }
+    const b = $('btn-autosort');
+    if (b) b.setAttribute('aria-pressed', String(autoSort));
+    for (const pid of S.panes.keys()) syncGrid(pid);
+  }
+
   function syncGrid(pid) {
     const g = gridFor(pid);
-    const list = panesOf(pid);
+    const list = displayList(pid);
+    lastOrder.set(pid, list.map((p) => p.id).join(','));
     if (list.length) {
       const { cols, visibleRows } = window.DeckLayout.gridFor(list.length);
       g.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
@@ -284,7 +312,7 @@
   // Ctrl/Cmd+1..0 from the menu: focus that tile and scroll it into view.
   // Also fine while a dialog or rename field is open; the jump just moves focus.
   function focusTerminalAt(action) {
-    const list = panesOf(S.activeId);
+    const list = displayList(S.activeId); // Nummern folgen der angezeigten Reihenfolge
     const i = window.DeckHotkeys.targetFor(action, list.length);
     if (i < 0) return;
     const pane = list[i];
@@ -771,6 +799,7 @@
       attList = Array.isArray(list) ? list : [];
       A.entries = new Map(attList.map((e) => [e.terminalId, e]));
       for (const l of S.panes.values()) for (const p of l) p.setAgentEntry(A.entries.get(p.id) || null);
+      scheduleResort();
       const unread = attList.filter((e) => e.unread).length;
       const badge = $('attention-count');
       badge.textContent = String(unread);
@@ -791,6 +820,8 @@
       requestAnimationFrame(() => panesOf(S.activeId).forEach((p) => p.refit()));
       return open;
     }
+    $('btn-autosort').setAttribute('aria-pressed', String(autoSort));
+    $('btn-autosort').onclick = () => setAutoSort(!autoSort);
     $('btn-attention').onclick = () => { closeMenu(); showSettings(false); showAttention(); };
     function jumpToNextAttention() {
       const entry = attList.find((e) => e.unread && byId(e.terminalId));
@@ -863,7 +894,7 @@
       D.browserFeedback = window.DeckBrowserFeedback.createBrowserFeedback({ document, api: api.browser, getPromptDraft: () => D.promptDraft, notify });
     }
     api.terminals.onData((id, data) => { const p = byId(id); if (p) p.write(data); });
-    api.terminals.onExit((id, code) => { const p = byId(id); if (p) p.handleExit(code); });
+    api.terminals.onExit((id, code) => { const p = byId(id); if (p) p.handleExit(code); scheduleResort(); });
     // Requests of mt-browser from the main process: find the tile by terminal id (any project) and ask its browser API.
     const BROWSER_OPS = new Set(['open', 'show', 'hide', 'isOpen', 'webContentsId', 'mode', 'visible']);
     api.browser.onRequest(async ({ reqId, terminalId, op, arg }) => {

@@ -23,3 +23,29 @@
 #btn-attention.on { border-color: var(--accent); color: var(--accent); }
 .attn-badge { display: inline-block; min-width: 16px; padding: 0 5px; margin-left: 4px; border-radius: 8px; font-size: 10px; line-height: 16px; text-align: center; color: var(--bg); background: var(--warn); }
 .attn-badge[hidden] { display: none; }
+
+/* Aktivität in der Kopfleiste: Linie am unteren Rand, je Zustand eigene Bewegung. */
+.tile-head[data-activity] { position: relative; }
+.tile-head[data-activity]::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; pointer-events: none; }
+/* Arbeitet: ein Lichtstreifen läuft durch. */
+.tile-head[data-activity="working"]::after {
+  background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%) no-repeat;
+  background-size: 35% 100%; animation: act-run 1.5s linear infinite;
+}
+/* Wartet auf dich: die ganze Leiste pulsiert warm, die Linie leuchtet. */
+.tile-head[data-activity="waiting"] { --act-color: var(--warn); animation: act-call 1.6s ease-in-out infinite; }
+.tile-head[data-activity="waiting"][data-agent-state="error"] { --act-color: var(--err); }
+.tile-head[data-activity="waiting"]::after { height: 3px; background: var(--act-color); animation: act-glow 1.6s ease-in-out infinite; }
+/* Inaktiv: dezente graue Linie, atmet langsam. */
+.tile-head[data-activity="idle"]::after { background: var(--dim); animation: act-breathe 4.5s ease-in-out infinite; }
+@keyframes act-run { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+@keyframes act-call { 0%, 100% { box-shadow: inset 0 0 0 999px transparent; } 50% { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--act-color) 16%, transparent); } }
+@keyframes act-glow { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes act-breathe { 0%, 100% { opacity: .12; } 50% { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) {
+  .tile-head[data-activity], .tile-head[data-activity]::after { animation: none; }
+  .tile-head[data-activity="working"]::after { background: var(--accent); }
+  .tile-head[data-activity="waiting"] { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--act-color) 14%, transparent); }
+  .tile-head[data-activity="idle"]::after { opacity: .3; }
+}
+#btn-autosort[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }

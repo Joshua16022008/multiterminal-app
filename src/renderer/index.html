@@ -43,6 +43,7 @@
         <button id="btn-toolbar" class="btn-small" aria-expanded="false" aria-controls="toolbar-options" title="Alle Optionen anzeigen">☰ Menü</button>
         <div id="toolbar-options" role="toolbar" aria-label="Optionen" hidden>
         <button id="btn-settings" class="btn-small" aria-expanded="false" aria-controls="settings-panel" title="Persönliches Profil und Agent-Einstellungen">Einstellungen</button>
+        <button id="btn-autosort" class="btn-small" aria-pressed="true" title="Kacheln automatisch sortieren: wartet auf dich → arbeitet → inaktiv">⇅</button>
         <button id="btn-attention" class="btn-small" aria-expanded="false" aria-controls="attention-panel" title="Rückmeldungen der Agenten: wartet auf dich, Antwort fertig, Fehler (⌘J springt zur nächsten)">Rückmeldungen <span id="attention-count" class="attn-badge" hidden></span></button>
         <button id="btn-diff" class="btn-small" aria-expanded="false" aria-controls="diff-panel" title="Lokale Git-Änderungen ansehen und kommentieren">Änderungen</button><!-- F04 -->
         <button id="btn-ports" class="btn-small" aria-expanded="false" aria-controls="ports-panel" title="Lokale Devserver und lauschende Ports">Ports</button>
@@ -85,6 +86,7 @@
   <script src="browser-view.js"></script>
   <script src="dictation.js"></script>
   <script src="attention-panel.js"></script>
+  <script src="activity.js"></script>
   <script src="task-link.js"></script><!-- F10 -->
   <script src="terminal-pane.js"></script>
   <script src="attachments.js"></script>
