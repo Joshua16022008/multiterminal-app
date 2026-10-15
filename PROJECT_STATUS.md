@@ -12,6 +12,8 @@ updatedBy: codex
 Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt bis zu 30 echte Terminals mit eigenem Mini-Browser für parallel laufende Terminal-Agenten bereitstellt.
 
 ## Aktueller Stand
+INSTALL-20261016-01: Stand `ac547dd` (F02–F10 inkl. F10-A) von Joshua installiert; `/Applications/Multiterminal.app` bytegleich zu `src/` geprüft, Vorversion unter `/Applications/Multiterminal.app.old`.
+
 F10A-OPUS-20261015-01 (15.10.2026): F10 Variante A umgesetzt – Kachel mit Second-Brain-Aufgabe verknüpfen (Chip im Kachelkopf, nur lesend, Abruf im Main-Prozess ohne Origin). 463/463 Tests, alle Electron-QA grün; lesend gegen echte Web-App bestätigt.
 
 FPAKETE-OPUS-20261015-01 (15.10.2026): F02 (exaktes Fortsetzen für Claude), F03 (⌘K-Palette, ⌘F-Terminalsuche), F04 (Panel „Änderungen“, lesend), F05 (Browser-Element kommentieren, CLI `click`/`type`), F08 (Arbeitsaufbauten), F09 (Übergabe) in `main` integriert; F10 als Konzept. 449/449 Tests und alle Electron-QA grün. Gepusht (`b58f9ab`) und gebaut; Bundle bytegleich zu `src/`, `qa-ports` gegen gepackte Module bestanden. Installation durch Joshua offen. F10: Joshua hat Variante A (Verknüpfung zu Second-Brain-Aufgaben, zunächst lesend) gewählt; Umsetzung noch nicht begonnen.
@@ -43,7 +45,7 @@ Agentenkommunikation als Projektdokumentation eingerichtet: `WORK_IN_PROGRESS.md
 Version 0.1.0: Terminal-Raster, Diktat, Kontenverwaltung, Verbrauchsanzeige, Terminal-Namen und Farben sind im Quellstand vorhanden. Tastenkürzel, Drag-and-drop, Mini-Browser-Steuerung und Settings liegen als lokale Änderungen vor. Bisherige Prüfungen stehen unter Nachweise; Alltagstests und Joshuas Abnahme bleiben offen. Der installierte Build wurde in COMMIT-CHECK-20261014-01 lesend mit den aktuellen Produktdateien abgeglichen; keine neue App-Bedienung in dieser Prüfrunde. Entwicklungsentwurf: `ENTWICKLUNGSPLAN.md`.
 
 ## Nächster Schritt
-Joshua installiert den gebauten Stand (App beenden, Installationsskript) und prüft danach die neuen Funktionen (zuvor offen: Hotkey-Belegung per echter Tastatur prüfen).
+Joshua prüft die neuen Funktionen in der installierten App (⌘K/⌘F, Änderungen, Übergabe, Browser-Element ⌖, Aufbauten, Fortsetzen, Aufgaben-Chip).
 
 ## Aktive Aufgaben
 - F11-Build/Installation abgeschlossen; Joshuas manuelle Abnahme offen. RELEASE-20261015-01 meldet Joshuas Aufhebung der verwaisten F06-/CLAUDE-PROFILE-Reservierungen; deren historische Einträge erhalten. Unabhängige Claude-Profil-Abnahme bleibt fachlich unvollständig. Kein Ausbau für andere Nutzer. Flüsterflow ruht weiterhin.
