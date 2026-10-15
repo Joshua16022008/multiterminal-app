@@ -9,6 +9,9 @@
     { id: 'new-terminal', label: 'Neues Terminal' },
     { id: 'close-terminal', label: 'Terminal schließen' },
     { id: 'next-attention', label: 'Nächste Rückmeldung' },
+    // F03
+    { id: 'command-palette', label: 'Befehlspalette' },
+    { id: 'terminal-search', label: 'Im Terminalverlauf suchen' },
     ...Array.from({ length: SLOTS }, (_, i) => ({ id: actionFor(i), label: `Terminal ${i + 1}` }))
   ];
   const modifiers = ['Cmd', 'Ctrl', 'Alt', 'Shift'];
@@ -44,6 +47,9 @@
   function defaults(platform = 'darwin') {
     const primary = platform === 'darwin' ? 'Cmd' : 'Ctrl';
     const result = { settings: [`${primary}+,`], 'new-terminal': [`${primary}+T`], 'close-terminal': [`${primary}+W`], 'next-attention': [`${primary}+J`] };
+    // F03: Cmd+K / Cmd+F; auf anderen Systemen mit Umschalt, damit Strg+K/Strg+F im Terminal (readline) frei bleiben.
+    result['command-palette'] = [platform === 'darwin' ? 'Cmd+K' : 'Ctrl+Shift+P'];
+    result['terminal-search'] = [platform === 'darwin' ? 'Cmd+F' : 'Ctrl+Shift+F'];
     for (let i = 0; i < SLOTS; i++) result[actionFor(i)] = platform === 'darwin' ? [`Cmd+${keyForIndex(i)}`, `Ctrl+${keyForIndex(i)}`] : [`Ctrl+${keyForIndex(i)}`];
     return result;
   }

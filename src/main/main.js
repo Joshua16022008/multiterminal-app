@@ -462,6 +462,10 @@ function buildMenu() {
         { type: 'separator' },
         { label: 'Zu Terminal springen', submenu: jump.visible },
         ...shortcutItems('next-attention', 'Zur nächsten Rückmeldung springen'),
+        // F03
+        { type: 'separator' },
+        ...shortcutItems('command-palette', 'Befehlspalette…'),
+        ...shortcutItems('terminal-search', 'Im Terminalverlauf suchen…'),
         ...jump.hidden,
       ],
     },
