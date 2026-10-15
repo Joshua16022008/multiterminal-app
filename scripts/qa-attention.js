@@ -233,12 +233,12 @@ app.on('browser-window-created', (_e, win) => {
 
         // menu item Cmd+J
         const item = findItem(Menu.getApplicationMenu(), 'Zur nächsten Rückmeldung springen');
-        assert.equal(item.accelerator, 'CmdOrCtrl+J');
+        assert.equal(item.accelerator, process.platform === 'darwin' ? 'Cmd+J' : 'Ctrl+J'); // seit den umbindbaren Hotkeys plattformgenau
         fireMenu('Zur nächsten Rückmeldung springen');
         await until(async () => (await active()).project === 'pa', 'cmd+j project');
         assert.equal((await active()).pane, 'a2'); assert.equal((await active()).focusIn, true);
         await until(async () => (await badge()) === 0, 'badge 0');
-        ok('menu "Zur nächsten Rückmeldung springen" (CmdOrCtrl+J) jumps to the newest unread tile');
+        ok('menu "Zur nächsten Rückmeldung springen" (Cmd+J) jumps to the newest unread tile');
 
         // typing answers a waiting agent
         assert.equal((await entry('a2')).state, 'needs-input');
