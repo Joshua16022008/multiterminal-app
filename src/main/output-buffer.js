@@ -62,15 +62,14 @@ function createOutputBuffer({ maxLines = 2000, maxRawBytes = 256 * 1024 } = {}) 
           break;
       }
       if (code === 0x1b) { e.state = 'esc'; continue; }
-      if (ch === '\n') { pushLine(e); continue; }
-      if (ch === '\r') {
-        if (data[i + 1] === '\n') continue; // CRLF: der Zeilenumbruch folgt
-        e.current = ''; // Wagenrücklauf: die Zeile wird überschrieben
-        continue;
-      }
+      if (ch === '\n') { e.cr = false; pushLine(e); continue; }
+      // Wagenrücklauf erst beim nächsten Zeichen auswerten: CRLF kann über zwei Datenblöcke verteilt sein.
+      if (ch === '\r') { e.cr = true; continue; }
+      if (code < 0x20 && ch !== '\b' && ch !== '\t') continue;
+      if (code === 0x7f || (code >= 0x80 && code < 0xa0)) continue;
+      if (e.cr) { e.current = ''; e.cr = false; } // Wagenrücklauf: die Zeile wird überschrieben
       if (ch === '\b') { e.current = e.current.slice(0, -1); continue; }
       if (ch === '\t') { e.current += '  '; continue; }
-      if (code < 0x20 || code === 0x7f || (code >= 0x80 && code < 0xa0)) continue;
       e.current += ch;
     }
   }

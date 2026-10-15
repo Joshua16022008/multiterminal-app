@@ -13,6 +13,15 @@ test('ANSI- und Steuersequenzen werden entfernt', () => {
   assert.deepStrictEqual(b.tail('t1', 10), ['rot und grün', 'nach OSC', 'Link', 'Prompt']);
 });
 
+test('CRLF über zwei Datenblöcke verteilt löscht die Zeile nicht', () => {
+  const b = createOutputBuffer();
+  b.append('t1', 'LOCAL_TEST_TERMINAL\r');
+  b.append('t1', '\n\x1b[?2004h');
+  b.append('t1', 'abc\r');
+  b.append('t1', '\x1b[Kxy\r\n');
+  assert.deepStrictEqual(b.tail('t1', 10), ['LOCAL_TEST_TERMINAL', 'xy']);
+});
+
 test('Sequenzen über Datenblock-Grenzen hinweg', () => {
   const b = createOutputBuffer();
   b.append('t', 'ab\x1b[3');

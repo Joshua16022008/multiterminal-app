@@ -12,7 +12,7 @@ button { font: inherit; color: inherit; cursor: pointer; -webkit-app-region: no-
 .spacer { flex: 1; }
 
 #pm-app { display: flex; flex-direction: column; height: 100%; border-top: 3px solid var(--accent-2); }
-#pm-head { display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 84px; background: var(--bg-2); border-bottom: 1px solid var(--border); }
+#pm-head { display: flex; align-items: center; gap: 8px; padding: 8px 14px; /* normaler Fensterrahmen: kein Platz für Fensterknöpfe nötig */ background: var(--bg-2); border-bottom: 1px solid var(--border); }
 #pm-title { margin: 0; font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: .02em; }
 .pm-btn { background: var(--bg-3); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; }
 .pm-btn:hover { border-color: var(--accent-2); }

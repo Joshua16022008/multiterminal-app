@@ -61,7 +61,7 @@
     const p = section('Ports (' + m.ports.length + ')');
     if (!m.ports.length) p.append(el('p', 'pm-empty', 'Keine lauschenden Ports.'));
     for (const x of m.ports) {
-      p.append(row(el('span', 'pm-name pm-mono', ':' + x.port), el('span', 'pm-meta', x.terminalId ? 'Kachel ' + x.terminalId : 'keiner Kachel zugeordnet')));
+      p.append(row(el('span', 'pm-name pm-mono', ':' + x.port), el('span', 'pm-meta', x.terminalId ? 'Kachel ' + ((m.terminals.find(t => t.id === x.terminalId) || {}).title || x.terminalId) : 'keiner Kachel zugeordnet')));
     }
     root.append(p);
 
@@ -102,6 +102,7 @@
   async function startManager(restart) {
     $('pm-exit').hidden = true;
     safeFit();
+    if (restart) term.reset(); // vor dem Neustart leeren, damit frühe Ausgabe des neuen Prozesses bleibt
     let res;
     try { res = restart ? await pm.restart() : await pm.start(term.cols, term.rows); }
     catch (e) { res = { ok: false, error: (e && e.message) || String(e) }; }
@@ -110,7 +111,6 @@
       $('pm-exit').hidden = false;
       return;
     }
-    if (restart) { term.reset(); }
     if (res.replay) term.write(res.replay);
     if (restart) { safeFit(); pm.resize(term.cols, term.rows); }
     refresh();
