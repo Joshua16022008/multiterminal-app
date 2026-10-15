@@ -26,6 +26,16 @@
 
 Neue Ergebniseinträge oben ergänzen; bestehende Einträge erhalten. Ungeprüfte Umsetzung ausdrücklich als solche kennzeichnen.
 
+### 15.10.2026 – F10A-OPUS-20261015-01: Kachel mit Second-Brain-Aufgabe verknüpfen (geprüft, Bedienabnahme offen)
+
+- Agent/Sitzung: Claude Code (Opus 5.5) als Planer/Integrator; Umsetzung durch Sonnet-Subagent im eigenen Worktree (nach Nutzungslimit fortgesetzt).
+- Entscheidung: Joshua wählt F10 Variante A (Verknüpfung, zunächst lesend).
+- Befund vorab (selbst geprüft): Web-App `GET /api/todos` antwortet ohne Origin-Header mit 200, mit Origin (`file://`, `null`) mit 403. Abruf daher nur im Main-Prozess; Web-App unverändert.
+- Änderung: neu `src/main/second-brain-tasks.js` (nur GET, kein Origin, ID-Prüfung, Basis-URL nur per `MULTITERMINAL_SECOND_BRAIN_URL` auf localhost/127.0.0.1 mit Port überschreibbar), `src/renderer/task-link.js`/`.css` (Chip „+ Aufgabe“ bzw. Titel mit Statuspunkt im Kachelkopf; Popover mit Suche/Bereichsfilter über offene Aufgaben und Ziele, Details, „Aktualisieren“, „Verknüpfung lösen“). Feld `secondBrainTodoId` je Kachel in `session-store.js`. Kein Abhaken, kein Polling.
+- Prüfung (eigener Lauf, Stand nach Merge): `npm test` 463/463 grün; alle 13 Electron-QA bestanden (neu `qa-task-link` mit Fixture-Server, der Origin mit 403 beantwortet); Screenshot selbst angesehen. Zusätzlich Dienst lesend gegen die echte Web-App: Liste mit 28 Einträgen (23 Aufgaben, 5 Ziele), Einzelabruf und „fehlt“ korrekt; keine Inhalte ausgegeben, nichts geschrieben.
+- Grenzen: nur lesend; Popover-DOM nur per Electron-QA geprüft; Vorlagen-Whitelist (F08) verwirft das Feld laut Code, ohne eigenen Test.
+- Nächste Aktion: Build und Installation durch Joshua; danach Bedienabnahme.
+
 ### 15.10.2026 – FPAKETE-OPUS-20261015-01: F02, F03, F04, F05, F08, F09 integriert, F10-Konzept (geprüft, Bedienabnahme offen)
 
 - Agent/Sitzung: Claude Code (Opus 5.5) als Planer und Integrator; Umsetzung F02/F03/F05/F08 durch Sonnet-Subagenten, F09/F10 durch Haiku-Subagenten, je in eigenem Git-Worktree; F04 selbst (Subagenten-Start wurde vom Auto-Modus abgelehnt, Joshua wählte Selbstumsetzung).

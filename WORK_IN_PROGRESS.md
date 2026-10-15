@@ -4,6 +4,15 @@ Vor Arbeitsbeginn zusammen mit `AGENTS.md`, `PROJECT_STATUS.md` und `PROGRESS.md
 
 ## Aktive Reservierungen
 
+### F10A-OPUS-20261015-01 – F10 Variante A: Kachel mit Second-Brain-Aufgabe verknüpfen (lesend)
+
+- Agent/Sitzung: Claude Code (Opus 5.5) als Planer/Integrator, Umsetzung durch Sonnet-Subagent im eigenen Worktree; Auftrag von Joshua am 15.10.2026.
+- Status: abgeschlossen und geprüft (15.10.2026): 463/463 Tests, alle 13 Electron-QA grün, Dienst lesend gegen echte Web-App bestätigt. Reservierungen freigegeben.
+- Befund vorab: Web-App `GET /api/todos` antwortet ohne Origin-Header mit 200, mit Origin (`file://`, `null`) mit 403. Abfrage daher nur aus dem Main-Prozess; Web-App unverändert.
+- Reservierte Bereiche: neu `src/main/second-brain-tasks.js`, `src/renderer/task-link.js`, `src/renderer/task-link.css`, Tests/QA dazu; Integration `main.js`, `preload.js`, `session-store.js`, `app.js`, `terminal-pane.js`, `index.html`. Keine Schreibzugriffe auf Second Brain.
+- Blocker: keine.
+- Nächste Aktion: Joshua installiert den neuen Build.
+
 ### FPAKETE-OPUS-20261015-01 – F02, F03, F04, F05, F08, F09, F10 über Subagenten
 
 - Agent/Sitzung: Claude Code (Opus 5.5) als Planer/Integrator, Auftrag von Joshua am 15.10.2026.

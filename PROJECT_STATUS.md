@@ -12,6 +12,8 @@ updatedBy: codex
 Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt bis zu 30 echte Terminals mit eigenem Mini-Browser für parallel laufende Terminal-Agenten bereitstellt.
 
 ## Aktueller Stand
+F10A-OPUS-20261015-01 (15.10.2026): F10 Variante A umgesetzt – Kachel mit Second-Brain-Aufgabe verknüpfen (Chip im Kachelkopf, nur lesend, Abruf im Main-Prozess ohne Origin). 463/463 Tests, alle Electron-QA grün; lesend gegen echte Web-App bestätigt.
+
 FPAKETE-OPUS-20261015-01 (15.10.2026): F02 (exaktes Fortsetzen für Claude), F03 (⌘K-Palette, ⌘F-Terminalsuche), F04 (Panel „Änderungen“, lesend), F05 (Browser-Element kommentieren, CLI `click`/`type`), F08 (Arbeitsaufbauten), F09 (Übergabe) in `main` integriert; F10 als Konzept. 449/449 Tests und alle Electron-QA grün. Gepusht (`b58f9ab`) und gebaut; Bundle bytegleich zu `src/`, `qa-ports` gegen gepackte Module bestanden. Installation durch Joshua offen. F10: Joshua hat Variante A (Verknüpfung zu Second-Brain-Aufgaben, zunächst lesend) gewählt; Umsetzung noch nicht begonnen.
 
 RESUME-NEWPROJ-20261015-01: Projektplanung gegen installierte `/Applications`-Module selbst geprüft (15.10.2026, 13:55), Electron Exit 0 / `passed`, Screenshot geprüft. Agentwahl, drei lokale Fake-Agenten über echte PTYs, Git-Anlage, Abbruch und Duplikatschutz bestanden. Direkte Koordination mit INSTALL bestätigt; kein erneutes Installieren/Beenden, keine Produktänderung. Physische Nutzerabnahme und echte CLI-Nachweise bleiben offen; Ergebnis in `PROGRESS.md`, eigene Bereiche frei.
