@@ -87,3 +87,18 @@ test('failed directory creation preserves defaults', t => {
   assert.deepEqual(store.get(), hk.defaults());
   assert.equal(fs.readFileSync(parent, 'utf8'), 'preserve');
 });
+
+test('a new action whose default the user already uses keeps all own bindings', t => {
+  const { filePath } = fixture(t);
+  const pmDefault = hk.defaults('darwin')['project-manager'][0];
+  // Ältere Datei ohne 'project-manager', in der der Nutzer dessen Standard einer anderen Aktion gegeben hat.
+  const saved = hk.defaults('darwin');
+  delete saved['project-manager'];
+  saved.settings = [pmDefault];
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(saved));
+  const store = createHotkeyStore({ filePath, platform: 'darwin' });
+  assert.deepEqual(store.get().settings, [pmDefault], 'eigene Belegung bleibt erhalten');
+  assert.deepEqual(store.get()['project-manager'], [], 'neue Aktion bleibt ohne kollidierendes Kürzel');
+  assert.deepEqual(store.get()['new-terminal'], saved['new-terminal']);
+});

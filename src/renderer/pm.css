@@ -30,7 +30,7 @@ button { font: inherit; color: inherit; cursor: pointer; -webkit-app-region: no-
 .pm-sec h2 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--accent-2); font-weight: 600; }
 .pm-row { display: flex; align-items: baseline; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
 .pm-row:last-child { border-bottom: 0; }
-.pm-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-name { flex: 1 0 auto; max-width: 60%; min-width: 3em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pm-meta { font-size: 11px; color: var(--dim); }
 .pm-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; align-self: center; background: var(--dim); }
 .pm-dot.working { background: var(--ok); }
@@ -38,7 +38,7 @@ button { font: inherit; color: inherit; cursor: pointer; -webkit-app-region: no-
 .pm-dot.turn-complete { background: #61afef; }
 .pm-dot.error { background: var(--err); }
 .pm-dot.unknown, .pm-dot.none, .pm-dot.ended { background: transparent; border: 1.5px solid var(--dim); }
-.pm-state { font-size: 11.5px; white-space: nowrap; }
+.pm-state { font-size: 11.5px; flex: 0 1 auto; min-width: 0; text-align: right; overflow-wrap: anywhere; color: var(--dim); } /* Name hat Vorrang, langer Zustand bricht um */
 .pm-state.needs-input { color: var(--accent); }
 .pm-state.error { color: var(--err); }
 .pm-state.working { color: var(--ok); }

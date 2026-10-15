@@ -94,9 +94,20 @@
   window.__pmTerm = term; // für QA-Skripte
 
   function safeFit() { try { fit.fit(); } catch { /* Fenster noch ohne Größe */ } }
-  term.onData(d => pm.write(d));
+  // Während des Replays antwortet xterm auf alte Terminalabfragen (DA, DSR, Farben);
+  // diese Antworten dürfen nicht als Eingabe beim Manager landen. Live-Ausgabe, die
+  // vor dem Replay eintrifft, wird zurückgehalten, damit die Reihenfolge stimmt.
+  let replaying = false, held = [];
+  term.onData(d => { if (!replaying) pm.write(d); });
   term.onResize(({ cols, rows }) => pm.resize(cols, rows));
-  pm.onData(d => term.write(d));
+  pm.onData(d => { if (replaying) held.push(d); else term.write(d); });
+  function writeReplay(text) {
+    return new Promise(resolve => term.write(text, () => {
+      const rest = held; held = []; replaying = false;
+      for (const d of rest) term.write(d);
+      resolve();
+    }));
+  }
   pm.onExit(() => { $('pm-exit').hidden = false; });
 
   async function startManager(restart, fresh) {
@@ -104,14 +115,18 @@
     safeFit();
     if (restart) term.reset(); // vor dem Neustart leeren, damit frühe Ausgabe des neuen Prozesses bleibt
     let res;
+    if (!restart) replaying = true; // bis das Replay geschrieben ist
     try { res = restart ? await pm.restart(fresh === true) : await pm.start(term.cols, term.rows); }
     catch (e) { res = { ok: false, error: (e && e.message) || String(e) }; }
+    if (!restart && !(res && res.ok !== false && res.replay)) { // kein Replay: Zurückgehaltenes sofort zeigen
+      replaying = false; const rest = held; held = []; for (const d of rest) term.write(d);
+    }
     if (!res || res.ok === false) {
       term.write('\r\n\x1b[31mManager konnte nicht gestartet werden: ' + ((res && res.error) || 'unbekannter Fehler') + '\x1b[0m\r\n');
       $('pm-exit').hidden = false;
       return;
     }
-    if (res.replay) term.write(res.replay);
+    if (!restart && res.replay) await writeReplay(res.replay);
     if (restart) { safeFit(); pm.resize(term.cols, term.rows); }
     refresh();
   }

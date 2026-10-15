@@ -37,7 +37,10 @@ function lagebild() {
 
 ipcMain.handle('pm:start', (_e, projectId, cols, rows) => {
   calls.start++; assert.equal(projectId, 'qa-proj');
-  return { ok: true, terminalId: 'pm-' + projectId, resumed: false, replay: 'REPLAY_VOM_MANAGER\r\n$ ' };
+  // Live-Ausgabe, die vor der Antwort eintrifft, muss NACH dem Replay erscheinen.
+  if (win && !win.isDestroyed()) win.webContents.send('pm:data', 'LIVE_NACH_REPLAY\r\n');
+  // Terminalabfragen im Replay (DA, DSR): xterm antwortet darauf – das darf nicht beim Manager ankommen.
+  return { ok: true, terminalId: 'pm-' + projectId, resumed: false, replay: 'REPLAY_VOM_MANAGER\x1b[c\x1b[6n\r\n$ ' };
 });
 ipcMain.on('pm:write', (_e, projectId, data) => {
   calls.write.push(data);
@@ -80,8 +83,12 @@ app.whenReady().then(async () => {
     assert.match(await run("document.getElementById('pm-hint').textContent"), /nichts wird ohne deine Bestätigung eingefügt/);
 
     stage = 'terminal';
-    await wait(async () => (await termText()).includes('REPLAY_VOM_MANAGER'), 'Replay geschrieben');
+    await wait(async () => (await termText()).includes('LIVE_NACH_REPLAY'), 'Replay und Live-Ausgabe geschrieben');
     assert.equal(calls.start, 1);
+    const shown = await termText();
+    assert.ok(shown.indexOf('REPLAY_VOM_MANAGER') < shown.indexOf('LIVE_NACH_REPLAY'), 'Live-Ausgabe erscheint nach dem Replay');
+    await new Promise(r => setTimeout(r, 300));
+    assert.deepEqual(calls.write, [], 'Antworten auf Terminalabfragen im Replay gehen nicht an den Manager');
     await wait(() => calls.resize.length > 0 || true, 'resize');
     await run("window.__pmTerm.input('hallo manager\\r', true)");
     await wait(async () => (await termText()).includes('hallo manager'), 'Eingabe über Kanal zurückgespiegelt');
