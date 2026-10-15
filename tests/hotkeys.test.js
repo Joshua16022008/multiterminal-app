@@ -46,7 +46,7 @@ test('shifted or alt digits are not hotkeys', () => {
 });
 
 test('full platform defaults preserve primary commands and ten terminal aliases', () => {
-  assert.strictEqual(hk.actions.length, 16);
+  assert.strictEqual(hk.actions.length, 17);
   assert.deepStrictEqual(hk.defaults().settings, ['Cmd+,']);
   assert.deepStrictEqual(hk.defaults()['focus-terminal:0'], ['Cmd+0', 'Ctrl+0']);
   assert.deepStrictEqual(hk.defaults('linux')['focus-terminal:0'], ['Ctrl+0']);
