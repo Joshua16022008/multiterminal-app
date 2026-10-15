@@ -4,6 +4,8 @@
 
 ## Aktueller Stand
 
+- TOPMENU-CODEX-20261016-01: Obere Optionen in ausklappbarer horizontaler Leiste; nur Plus und Menü direkt sichtbar. 463/463 Tests, Build und Electron-Menüprüfung gegen Quelle/Paket grün; 71 Quelldateien im Paket bytegleich. Fertiges Paket unter `dist/Multiterminal-darwin-arm64/Multiterminal.app`, noch nicht installiert; eigene Reservierungen frei.
+
 - RESUME-NEWPROJ-20261015-01: Projektplanung gegen installierte `/Applications`-Module am 15.10.2026 um 13:55 selbst geprüft, Electron-QA Exit 0 / `passed`; Screenshot selbst geprüft. Agentwahl, drei lokale Fake-Agenten über echte PTYs, Git-Anlage, Abbruch und Duplikatschutz bestanden. Installation/Hotkey-Abschluss durch zuständige INSTALL-Sitzung inzwischen dokumentiert; keine erneute Installation nötig. Physische Bedienabnahme bleibt offen.
 
 - INSTALL-HOTKEYS-CODEX-20261015-01: Installation abgeschlossen, am 15.10.2026 um 13:56 unabhängig nachgeprüft. 836 Bundle-Einträge/55 Produktdateien identisch; isolierte Electron-Hotkey-QA gegen installierte Module Exit 0, Screenshot selbst geprüft. Reguläre installierte App läuft bereits als PID 621. Frühere Installationswarte-Meldungen unten sind überholt; echte OS-Tastendrücke bleiben Nutzerabnahme.
@@ -20,11 +22,22 @@
 
 ## Nächster Schritt
 
-- Joshua prüft eine selbst gewählte Belegung unter Einstellungen → Hotkeys per echter Tastatur.
+- Geprüften Menüleisten-Build bei nächster freigegebener App-Aktualisierung installieren.
 
 ## Erledigt
 
 Neue Ergebniseinträge oben ergänzen; bestehende Einträge erhalten. Ungeprüfte Umsetzung ausdrücklich als solche kennzeichnen.
+
+### 16.10.2026, 00:21 +02:00 – TOPMENU-CODEX-20261016-01: Optionen in ausklappbarer Leiste
+
+- Agent/Sitzung: Codex `/root`, Joshuas Menüauftrag; Checkout `main`, Ausgangs-HEAD `0ab6506`, anfangs sauber.
+- Status: umgesetzt und geprüft gegen Quelle und fertiges Paket; Installation und Joshuas Bedienabnahme offen.
+- Änderung und Dateien: `src/renderer/index.html`, `styles.css`, `app.js`; neue `scripts/qa-topbar.js`; Paket `dist/Multiterminal-darwin-arm64/Multiterminal.app`. Oben bleiben Plus und „☰ Menü“, alle neun bisherigen Optionen einschließlich Schnellstart liegen in einer breiten Leiste darunter. Bei wenig Platz Umbruch; Aktion, Außenklick und Escape schließen. Escape setzt Fokus auf den Menüknopf zurück. Einstellungen und weitere globale Optionen sind auch ohne Projekt erreichbar.
+- Entscheidung: bestehende Aktionsknöpfe und Handler erhalten, Leiste als Overlay, keine Verschiebung/Neuerzeugung der Terminals. Schnellstart-Popup am sichtbaren Menüknopf verankert.
+- Verifiziert: `node --check` für App/QA und `git diff --check` sauber; eigener vollständiger `npm test` außerhalb Sandbox Exit 0, 463 bestanden/0 fehlgeschlagen. Erster Sandboxlauf scheiterte an vorhandenen lokalen Server-/Sockettests (`listen EPERM`). `npm run build` Exit 0, beide spawn-helper ausführbar; bekannte optionale `.icon`-Warnung. Erster Sandboxbuild scheiterte am Netzwerk (`fetch failed`), Wiederholung außerhalb Sandbox erfolgreich. Alle 71 Dateien unter `src/` bytegleich im Paket.
+- Electron-Prüfung: `node_modules/.bin/electron scripts/qa-topbar.js` sowie derselbe Aufruf mit `dist/Multiterminal-darwin-arm64/Multiterminal.app/Contents/Resources/app/src/main/main.js` jeweils Exit 0/`passed`. Echte Renderer/Preload/IPC mit isolierten Daten und lokalem Terminal-Fixture, keine Anbieteraufrufe. Native Electron-Mausereignisse für Menü und Aktionen, Escape/Fokus, Außenklick, Umschalten, alle neun Optionen, Plus erzeugt Kachel, Schnellstart/Custom-Formular, schmale Ansicht und globale Optionen ohne Projekt bestanden; keine Rendererfehler. Breite/schmale Quell-Screenshots und breite Paketansicht selbst visuell geprüft. Belege: `/var/folders/dz/mbg87p4x3pbf1v207rr8f1t80000gp/T/mt-topbar-qa-I47ysQ/` (Quelle), `.../mt-topbar-qa-IbzACG/` (Paket), `/tmp/multiterminal-topmenu-tests-20261016.log`, `/tmp/multiterminal-topmenu-build-20261016.log`.
+- Offen/Blocker: kein technischer Blocker. Physische Bedienabnahme und Installation offen; laufende Nutzer-App/Terminals unverändert. Kein Commit/Push, keine externen Nachrichten, keine Provideraufrufe. Alle eigenen Reservierungen freigegeben.
+- Nächste Aktion: geprüften Menüleisten-Build bei nächster freigegebener App-Aktualisierung installieren.
 
 ### 15.10.2026 – F10A-OPUS-20261015-01: Kachel mit Second-Brain-Aufgabe verknüpfen (geprüft, Bedienabnahme offen)
 

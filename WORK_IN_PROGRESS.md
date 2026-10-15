@@ -4,6 +4,16 @@ Vor Arbeitsbeginn zusammen mit `AGENTS.md`, `PROJECT_STATUS.md` und `PROGRESS.md
 
 ## Aktive Reservierungen
 
+### TOPMENU-CODEX-20261016-01 – Obere Optionen als ausklappbare Leiste
+
+- Agent/Sitzung: Codex `/root`, Joshuas Menüauftrag, 16.10.2026, 00:12 +02:00.
+- Status: abgeschlossen und geprüft (16.10.2026, 00:21 +02:00): 463/463 Tests, Build und isolierte Electron-Menüprüfung gegen Quelle UND Paket bestanden. Sämtliche eigenen Reservierungen freigegeben.
+- Arbeitskopie: dieser Checkout, Branch `main`, HEAD `0ab6506`.
+- Bearbeitete Bereiche (frei): `src/renderer/index.html`, `styles.css`, `app.js` (nur obere Leiste und Menüverhalten), neu `scripts/qa-topbar.js`, aktueller Build unter `dist/Multiterminal-darwin-arm64/`; eigene gezielte Koordinationseinträge. Historischer NEWPROJ-Installationsvorbehalt durch bestätigte spätere Installation überholt; alte Sicherung bleibt erhalten.
+- Ziel: nur Plus und Menü direkt sichtbar; bisherige Optionen einschließlich Schnellstart in einer länglichen ausklappbaren Leiste.
+- Blocker: keine. Kein Provideraufruf, Commit/Push oder Austausch der laufenden App.
+- Nächste Aktion: geprüften Menüleisten-Build bei nächster freigegebener App-Aktualisierung installieren.
+
 ### F10A-OPUS-20261015-01 – F10 Variante A: Kachel mit Second-Brain-Aufgabe verknüpfen (lesend)
 
 - Agent/Sitzung: Claude Code (Opus 5.5) als Planer/Integrator, Umsetzung durch Sonnet-Subagent im eigenen Worktree; Auftrag von Joshua am 15.10.2026.

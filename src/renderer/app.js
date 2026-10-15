@@ -484,6 +484,7 @@
     $('ws-title').textContent = p ? p.name : '';
     $('counter').textContent = p ? `${n} / ${MAX}` : '';
     $('ws-actions').hidden = !p;
+    $('project-options').hidden = !p;
     const full = n >= MAX;
     const tip = full ? `Maximal ${MAX} Terminals pro Projekt erreicht. Schließe eines, um ein neues zu öffnen.` : '';
     $('btn-plus').disabled = full;
@@ -514,6 +515,21 @@
   }
 
   /* ---------- Plus-Menü ---------- */
+  function closeToolbar(restoreFocus = false) {
+    const wasOpen = !$('toolbar-options').hidden;
+    $('toolbar-options').hidden = true;
+    $('btn-toolbar').setAttribute('aria-expanded', 'false');
+    if (wasOpen && restoreFocus) $('btn-toolbar').focus();
+  }
+
+  function toggleToolbar() {
+    if (!$('toolbar-options').hidden) { closeToolbar(true); return; }
+    closeMenu();
+    $('toolbar-options').hidden = false;
+    $('btn-toolbar').setAttribute('aria-expanded', 'true');
+    $('toolbar-options').querySelector('button:not(:disabled)').focus();
+  }
+
   function closeMenu() { $('menu').hidden = true; }
   function openMenu() {
     const m = $('menu');
@@ -551,7 +567,7 @@
         },
       }));
     }
-    const r = $('btn-menu').getBoundingClientRect();
+    const r = $('btn-toolbar').getBoundingClientRect();
     m.hidden = false;
     m.style.top = r.bottom + 4 + 'px';
     m.style.left = Math.max(8, r.right - m.offsetWidth) + 'px';
@@ -656,12 +672,21 @@
     $('btn-ports').onclick = () => { closeMenu(); showSettings(false); showPorts(); };
     $('btn-accounts').onclick = () => { $('btn-accounts').classList.toggle('on', D.accountsPanel.toggle()); };
     $('btn-plus').onclick = () => newTerminal(S.activeId, null);
-    $('btn-menu').onclick = (e) => { e.stopPropagation(); openMenu(); };
+    $('btn-menu').onclick = (e) => { e.stopPropagation(); openMenu(); closeToolbar(); };
+    $('btn-toolbar').onclick = toggleToolbar;
+    $('toolbar-options').addEventListener('click', (e) => {
+      if (e.target.closest('button')) closeToolbar();
+    });
     $('btn-progress').onclick = () => { $('btn-progress').classList.toggle('on', D.progressPanel.toggle()); };
     // F09: Übergabe-Dialog für die aktive Kachel (Einfügen nur über die Promptvorschau)
     $('btn-handoff').onclick = () => { closeMenu(); D.handoff.open(); };
-    document.addEventListener('mousedown', (e) => { if (!e.target.closest('#menu, #btn-menu, #add-project, #empty-add')) closeMenu(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+    document.addEventListener('mousedown', (e) => {
+      if (!e.target.closest('#menu, #btn-menu, #add-project, #empty-add')) closeMenu();
+      if (!e.target.closest('#toolbar-options, #btn-toolbar')) closeToolbar();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { closeMenu(); closeToolbar(true); }
+    });
 
     /* Globale Terminal-Ereignisse, Zuordnung per id */
     const byId = (id) => { for (const l of S.panes.values()) for (const p of l) if (p.id === id) return p; return null; };

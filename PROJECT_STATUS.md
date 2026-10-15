@@ -2,7 +2,7 @@
 schemaVersion: 1
 projectId: multiterminal-app
 state: active
-updatedAt: 2026-10-15T13:57:00+02:00
+updatedAt: 2026-10-16T00:21:00+02:00
 updatedBy: codex
 ---
 
@@ -12,6 +12,8 @@ updatedBy: codex
 Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt bis zu 30 echte Terminals mit eigenem Mini-Browser für parallel laufende Terminal-Agenten bereitstellt.
 
 ## Aktueller Stand
+TOPMENU-CODEX-20261016-01: Oben nur Plus und „☰ Menü“; alle bisherigen Optionen einschließlich Schnellstart in einer länglichen ausklappbaren Leiste. Bei schmalen Fenstern Umbruch, Schließen per Aktion/Außenklick/Escape. Selbst geprüft: 463/463 Tests, Build Exit 0, Electron-Menüprüfung gegen Quelle UND Paket, Screenshots visuell geprüft; 71 Quelldateien im Paket bytegleich. Fertiger Build unter `dist/Multiterminal-darwin-arm64/Multiterminal.app`; noch nicht installiert, laufende Nutzer-App unverändert. Bereiche freigegeben, kein technischer Blocker.
+
 INSTALL-20261016-01: Stand `ac547dd` (F02–F10 inkl. F10-A) von Joshua installiert; `/Applications/Multiterminal.app` bytegleich zu `src/` geprüft, Vorversion unter `/Applications/Multiterminal.app.old`.
 
 F10A-OPUS-20261015-01 (15.10.2026): F10 Variante A umgesetzt – Kachel mit Second-Brain-Aufgabe verknüpfen (Chip im Kachelkopf, nur lesend, Abruf im Main-Prozess ohne Origin). 463/463 Tests, alle Electron-QA grün; lesend gegen echte Web-App bestätigt.
@@ -45,7 +47,7 @@ Agentenkommunikation als Projektdokumentation eingerichtet: `WORK_IN_PROGRESS.md
 Version 0.1.0: Terminal-Raster, Diktat, Kontenverwaltung, Verbrauchsanzeige, Terminal-Namen und Farben sind im Quellstand vorhanden. Tastenkürzel, Drag-and-drop, Mini-Browser-Steuerung und Settings liegen als lokale Änderungen vor. Bisherige Prüfungen stehen unter Nachweise; Alltagstests und Joshuas Abnahme bleiben offen. Der installierte Build wurde in COMMIT-CHECK-20261014-01 lesend mit den aktuellen Produktdateien abgeglichen; keine neue App-Bedienung in dieser Prüfrunde. Entwicklungsentwurf: `ENTWICKLUNGSPLAN.md`.
 
 ## Nächster Schritt
-Joshua prüft die neuen Funktionen in der installierten App (⌘K/⌘F, Änderungen, Übergabe, Browser-Element ⌖, Aufbauten, Fortsetzen, Aufgaben-Chip).
+Geprüften Menüleisten-Build bei nächster freigegebener App-Aktualisierung installieren.
 
 ## Aktive Aufgaben
 - F11-Build/Installation abgeschlossen; Joshuas manuelle Abnahme offen. RELEASE-20261015-01 meldet Joshuas Aufhebung der verwaisten F06-/CLAUDE-PROFILE-Reservierungen; deren historische Einträge erhalten. Unabhängige Claude-Profil-Abnahme bleibt fachlich unvollständig. Kein Ausbau für andere Nutzer. Flüsterflow ruht weiterhin.
@@ -67,6 +69,7 @@ Joshua prüft die neuen Funktionen in der installierten App (⌘K/⌘F, Änderun
 - Umsetzung verteilt: Kern Opus, UI und Persistenz Sonnet, Kleinteile und Doku Haiku.
 
 ## Nachweise
+- TOPMENU-CODEX-20261016-01 (16.10.2026): eigener `npm test` Exit 0, 463/463; `npm run build` Exit 0; `scripts/qa-topbar.js` gegen Quelle und gepackten Main jeweils Exit 0/`passed`, native Electron-Maus-/Escape-Ereignisse, alle neun Optionen plus Plusknopf geprüft. Schmale Ansicht, Fokus, Außenklick und Optionen ohne Projekt geprüft. 71 Quelldateien bytegleich im Paket; Syntax- und Diffprüfung sauber. Screenshots `/var/folders/dz/mbg87p4x3pbf1v207rr8f1t80000gp/T/mt-topbar-qa-IbzACG/`; Details in `PROGRESS.md`. Kein Installieren/Beenden der Nutzer-App.
 - F11-BUILD-CODEX-B-20261014-02 (15.10.2026): eigener Build Exit 0, 350/350 Tests grün, Quellmanifest SHA-256 `9a0327f7e40b297fc18dd61f968a00d04cf5a3fbbbb0d5cba5aa5703f260ccd9` vor/nach unverändert, 53 Produktdateien in Build UND installierter App bytegleich, alle Featuremodule vorhanden. Echter F11-Electron-Test gegen gepackte Module bestanden, Screenshot visuell geprüft; Bundle-Binärdatei lädt natives node-pty. GitHub direkt abgefragt: `f6b0f8197806c94e19eb0b4faa4713ef7c5ffab5`, entspricht lokalem HEAD. Installation/Commit/Push durch parallele RELEASE-Sitzung, selbst lesend bestätigt. Kein Beenden/Ersetzen der laufenden App durch CODEX-B; vollständiger Eintrag in `PROGRESS.md`.
 - F06-CODEX-A-20261014-01 (14.10.2026, 19:21 +02:00): eigener frischer `npm test`-Lauf 350/350 grün und `scripts/qa-attachments.js` in echtem Electron/IPC/PTY vollständig `passed`, einschließlich maximierter anderer Kachel; Screenshot selbst visuell geprüft. F01-Korrektur selbst im Code gelesen, keine fremden Ergebnisse als eigene übernommen. Synthetische Drop-/Paste-Ereignisse, lokale Bild-Fixture; physische Bedienung und Nutzerabnahme offen. Details und Nachweisdatei in `PROGRESS.md`; alle eigenen Bereiche freigegeben.
 - Agentenstatus und Aufmerksamkeit (F01-CLAUDE-A-20261014-01, 14.10.2026): Knopf „Rückmeldungen“ mit Zähler, Liste, Status-Punkt im Kachelkopf und ⌘J-Sprung, standardmäßig aus; Quelle sind Claude-Hooks nur per `--settings` aus der App (`mt-event` über den Bridge-Socket mit Token je Terminal, `claude`-Wrapper, ZDOTDIR-Shim nur bei Status an), keine Prompt-/Antwortinhalte, `~/.claude` unverändert. Live mit echtem `claude` (Haiku, ein Prompt) belegt: SessionStart, UserPromptSubmit, Stop mit Ungelesen, SessionEnd; Shim in echter zsh mit Joshuas Startdateien. Nur per Fixture: PermissionRequest/Notification, StopFailure, Sprung per Klick/⌘J, Eingabe-Reset, Duplikate/veraltet/fremdes Token. Fensterfokus gestubbt, Desktopmeldung nur als Aufruf protokolliert. 350/350 Tests grün. Offen: nur zsh, nur vertraute Ordner, Codex ohne Status, Alltagsabnahme durch Joshua. Großteil in Commit `774b6ff`, Shim und idle_prompt-Anpassung uncommittet. Details in `PROGRESS.md`.
