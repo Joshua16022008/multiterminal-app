@@ -193,7 +193,7 @@ Alle elf Recherchepunkte sind genau einem Paket zugeordnet. **Frei** bedeutet hi
 
 ### F10 – Aufgabenablage (Konzept)
 
-**Stand:** 14.10.2026. Nur Konzept; keine Produkt-, Vault- oder Datenänderung. Wer die Aufgabenoberfläche baut, braucht eine Freigabe von Joshua.
+**Stand:** 15.10.2026. Nur Konzept; keine Produkt-, Vault- oder Datenänderung. Wer die Aufgabenoberfläche baut, braucht eine Freigabe von Joshua.
 
 **Ausgangslage — in Multiterminal vorhanden (Belege):**
 - PROGRESS.md-Anzeige: `src/main/progress-files.js:72` (`ensureProgress`, Vorlage mit Stand, nächstem Schritt, Erledigt, Offenen Fragen) und `:92` (`readProgress`). `src/renderer/progress-panel.js:6,11`: nur Anzeige plus Leseauftrag ins aktive Terminal.
