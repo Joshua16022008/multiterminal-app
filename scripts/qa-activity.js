@@ -59,11 +59,31 @@ app.on('browser-window-created', (_e, win) => {
       assert.deepEqual(await visualOrder(), ['t3', 't2', 't1', 't4']);
       const nums = Object.fromEntries((await tiles()).map((t) => [t.id, t.num]));
       assert.equal(nums.t3, '1', 'number 1 follows the visual first tile');
-      await run("document.getElementById('btn-autosort').click()"); // aus
+      stage = 'comfort settings';
+      const qol = (key) => run(`(() => { const b=document.getElementById('qol-${key}'); b.click(); return b.checked; })()`);
+      await run("document.getElementById('btn-qol').click()");
+      assert.equal(await run("!document.getElementById('qol-panel').hidden"), true);
+      assert.deepEqual(await run("[...document.querySelectorAll('#qol-panel input')].map(i=>i.id+':'+i.checked)"),
+        ['qol-status:true', 'qol-markWaiting:true', 'qol-markWorking:true', 'qol-markIdle:true', 'qol-animate:true', 'qol-autoSort:true', 'qol-taskChip:true']);
+      assert.equal(await qol('autoSort'), false);
       await until(async () => (await visualOrder()).join() === 't1,t2,t3,t4', 'manual order when off', 3000);
-      assert.equal(await run("document.getElementById('btn-autosort').getAttribute('aria-pressed')"), 'false');
-      await run("document.getElementById('btn-autosort').click()"); // wieder an
+      assert.equal(await qol('autoSort'), true);
       await until(async () => (await visualOrder())[0] === 't3', 'sorted again', 3000);
+      assert.equal(await qol('animate'), false);
+      assert.equal((await tiles()).find((t) => t.id === 't2').anim, 'none', 'no animation when off');
+      assert.equal(await run("getComputedStyle(document.querySelector('[data-activity=working]'), '::after').display"), 'block', 'mark stays visible');
+      assert.equal(await qol('markWorking'), false);
+      assert.equal(await run("getComputedStyle(document.querySelector('[data-activity=working]'), '::after').display"), 'none');
+      assert.equal(await qol('taskChip'), false);
+      assert.equal(await run("[...document.querySelectorAll('.task-chip')].every(c=>getComputedStyle(c).display==='none')"), true);
+      assert.equal(await run("JSON.parse(localStorage.getItem('mt.qol')).markWorking"), false, 'stored');
+      await run("[...document.querySelectorAll('#qol-panel button')].find(b=>b.textContent==='Standard wiederherstellen').click()");
+      assert.equal(await run("[...document.querySelectorAll('#qol-panel input')].every(i=>i.checked)"), true);
+      assert.equal(await run("document.body.className.includes('qol-')"), false);
+      await run('new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))');
+      fs.writeFileSync(path.join(root, 'qol.png'), (await win.webContents.capturePage()).toPNG());
+      await run("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))");
+      assert.equal(await run("document.getElementById('qol-panel').hidden"), true);
 
       stage = 'state change moves tiles';
       await hook('t3', 'UserPromptSubmit'); await waitState('t3', 'working');
@@ -74,7 +94,7 @@ app.on('browser-window-created', (_e, win) => {
       await run('new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))');
       const screenshot = path.join(root, 'activity.png');
       fs.writeFileSync(screenshot, (await win.webContents.capturePage()).toPNG());
-      console.log(JSON.stringify({ result: 'passed', checks: ['no agent: unmarked, manual order', 'idle/working/waiting marks with own animation', 'sorted waiting>working>idle/plain', 'numbers follow display', 'toggle off restores manual order', 'resort on state change', 'screenshot'], root, screenshot }));
+      console.log(JSON.stringify({ result: 'passed', checks: ['no agent: unmarked, manual order', 'idle/working/waiting marks with own animation', 'sorted waiting>working>idle/plain', 'numbers follow display', 'comfort menu: sort/animation/marks/task chip switch and persist, reset', 'resort on state change', 'screenshot'], root, screenshot }));
     } catch (error) { failed = true; console.error(JSON.stringify({ stage, root, error: error.stack || String(error), tiles: await tiles().catch(() => null) })); }
     clearTimeout(timer); app.exit(failed ? 1 : 0);
   });

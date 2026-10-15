@@ -48,4 +48,3 @@
   .tile-head[data-activity="waiting"] { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--act-color) 14%, transparent); }
   .tile-head[data-activity="idle"]::after { opacity: .3; }
 }
-#btn-autosort[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }

@@ -12,7 +12,7 @@ updatedBy: codex
 Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt bis zu 30 echte Terminals mit eigenem Mini-Browser für parallel laufende Terminal-Agenten bereitstellt.
 
 ## Aktueller Stand
-ACTIVITY-OPUS-20261016-01: Kopfleisten-Animation (arbeitet / wartet / inaktiv) und automatische Sortierung (wartet vorne, arbeitet Mitte, inaktiv hinten; Schalter ⇅) umgesetzt und geprüft, noch nicht gebaut/installiert.
+ACTIVITY-OPUS-20261016-01: Kopfleisten-Animation (arbeitet / wartet / inaktiv) und automatische Sortierung (wartet vorne, arbeitet Mitte, inaktiv hinten) sowie Komfort-Menü zum Ein-/Ausschalten umgesetzt und geprüft; gebaut, Installation durch Joshua offen.
 
 WORKTREE-EXPLAIN-CODEX-20261016-01: Arbeitskopien-Auswahl und Dienst lesend gegen installierte App bestätigt, neuere Menüansicht im vorhandenen Paket-Screenshot geprüft. Startpfad setzt Arbeitsordner/Branchzuordnung, erzeugt noch kein Worktree-Aufgabenpaket. Gemeinsame Startauswahl samt Projekt-/Aufgabenkontext empfohlen; Erklärung, keine Produktumsetzung oder neue Bedienprüfung. Details in `PROGRESS.md`, eigene Bereiche frei; aktive PM-Aufgabe unverändert.
 

@@ -119,8 +119,7 @@
   }
   /* Automatische Sortierung nach Aktivität: wartet -> arbeitet -> inaktiv/ohne Agent.
      Die manuelle Reihenfolge (panesOf) bleibt gespeichert und ordnet innerhalb jeder Gruppe. */
-  let autoSort = true;
-  try { autoSort = localStorage.getItem('mt.autoSort') !== 'off'; } catch (_) { /* Standard: an */ }
+  let autoSort = true; // gesetzt von den Komfort-Einstellungen (qol-panel.js)
   function displayList(pid) {
     const list = panesOf(pid);
     return autoSort && window.DeckActivity ? window.DeckActivity.sortByActivity(list, (p) => p.activity && p.activity()) : list;
@@ -137,10 +136,8 @@
     }, 700); // kurz warten, damit schnelle Statuswechsel nicht hin und her springen
   }
   function setAutoSort(on) {
+    if (autoSort === Boolean(on)) return;
     autoSort = Boolean(on);
-    try { localStorage.setItem('mt.autoSort', autoSort ? 'on' : 'off'); } catch (_) { /* nur diese Sitzung */ }
-    const b = $('btn-autosort');
-    if (b) b.setAttribute('aria-pressed', String(autoSort));
     for (const pid of S.panes.keys()) syncGrid(pid);
   }
 
@@ -820,8 +817,19 @@
       requestAnimationFrame(() => panesOf(S.activeId).forEach((p) => p.refit()));
       return open;
     }
-    $('btn-autosort').setAttribute('aria-pressed', String(autoSort));
-    $('btn-autosort').onclick = () => setAutoSort(!autoSort);
+    // Komfort: alle Markierungen, Animation, Sortierung und Aufgaben-Chip schaltbar.
+    let storage = null;
+    try { storage = window.localStorage; } catch (_) { /* ohne Speicher gelten die Standards */ }
+    D.qol = window.DeckQol.createQolPanel({
+      button: $('btn-qol'), root: $('qol-panel'), h: D.h,
+      storage: storage || { getItem: () => null, setItem: () => {} },
+      onChange: (q) => setAutoSort(q.autoSort),
+      getStatus: () => Boolean(attSettings.statusEnabled),
+      setStatus: async (on) => {
+        const next = await guard(() => api.agents.setSettings({ statusEnabled: Boolean(on) }));
+        if (next) { attSettings = next; attPanel.update(attList, attSettings); }
+      },
+    });
     $('btn-attention').onclick = () => { closeMenu(); showSettings(false); showAttention(); };
     function jumpToNextAttention() {
       const entry = attList.find((e) => e.unread && byId(e.terminalId));
