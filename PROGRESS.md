@@ -4,6 +4,10 @@
 
 ## Aktueller Stand
 
+- RESUME-NEWPROJ-20261015-01: Projektplanung gegen installierte `/Applications`-Module am 15.10.2026 um 13:55 selbst geprüft, Electron-QA Exit 0 / `passed`; Screenshot selbst geprüft. Agentwahl, drei lokale Fake-Agenten über echte PTYs, Git-Anlage, Abbruch und Duplikatschutz bestanden. Installation/Hotkey-Abschluss durch zuständige INSTALL-Sitzung inzwischen dokumentiert; keine erneute Installation nötig. Physische Bedienabnahme bleibt offen.
+
+- INSTALL-HOTKEYS-CODEX-20261015-01: Installation abgeschlossen, am 15.10.2026 um 13:56 unabhängig nachgeprüft. 836 Bundle-Einträge/55 Produktdateien identisch; isolierte Electron-Hotkey-QA gegen installierte Module Exit 0, Screenshot selbst geprüft. Reguläre installierte App läuft bereits als PID 621. Frühere Installationswarte-Meldungen unten sind überholt; echte OS-Tastendrücke bleiben Nutzerabnahme.
+
 - NEWPROJ-QA-CODEX-20261015-01: gemeinsamer Build mit Projektplanung und Hotkeys fertig, 55 Produktdateien bytegleich, Quellmanifest stabil. Eigener abschließender Gesamtlauf 368/368 und beide Electron-QA-Scripte gegen gepackte Module grün, beide Screenshots selbst geprüft. Native Bundle-Binärdatei lädt `node-pty`; bisher installierte App vollständig extern gesichert. Installation wartet auf Joshuas Freigabe zum Schließen/Neustarten der laufenden App; keine Benutzerterminals beendet.
 
 - RELEASE-20261015-01 (Claude `multiterminal-app-f9`, auf Joshuas Anweisung): Stand nach `774b6ff` mit F01-zsh-Aufsatz, idle_prompt-Anpassung und F06-Maximierungskorrektur gemeinsam committet, gepusht, gebaut und nach `/Applications` installiert. Vorher `npm test` 350/350 grün, `scripts/qa-attachments.js` vollständig grün, `git diff --check` sauber. Reservierungen F06-CODEX-A und CLAUDE-PROFILE von Joshua als verwaist erklärt; unabhängige Claude-Profil-Prüfung bleibt unvollständig. Nächste Aktion: Joshua testet Rückmeldungen und Promptvorschau in der installierten App.
@@ -16,11 +20,50 @@
 
 ## Nächster Schritt
 
-- Nach Joshuas Freigabe die laufende App regulär schließen, gesicherten geprüften Build installieren und neu starten.
+- Joshua prüft eine selbst gewählte Belegung unter Einstellungen → Hotkeys per echter Tastatur.
 
 ## Erledigt
 
 Neue Ergebniseinträge oben ergänzen; bestehende Einträge erhalten. Ungeprüfte Umsetzung ausdrücklich als solche kennzeichnen.
+
+### 15.10.2026 – FPAKETE-OPUS-20261015-01: F02, F03, F04, F05, F08, F09 integriert, F10-Konzept (geprüft, Bedienabnahme offen)
+
+- Agent/Sitzung: Claude Code (Opus 5.5) als Planer und Integrator; Umsetzung F02/F03/F05/F08 durch Sonnet-Subagenten, F09/F10 durch Haiku-Subagenten, je in eigenem Git-Worktree; F04 selbst (Subagenten-Start wurde vom Auto-Modus abgelehnt, Joshua wählte Selbstumsetzung).
+- Änderung:
+  - F02: Claude-Kacheln speichern ihre native Gesprächs-ID (aus F01-Hook) und setzen nach Neustart mit `claude --resume <ID>` exakt fort; Codex/Kimi ohne Identitätsquelle bleiben sichtbar bei „letztes Gespräch“. Neu `src/main/agent-session-service.js`.
+  - F03: Befehlspalette (⌘K) und Terminalsuche (⌘F, geladener Verlauf, Treffer n/m), beide umbindbar. `hotkey-store.js` ergänzt neue Aktionen in alten `hotkeys.json`, statt eigene Belegungen zu verwerfen.
+  - F04: Panel „Änderungen“: gestaged/nicht gestaged/neu, Diff mit Zeilennummern, Binär-/Großdiff-Hinweis, Zeilenauswahl mit Kommentar und Zielkachel über die Promptvorschau. Nur lesend; Arbeitskopie der aktiven Kachel (F07) wird berücksichtigt. Neu `src/main/diff-service.js`, `src/renderer/diff-panel.js`.
+  - F05: Element im Mini-Browser markieren und kommentieren (mit Bildausschnitt) über die Promptvorschau; Browser-CLI um `click`/`type` nur für die eigene Kachel erweitert.
+  - F08: „Aufbau speichern/starten“ im Projektmenü; Vorschau ohne Ausführung, Devserver standardmäßig aus, keine Gesprächs-IDs/Konten in Vorlagen.
+  - F09: Knopf „⇄ Übergabe“: editierbare Übergabe an eine andere Kachel über die Promptvorschau, optional mit PROGRESS-Auszug.
+  - F10: nur Konzept in `ENTWICKLUNGSPLAN.md` („F10 – Aufgabenablage (Konzept)“), Empfehlung Variante A (Verknüpfung zu Second-Brain-Aufgaben, zunächst lesend).
+  - `scripts/qa-attention.js`: Erwartung an Menükürzel plattformgenau (`Cmd+J`); war seit den umbindbaren Hotkeys veraltet.
+- Integration: Merges in `main` nacheinander; Konflikte in `app.js` (F03/F09, F05) und `index.html` (F03/F08, F05) waren reine Einfügungen an derselben Stelle und wurden durch Behalten beider Seiten gelöst.
+- Prüfung (eigener Lauf auf dem integrierten Stand `cbab673`): `npm test` 449/449 grün, `git diff --check` sauber. Electron-QA alle bestanden: qa-diff, qa-browser-feedback, qa-search, qa-handoff, qa-resume, qa-templates, qa-hotkeys, qa-attachments, qa-attention, qa-ports, qa-project-planning, qa-worktree (beide Phasen). F04-Screenshot selbst angesehen. Subagenten-Screenshots nicht von mir gesichtet.
+- Grenzen: kein echter `claude`/`codex`/`kimi`-Nachweis für F02 (keine bezahlten Aufrufe); F02 nur bei eingeschaltetem Agentenstatus; F04 Arbeitskopie-Bereich nicht in der Electron-QA geprüft; F05 nur Hauptframe (keine iframes/Shadow DOM); F09/F04-Texte werden einzeilig eingefügt (F06-Regel); `qa-worktree` braucht zwischen den Phasen das Löschen der Arbeitskopie B (nicht im Skript dokumentiert); Phase 1 gelegentlich Timeout unter Last.
+- Offen: Build/Installation und Joshuas Bedienabnahme; Entscheidung F10 Variante A oder B.
+- Nächste Aktion: Joshua entscheidet über Build/Installation des neuen Stands.
+
+### 15.10.2026, 13:57 +02:00 – RESUME-NEWPROJ-20261015-01: Installierte Projektplanung geprüft
+
+- Agent/Sitzung: Codex `/root`, Thread `01a13f68-ad6a-77c1-bf13-04d4311280a3`, Fortsetzung auf Joshuas PROGRESS-Auftrag; Checkout `main`, HEAD `ff0595e`. Bestehende Fremdänderungen erhalten.
+- Erledigter Schritt: eigener `env TMPDIR='<Checkout>/node_modules/.cache/resume-newproj-20261015' node_modules/.bin/electron scripts/qa-project-planning.js /Applications/Multiterminal.app/Contents/Resources/app/src/main/main.js`, 13:55, Exit 0 / `passed`. Echter Renderer/Preload/IPC/PTY mit getrennten Testdaten: Menü und Agentwahl, Abbruch ohne Projekt/PTY, ungültiger Name bleibt bearbeitbar, alle drei eingebauten Agenten als lokale Fakes mit exaktem Eröffnungssatz und richtigem CWD, Git-Branch `main` mit genau einem Commit und drei Planungsdateien, aktive sichtbare Zielkachel, Duplikat ohne Überschreiben und GitHub-Dialogabbruch ohne `gh` bestanden.
+- Sichtnachweis: `node_modules/.cache/resume-newproj-20261015/mt-project-planning-qa-Iyuqfd/project-planning-dialog.png` selbst geöffnet und geprüft; lesbarer Projektname, Codex-Auswahl und Aktionen. Erwartete Fehler für ungültigen Namen/vorhandenen Ordner sind bestandene Negativfälle.
+- Koordination/Entscheidung: Neuere INSTALL-Reservierung erkannt, dessen Zuständigkeit direkt bestätigt und Dokumentfreigabe vor eigenem Abschluss abgewartet. INSTALL berichtet separat vollständigen Bundle-Abgleich, bestandene installierte Hotkey-QA und laufende reguläre App PID 621; diese Ergebnisse sind keine eigenen Prüfungen dieses Threads. Kein doppelter Austausch/Neustart und keine Nutzerterminals verändert.
+- Dateien: eigene gezielte Einträge in `PROGRESS.md`, `PROJECT_STATUS.md`, `WORK_IN_PROGRESS.md`; vorhandenes QA-Script unverändert verwendet. Keine Produktänderung, kein Commit/Push oder Provideraufruf; Testprojekte nur im getrennten QA-Cache.
+- Grenzen/Blocker: keine technische Blockade. Synthetische UI-Klicks, lokale Fake-Agenten, GitHub-Bestätigungsdialog auf Abbruch gestubbt; kein echter Provider-/Veröffentlichungsnachweis. Echte OS-Tastendrücke, Nutzerabnahme und unabhängige Claude-Profil-Abnahme bleiben offen. Letzter Gesamttest 368/368 stammt aus dem dokumentierten vorherigen Lauf; keine neue Gesamtsuite ohne Produktänderung gestartet.
+- Musterhinweis: Für den wiederkehrenden App-Build-/Installations-/Prüfablauf liegt ein Vorschlag unter ◆ MUSTER vor; keine Automatisierung eingerichtet.
+- Dokumentprüfung: `git diff --check -- PROGRESS.md PROJECT_STATUS.md WORK_IN_PROGRESS.md` nach Ergebniseintrag Exit 0; ausschließlich diese drei Koordinationsdateien lokal geändert. Fremde INSTALL-Einträge erhalten.
+- Nächste Aktion: Joshua prüft eine selbst gewählte Belegung unter Einstellungen → Hotkeys per echter Tastatur.
+
+### 15.10.2026, 13:56 +02:00 – INSTALL-HOTKEYS-CODEX-20261015-01: Installation und installierte Hotkeys abschließend geprüft
+
+- Agent/Sitzung: Codex `/root`, Wiederaufnahme auf „guck wo wir waren und mach da weiter“; Checkout `main`, HEAD `ff0595e`. Lokale fremde Status-/Übergabeänderungen erhalten, keine Produktänderungen oder Git-Mutationen.
+- Geprüft: vollständiger SHA-256-/Modus-/Symlink-Abgleich zwischen `dist/Multiterminal-darwin-arm64/Multiterminal.app` und `/Applications/Multiterminal.app`: 836 Einträge identisch; alle 55 aktuellen Dateien aus `src`/`assets` ebenfalls bytegleich.
+- Eigener Bediennachweis: `env TMPDIR='<Checkout>/node_modules/.cache/hotkeys-qa-20261015' node_modules/.bin/electron scripts/qa-hotkeys.js /Applications/Multiterminal.app/Contents/Resources/app/src/main/main.js`, Exit 0 / `passed`. 14 Aktionen, Aufnahme/Menüunterdrückung, Konflikte und reservierte Kürzel, Abbruch, Entwurf vs. live, echte IPC-/Dateispeicherung, Menüs, zweite Belegung entfernen, echte PTY mit neuer/alter Belegung, Deaktivierung, Renderer-Neuladen und Standards bestanden. Screenshot `node_modules/.cache/hotkeys-qa-20261015/mt-hotkeys-qa-SHVumh/hotkeys.png` selbst geöffnet und geprüft.
+- Laufzustand: reguläre App bereits als PID 621 aus `/Applications/Multiterminal.app/Contents/MacOS/Multiterminal` gestartet; erneutes Schließen/Neustarten würde unnötig laufende Benutzerterminals beenden und wurde ausgelassen. Frühere Installation samt externer Sicherung anhand Installationsbericht bestätigt; diese Runde hat ausschließlich geprüft.
+- Grenzen/Koordination: Menüaktionen direkt ausgelöst, physische OS-Kürzel bleiben Nutzerabnahme. RESUME-NEWPROJ-20261015-01 prüft die installierte Projektplanung unabhängig mit eigenen Tempdaten; Zuständigkeit direkt bestätigt. Kein Provideraufruf; keine Übernahme offener Claude-Profil-Abnahme. Eigene Reservierungen freigegeben.
+- Nächste Aktion: Joshua prüft eine selbst gewählte Belegung unter Einstellungen → Hotkeys per echter Tastatur.
 
 ### 15.10.2026, 13:43 +02:00 – NEWPROJ-QA-CODEX-20261015-01: Paketprüfung abgeschlossen, Installation vorbereitet
 

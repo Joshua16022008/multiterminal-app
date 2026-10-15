@@ -2,7 +2,7 @@
 schemaVersion: 1
 projectId: multiterminal-app
 state: active
-updatedAt: 2026-10-15T13:43:00+02:00
+updatedAt: 2026-10-15T13:57:00+02:00
 updatedBy: codex
 ---
 
@@ -12,6 +12,12 @@ updatedBy: codex
 Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt bis zu 30 echte Terminals mit eigenem Mini-Browser für parallel laufende Terminal-Agenten bereitstellt.
 
 ## Aktueller Stand
+FPAKETE-OPUS-20261015-01 (15.10.2026): F02 (exaktes Fortsetzen für Claude), F03 (⌘K-Palette, ⌘F-Terminalsuche), F04 (Panel „Änderungen“, lesend), F05 (Browser-Element kommentieren, CLI `click`/`type`), F08 (Arbeitsaufbauten), F09 (Übergabe) in `main` integriert; F10 als Konzept. 449/449 Tests und alle Electron-QA grün. Nicht gebaut/installiert, nicht gepusht. Offene Entscheidung F10: Variante A (Verknüpfung) oder B (Kachelnotiz).
+
+RESUME-NEWPROJ-20261015-01: Projektplanung gegen installierte `/Applications`-Module selbst geprüft (15.10.2026, 13:55), Electron Exit 0 / `passed`, Screenshot geprüft. Agentwahl, drei lokale Fake-Agenten über echte PTYs, Git-Anlage, Abbruch und Duplikatschutz bestanden. Direkte Koordination mit INSTALL bestätigt; kein erneutes Installieren/Beenden, keine Produktänderung. Physische Nutzerabnahme und echte CLI-Nachweise bleiben offen; Ergebnis in `PROGRESS.md`, eigene Bereiche frei.
+
+INSTALL-HOTKEYS-CODEX-20261015-01: Installation abgeschlossen und bei Wiederaufnahme unabhängig geprüft (15.10.2026, 13:56). Alle 836 Bundle-Einträge einschließlich 55 Produktdateien erneut bytegleich; isolierte Hotkey-QA gegen installierte Module Exit 0, Screenshot selbst geprüft. Reguläre App läuft bereits unter `/Applications/Multiterminal.app` als PID 621, kein weiterer Neustart nötig. Historische Installationswarte-Meldungen unten sind überholt. Physische OS-Tastendrücke bleiben Nutzerabnahme; keine Installationsblocker, eigene Reservierungen frei.
+
 NEWPROJ-QA-CODEX-20261015-01: gemeinsamer Build mit Projektplanung/Hotkeys/F01/F06/F07/F11 fertig geprüft; 55 Produktdateien bytegleich, Quellmanifest stabil. Eigener finaler Gesamtlauf 368/368 und beide Electron-QA gegen gepackte Module grün; Screenshots selbst geprüft, native Bundle-Binärdatei lädt node-pty. Build-Temp extern und Test-Caches ausgeschlossen. Installation wartet ausschließlich auf Joshuas Freigabe zum Schließen/Neustarten der laufenden App (Benutzerterminals würden enden); vollständige externe Sicherung vorhanden. Interner Speicher knapp, Installation mit Auslagerung vorbereitet. Keine Nutzerterminals beendet, keine Installation, alle eigenen Codebereiche frei; Bundle/Sicherung erhalten.
 
 HOTKEYS-CODEX-20261015-01: Einstellungen-Tab „Hotkeys“ mit zwei Belegungen je Aktion, Konfliktprüfung, Deaktivierung, Standards und atomarer Speicherung umgesetzt/geprüft. 368/368 eigener Gesamtlauf und isolierte Electron-QA mit echten Menüs/IPC/PTY grün; Screenshot visuell geprüft. Belegung greift sofort, bleibt nach Neuladen erhalten; Fokus und Terminal-10-/Zoom-Kollision korrigiert. Produktfreigabe an NEWPROJ-Build bestätigt. Physische OS-Tastendrücke und Installation dieses Stands bleiben offen. Nächster Auftragsschritt: im gemeinsamen Build paketieren; keine Produktblocker.
@@ -35,7 +41,7 @@ Agentenkommunikation als Projektdokumentation eingerichtet: `WORK_IN_PROGRESS.md
 Version 0.1.0: Terminal-Raster, Diktat, Kontenverwaltung, Verbrauchsanzeige, Terminal-Namen und Farben sind im Quellstand vorhanden. Tastenkürzel, Drag-and-drop, Mini-Browser-Steuerung und Settings liegen als lokale Änderungen vor. Bisherige Prüfungen stehen unter Nachweise; Alltagstests und Joshuas Abnahme bleiben offen. Der installierte Build wurde in COMMIT-CHECK-20261014-01 lesend mit den aktuellen Produktdateien abgeglichen; keine neue App-Bedienung in dieser Prüfrunde. Entwicklungsentwurf: `ENTWICKLUNGSPLAN.md`.
 
 ## Nächster Schritt
-Nach Joshuas Freigabe die laufende App regulär schließen, gesicherten geprüften Build installieren und neu starten.
+Joshua entscheidet über Push, Build und Installation des Stands `cbab673` und prüft danach die neuen Funktionen (zuvor offen: Hotkey-Belegung per echter Tastatur prüfen).
 
 ## Aktive Aufgaben
 - F11-Build/Installation abgeschlossen; Joshuas manuelle Abnahme offen. RELEASE-20261015-01 meldet Joshuas Aufhebung der verwaisten F06-/CLAUDE-PROFILE-Reservierungen; deren historische Einträge erhalten. Unabhängige Claude-Profil-Abnahme bleibt fachlich unvollständig. Kein Ausbau für andere Nutzer. Flüsterflow ruht weiterhin.
