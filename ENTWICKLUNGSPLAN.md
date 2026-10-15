@@ -232,7 +232,7 @@ Alle elf Recherchepunkte sind genau einem Paket zugeordnet. **Frei** bedeutet hi
 
 **Empfehlung:** Variante A, zunächst nur lesend. Second Brain ist schon die Aufgabenwelt mit Inbox, Fälligkeit und Zielen; eine zweite Welt würde Doppelpflege erzeugen. Variante B nur, wenn die App ohne Mac-Lauf der Web-App funktionieren muss.
 
-**Offene Entscheidung für Joshua:** Sollen Kacheln nur auf bestehende Second-Brain-Aufgaben verweisen (Variante A), oder soll Multiterminal eigene Kachelaufgaben führen (Variante B)?
+**Entscheidung (Joshua, 15.10.2026): Variante A** – Kacheln verweisen nur auf bestehende Second-Brain-Aufgaben; zunächst lesend. Vor der Umsetzung zu klären: ob die Web-App Anfragen aus Multiterminal annimmt (Origin-Schutz).
 
 Grenzen: keine Modellaufrufe, keine Änderung an `todos.json` oder an der Web-App, kein Spiegeln, keine Umsetzung in dieser Lieferung.
 

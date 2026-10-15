@@ -41,8 +41,9 @@ Neue Ergebniseinträge oben ergänzen; bestehende Einträge erhalten. Ungeprüft
 - Integration: Merges in `main` nacheinander; Konflikte in `app.js` (F03/F09, F05) und `index.html` (F03/F08, F05) waren reine Einfügungen an derselben Stelle und wurden durch Behalten beider Seiten gelöst.
 - Prüfung (eigener Lauf auf dem integrierten Stand `cbab673`): `npm test` 449/449 grün, `git diff --check` sauber. Electron-QA alle bestanden: qa-diff, qa-browser-feedback, qa-search, qa-handoff, qa-resume, qa-templates, qa-hotkeys, qa-attachments, qa-attention, qa-ports, qa-project-planning, qa-worktree (beide Phasen). F04-Screenshot selbst angesehen. Subagenten-Screenshots nicht von mir gesichtet.
 - Grenzen: kein echter `claude`/`codex`/`kimi`-Nachweis für F02 (keine bezahlten Aufrufe); F02 nur bei eingeschaltetem Agentenstatus; F04 Arbeitskopie-Bereich nicht in der Electron-QA geprüft; F05 nur Hauptframe (keine iframes/Shadow DOM); F09/F04-Texte werden einzeilig eingefügt (F06-Regel); `qa-worktree` braucht zwischen den Phasen das Löschen der Arbeitskopie B (nicht im Skript dokumentiert); Phase 1 gelegentlich Timeout unter Last.
-- Offen: Build/Installation und Joshuas Bedienabnahme; Entscheidung F10 Variante A oder B.
-- Nächste Aktion: Joshua entscheidet über Build/Installation des neuen Stands.
+- Nachtrag: gepusht (`b58f9ab`), gebaut (`dist/Multiterminal-darwin-arm64`, `src/` bytegleich, `qa-ports` gegen gepackte Module bestanden). F10: Joshua wählt Variante A.
+- Offen: Installation (diese Sitzung läuft in der App) und Joshuas Bedienabnahme; F10-A-Umsetzung.
+- Nächste Aktion: Joshua beendet die App und führt das Installationsskript aus.
 
 ### 15.10.2026, 13:57 +02:00 – RESUME-NEWPROJ-20261015-01: Installierte Projektplanung geprüft
 
