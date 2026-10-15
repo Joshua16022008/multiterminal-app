@@ -13,6 +13,19 @@
     { id: 'command-palette', label: 'Befehlspalette' },
     { id: 'terminal-search', label: 'Im Terminalverlauf suchen' },
     { id: 'project-manager', label: 'Projektmanager öffnen' }, // PM
+    // Neue Funktionen: Panels, Übergabe, Browser, Aufgaben, Aufbauten, Komfort, Manager-Lagebild
+    { id: 'diff-panel', label: 'Änderungen anzeigen' },
+    { id: 'ports-panel', label: 'Ports anzeigen' },
+    { id: 'attention-panel', label: 'Rückmeldungen anzeigen' },
+    { id: 'progress-panel', label: 'Fortschritt anzeigen' },
+    { id: 'handoff', label: 'Übergabe an anderes Terminal' },
+    { id: 'browser-pick', label: 'Element im Browser kommentieren' },
+    { id: 'task-link', label: 'Second-Brain-Aufgabe der Kachel' },
+    { id: 'layout-start', label: 'Aufbau starten' },
+    { id: 'layout-save', label: 'Aufbau speichern' },
+    { id: 'qol-panel', label: 'Komfort-Einstellungen' },
+    { id: 'auto-sort', label: 'Automatische Sortierung an/aus' },
+    { id: 'pm-situation', label: 'Lagebild im Projektmanager ein/aus' },
     ...Array.from({ length: SLOTS }, (_, i) => ({ id: actionFor(i), label: `Terminal ${i + 1}` }))
   ];
   const modifiers = ['Cmd', 'Ctrl', 'Alt', 'Shift'];
@@ -52,6 +65,14 @@
     result['command-palette'] = [platform === 'darwin' ? 'Cmd+K' : 'Ctrl+Shift+P'];
     result['terminal-search'] = [platform === 'darwin' ? 'Cmd+F' : 'Ctrl+Shift+F'];
     result['project-manager'] = [`${primary}+Shift+O`]; // PM (Cmd+Shift+M ist als reserviert gesperrt)
+    // Mac: Cmd+Umschalt+Buchstabe; sonst Strg+Alt, damit Strg+Umschalt-Kürzel der Shell frei bleiben.
+    const extra = (letter) => [platform === 'darwin' ? `Cmd+Shift+${letter}` : `Ctrl+Alt+${letter}`];
+    Object.assign(result, {
+      'diff-panel': extra('D'), 'ports-panel': extra('P'), 'attention-panel': extra('J'), 'progress-panel': extra('G'),
+      handoff: extra('U'), 'browser-pick': extra('E'), 'task-link': extra('L'), 'layout-start': extra('B'),
+      'layout-save': [platform === 'darwin' ? 'Cmd+Alt+B' : 'Ctrl+Alt+Shift+B'], 'qol-panel': extra('K'), 'auto-sort': extra('S'),
+      'pm-situation': [platform === 'darwin' ? 'Cmd+\\' : 'Ctrl+Alt+\\'], // Strg+Backslash wäre in Terminals SIGQUIT
+    });
     for (let i = 0; i < SLOTS; i++) result[actionFor(i)] = platform === 'darwin' ? [`Cmd+${keyForIndex(i)}`, `Ctrl+${keyForIndex(i)}`] : [`Ctrl+${keyForIndex(i)}`];
     return result;
   }

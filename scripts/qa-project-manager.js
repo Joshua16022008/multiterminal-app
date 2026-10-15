@@ -13,7 +13,7 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 const electron = require('electron');
-const { app, BrowserWindow, dialog } = electron;
+const { app, BrowserWindow, Menu, dialog } = electron;
 
 const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'mt-pm-e2e-')));
 const home = path.join(root, 'home'), data = path.join(root, 'data'), project = path.join(root, 'project');
@@ -189,6 +189,22 @@ app.on('browser-window-created', (_event, win) => {
       assert.equal(await pmRun("document.getElementById('pm-title').textContent"), 'Projektmanager · PM-Projekt');
       assert.match(await pmRun("document.getElementById('pm-hint').textContent"), /nichts wird ohne deine Bestätigung eingefügt/);
 
+      stage = 'lagebild toggle';
+      const findItem = (menu, label) => { for (const it of menu.items) { if (it.label === label) return it; if (it.submenu) { const f = findItem(it.submenu, label); if (f) return f; } } return null; };
+      const sitItem = findItem(Menu.getApplicationMenu(), 'Lagebild im Projektmanager ein/aus');
+      assert.ok(sitItem, 'menu item for the Lagebild'); assert.equal(sitItem.accelerator, process.platform === 'darwin' ? 'Cmd+\\' : 'Ctrl+Alt+\\');
+      const colsBefore = await pmRun('window.__pmTerm.cols');
+      await pmRun("document.getElementById('pm-toggle-situation').click()");
+      assert.equal(await pmRun("document.getElementById('pm-situation').hidden"), true);
+      assert.equal(await pmRun("document.getElementById('pm-refresh').hidden"), true, 'refresh button hidden with the Lagebild');
+      assert.equal(await pmRun("document.getElementById('pm-toggle-situation').getAttribute('aria-expanded')"), 'false');
+      await until(async () => (await pmRun('window.__pmTerm.cols')) > colsBefore, 'manager terminal uses the freed width');
+      assert.equal(await pmRun("localStorage.getItem('mt.pm.situation')"), 'off', 'remembered');
+      pmWin.webContents.send('pm:menu', 'pm-situation'); // derselbe Weg wie der Menü-Hotkey bei fokussiertem Manager-Fenster
+      await until(() => pmRun("!document.getElementById('pm-situation').hidden"), 'hotkey shows the Lagebild again');
+      await until(async () => (await pmRun('window.__pmTerm.cols')) === colsBefore, 'terminal back to its width');
+      assert.equal(await pmRun("localStorage.getItem('mt.pm.situation')"), 'on');
+
       stage = 'mt-pm read commands';
       let r = await mtpm('mt-pm status');
       assert.equal(r.code, 0, r.stderr); for (const part of ['Alpha', 'Beta', 'feature/pm-qa']) assert.ok(r.stdout.includes(part), 'status misses ' + part);
@@ -300,6 +316,7 @@ app.on('browser-window-created', (_event, win) => {
         'sidebar symbol, top button and menu action open exactly one manager window per project',
         'manager PTY in project folder with role prompt and --resume, never --continue',
         'Lagebild schema and rendering: tiles, honest no-agent, worktree, changes, port, next step',
+        'Lagebild toggle: button and hotkey path, terminal widens, state remembered, menu accelerator',
         'mt-pm status/output/changes/ports/docs with real socket and token',
         'mt-pm send opens prompt preview for the right tile, nothing written before insert',
         'second send while preview open refused, preview kept',

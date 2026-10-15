@@ -21,4 +21,5 @@ contextBridge.exposeInMainWorld('pm', {
   state: () => ipcRenderer.invoke('pm:state', projectId),
   onData: callback => subscribe('pm:data', callback),
   onExit: callback => subscribe('pm:exit', callback),
+  onMenu: callback => subscribe('pm:menu', callback),
 });

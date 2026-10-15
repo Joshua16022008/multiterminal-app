@@ -288,6 +288,7 @@ function createPmMain(ctx) {
   function handleMenuAction(action, win) {
     if (!win || win.isDestroyed() || ![...windows.values()].includes(win)) return false;
     if (action === 'close-terminal') win.close();
+    else if (action === 'pm-situation') win.webContents.send('pm:menu', action);
     return true;
   }
 

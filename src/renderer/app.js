@@ -875,6 +875,9 @@
       { id: 'next-attention', label: 'Nächste Rückmeldung', run: () => jumpToNextAttention() },
       { id: 'attention-panel', label: 'Rückmeldungen anzeigen', run: () => { showSettings(false); showAttention(true); } },
       { id: 'settings', label: 'Einstellungen öffnen', run: () => showSettings(true) },
+      ...window.DeckHotkeys.actions
+        .filter((a) => ['diff-panel', 'ports-panel', 'progress-panel', 'handoff', 'browser-pick', 'task-link', 'layout-start', 'layout-save', 'qol-panel', 'auto-sort', 'project-manager'].includes(a.id))
+        .map((a) => ({ id: a.id, label: a.label, run: () => (a.id === 'project-manager' ? openProjectManager(S.activeId) : runFeatureAction(a.id)) })),
     ].map((a) => ({ ...a, hotkey: hotkeyLabel(a.id) }));
     let paletteReturn = null;
     D.commandPalette = window.DeckCommandPalette.create({
@@ -931,8 +934,46 @@
       else if (action === 'command-palette') D.commandPalette.toggle(); // F03
       else if (action === 'terminal-search') openTerminalSearch(); // F03
       else if (action === 'project-manager') openProjectManager(S.activeId); // PM
+      else if (runFeatureAction(action)) return; // Hotkeys der neuen Funktionen
       else focusTerminalAt(action);
     });
+    // Hotkeys der neuen Funktionen: dieselben Wege wie die Knöpfe; Kachelfunktionen wirken auf die aktive Kachel.
+    function runFeatureAction(action) {
+      const pane = activePane();
+      const needPane = () => { if (!pane) notify('Keine Kachel aktiv.'); return pane; };
+      switch (action) {
+        case 'diff-panel': closeMenu(); showSettings(false); showDiff(); return true;
+        case 'ports-panel': closeMenu(); showSettings(false); showPorts(); return true;
+        case 'attention-panel': closeMenu(); showSettings(false); showAttention(); return true;
+        case 'progress-panel': $('btn-progress').classList.toggle('on', D.progressPanel.toggle()); return true;
+        case 'handoff': closeMenu(); D.handoff.open(); return true;
+        case 'qol-panel': D.qol.toggle(); return true;
+        case 'auto-sort': {
+          const on = !D.qol.get().autoSort;
+          D.qol.set('autoSort', on);
+          notify('Automatische Sortierung ' + (on ? 'an' : 'aus') + '.');
+          return true;
+        }
+        case 'layout-start': if (!activeProject()) notify('Zuerst ein Projekt auswählen.'); else D.workspaceTemplates.openList(); return true;
+        case 'layout-save': if (!activeProject()) notify('Zuerst ein Projekt auswählen.'); else D.workspaceTemplates.openSave(); return true;
+        case 'browser-pick': {
+          if (!needPane()) return true;
+          const b = pane.el.querySelector('.bf-btn');
+          if (!b || b.offsetParent === null) notify('Der Mini-Browser dieser Kachel ist nicht offen.');
+          else b.click();
+          return true;
+        }
+        case 'task-link': {
+          if (!needPane()) return true;
+          const chip = pane.el.querySelector('.task-chip');
+          if (!chip || !D.qol.get().taskChip) notify('Der Aufgaben-Chip ist ausgeschaltet (Komfort).');
+          else chip.click();
+          return true;
+        }
+        case 'pm-situation': openProjectManager(S.activeId); return true; // im Hauptfenster: Manager öffnen
+        default: return false;
+      }
+    }
     // PM: Auftrag des Projektmanagers -> nur Promptvorschau, Einfügen erst nach Klick.
     $('btn-pm').onclick = () => { closeMenu(); openProjectManager(S.activeId); };
     const pmSend = window.DeckPmSend.createSendHandler({

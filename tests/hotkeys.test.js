@@ -46,7 +46,7 @@ test('shifted or alt digits are not hotkeys', () => {
 });
 
 test('full platform defaults preserve primary commands and ten terminal aliases', () => {
-  assert.strictEqual(hk.actions.length, 17);
+  assert.strictEqual(hk.actions.length, 29);
   assert.deepStrictEqual(hk.defaults().settings, ['Cmd+,']);
   assert.deepStrictEqual(hk.defaults()['focus-terminal:0'], ['Cmd+0', 'Ctrl+0']);
   assert.deepStrictEqual(hk.defaults('linux')['focus-terminal:0'], ['Ctrl+0']);
@@ -121,4 +121,16 @@ test('shortcut labels show modifier and key names clearly', () => {
   assert.strictEqual(hk.format('Cmd+Shift+T'), '⌘ + ⇧ + T');
   assert.strictEqual(hk.format('Ctrl+Down'), '⌃ + ↓');
   assert.strictEqual(hk.format(''), 'Nicht belegt');
+});
+
+test('new feature actions have conflict-free defaults on every platform', () => {
+  const mac = hk.defaults('darwin'), linux = hk.defaults('linux');
+  assert.deepStrictEqual(mac['diff-panel'], ['Cmd+Shift+D']);
+  assert.deepStrictEqual(mac['pm-situation'], ['Cmd+\\']);
+  assert.deepStrictEqual(linux['pm-situation'], ['Ctrl+Alt+\\'], 'Ctrl+Backslash stays SIGQUIT in terminals');
+  assert.deepStrictEqual(linux['ports-panel'], ['Ctrl+Alt+P'], 'no clash with Ctrl+Shift+P (palette)');
+  for (const platform of ['darwin', 'win32', 'linux']) {
+    const all = Object.values(hk.defaults(platform)).flat();
+    assert.strictEqual(new Set(all).size, all.length, platform + ': every combination used once');
+  }
 });
