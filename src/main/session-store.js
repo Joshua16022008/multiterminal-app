@@ -60,6 +60,8 @@ function sanitizeTerminal(t) {
   // F02: belegte native Gesprächs-ID (nur aus Agentenereignissen); ungültige Werte werden verworfen
   const ns = sanitizeNativeSession(t.nativeSession);
   if (ns) out.nativeSession = ns;
+  // F10: verknüpfte Second-Brain-Aufgabe (nur die ID; Titel/Status werden live gelesen)
+  if (validId(t.secondBrainTodoId)) out.secondBrainTodoId = t.secondBrainTodoId;
   return out;
 }
 

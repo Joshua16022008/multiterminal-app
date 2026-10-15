@@ -192,6 +192,19 @@ test('browserMode is kept only for the non-default modes', () => {
   assert.deepStrictEqual(modes, ['terminal', 'browser', undefined, undefined, undefined]);
 });
 
+// F10
+test('secondBrainTodoId round trip, old files and invalid values', () => {
+  const dir = tmp();
+  const store = createSessionStore(dir);
+  store.save({ version: 1, activeProjectId: 'p1', projects: { p1: { terminals: [
+    term('a', { secondBrainTodoId: 'abc123xyz' }), term('b'),
+    term('c', { secondBrainTodoId: '../etc' }), term('d', { secondBrainTodoId: 42 }), term('e', { secondBrainTodoId: '' }),
+  ] } } });
+  const t = store.load().projects.p1.terminals;
+  assert.equal(t[0].secondBrainTodoId, 'abc123xyz');
+  for (const x of t.slice(1)) assert.ok(!('secondBrainTodoId' in x), x.id);
+});
+
 // F02
 test('nativeSession round trip, old files without the field and invalid values', () => {
   const dir = tmp();
