@@ -17,7 +17,7 @@ contextBridge.exposeInMainWorld('pm', {
   start: (cols, rows) => ipcRenderer.invoke('pm:start', projectId, cols, rows),
   write: data => ipcRenderer.send('pm:write', projectId, data),
   resize: (cols, rows) => ipcRenderer.send('pm:resize', projectId, cols, rows),
-  restart: () => ipcRenderer.invoke('pm:restart', projectId),
+  restart: (fresh) => ipcRenderer.invoke('pm:restart', projectId, fresh === true),
   state: () => ipcRenderer.invoke('pm:state', projectId),
   onData: callback => subscribe('pm:data', callback),
   onExit: callback => subscribe('pm:exit', callback),

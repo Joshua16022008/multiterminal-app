@@ -17,6 +17,7 @@ const REQUEST_TIMEOUT_MS = 5000;
 const HANDLER_TIMEOUT_MS = 30000;
 const MAX_SEND_CHARS = 4000;
 const MAX_LINES = 500;
+const MAX_RESPONSE_BYTES = 1024 * 1024;
 const DEFAULT_LINES = 50;
 
 const COMMANDS = Object.freeze(['status', 'output', 'changes', 'ports', 'docs', 'send']);
@@ -156,7 +157,11 @@ function createPmBridge({ socketPath, service, requestSend, requestTimeoutMs, ha
       done = true;
       clearTimeout(timer);
       if (socket.destroyed) return;
-      socket.end(JSON.stringify(response) + '\n');
+      let text = JSON.stringify(response);
+      if (Buffer.byteLength(text) > MAX_RESPONSE_BYTES) {
+        text = JSON.stringify({ ok: false, error: `Antwort zu groß (über ${MAX_RESPONSE_BYTES} Bytes); bitte weniger Zeilen anfordern.` });
+      }
+      socket.end(text + '\n');
     }
 
     socket.on('error', () => { done = true; clearTimeout(timer); });
@@ -221,4 +226,4 @@ function createPmBridge({ socketPath, service, requestSend, requestTimeoutMs, ha
   return { start, stop, register, unregister, envFor, socketPath };
 }
 
-module.exports = { createPmBridge, validateCommand, cleanText, COMMANDS, MAX_SEND_CHARS, MAX_SOCKET_PATH_BYTES, MAX_REQUEST_BYTES };
+module.exports = { createPmBridge, validateCommand, cleanText, COMMANDS, MAX_SEND_CHARS, MAX_RESPONSE_BYTES, MAX_SOCKET_PATH_BYTES, MAX_REQUEST_BYTES };

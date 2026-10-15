@@ -93,8 +93,8 @@ function time(ms) {
   try { return new Date(ms).toLocaleString('de-DE'); } catch (_) { return String(ms); }
 }
 
-function agentText(agent) {
-  if (!agent) return 'kein Agent';
+function agentText(agent, statusEnabled) {
+  if (!agent) return statusEnabled === false ? 'Agentenzustand unbekannt (Agentenstatus aus)' : 'kein Agentenereignis';
   const provider = agent.provider || 'Agent';
   const since = agent.since ? ` (seit ${time(agent.since)})` : '';
   return `${provider}: ${STATE_LABEL[agent.state] || 'unbekannt'}${since}`;
@@ -109,7 +109,7 @@ function formatStatus(s) {
   if (!s.terminals.length) out.push('  keine');
   for (const t of s.terminals) {
     const ws = t.workspace ? `, Arbeitskopie ${t.workspace.branch || t.workspace.workspaceId}` : '';
-    out.push(`  - ${t.title} [${t.id}] ${t.running ? 'läuft' : 'beendet'}; ${agentText(t.agent)}${t.preset ? `; Vorgabe ${t.preset}` : ''}${ws}`);
+    out.push(`  - ${t.title} [${t.id}] ${t.running ? 'läuft' : 'beendet'}; ${agentText(t.agent, s.agentStatusEnabled)}${t.preset ? `; Vorgabe ${t.preset}` : ''}${ws}`);
   }
   out.push('');
   out.push(`Arbeitskopien (${s.worktrees.length}):`);
@@ -129,7 +129,7 @@ function formatStatus(s) {
   out.push('');
   out.push(`Nächster Schritt (PROJECT_STATUS.md): ${s.docs.nextStep || 'unbekannt'}`);
   out.push(`Aktive Reservierungen (WORK_IN_PROGRESS.md): ${s.docs.activeReservations === null ? 'unbekannt' : s.docs.activeReservations}`);
-  out.push(`Manager: ${s.manager.running ? 'läuft' : 'läuft nicht'}${s.manager.resumed ? ', Gespräch fortgesetzt' : ''}`);
+  out.push(`Manager: ${s.manager.running ? 'läuft' : 'läuft nicht'}${s.manager.resumed ? ', Fortsetzung des Gesprächs angefordert' : ''}`);
   return out.join('\n');
 }
 

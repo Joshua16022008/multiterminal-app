@@ -8,8 +8,10 @@
 const MAX_TAIL_LINES = 500;
 const DEFAULT_TAIL_LINES = 50;
 const MAX_LINE_LENGTH = 2000;
+const CONTROL_RE = /[\u0000-\u001f\u007f-\u009f]/g;
 
-function createOutputBuffer({ maxLines = 2000, maxRawBytes = 256 * 1024 } = {}) {
+// keepRaw(id): nur Terminals, die den Rohrest brauchen (Manager), führen ihn mit.
+function createOutputBuffer({ maxLines = 2000, maxRawBytes = 256 * 1024, keepRaw = () => true } = {}) {
   const entries = new Map(); // terminalId -> { lines, current, state, raw }
 
   function entryFor(id) {
@@ -32,6 +34,17 @@ function createOutputBuffer({ maxLines = 2000, maxRawBytes = 256 * 1024 } = {}) 
   // Zustandsautomat, damit auch über Datenblöcke verteilte Sequenzen entfernt werden.
   function feed(e, data) {
     for (let i = 0; i < data.length; i++) {
+      // Schneller Pfad: gewöhnlicher Text in großen Stücken statt Zeichen für Zeichen.
+      if (e.state === 'text' && !e.cr) {
+        CONTROL_RE.lastIndex = i;
+        const m = CONTROL_RE.exec(data);
+        const end = m ? m.index : data.length;
+        if (end > i) {
+          if (e.current.length < MAX_LINE_LENGTH) e.current += data.slice(i, Math.min(end, i + MAX_LINE_LENGTH - e.current.length));
+          i = end - 1;
+          continue;
+        }
+      }
       const ch = data[i];
       const code = data.charCodeAt(i);
       switch (e.state) {
@@ -69,8 +82,8 @@ function createOutputBuffer({ maxLines = 2000, maxRawBytes = 256 * 1024 } = {}) 
       if (code === 0x7f || (code >= 0x80 && code < 0xa0)) continue;
       if (e.cr) { e.current = ''; e.cr = false; } // Wagenrücklauf: die Zeile wird überschrieben
       if (ch === '\b') { e.current = e.current.slice(0, -1); continue; }
-      if (ch === '\t') { e.current += '  '; continue; }
-      e.current += ch;
+      if (ch === '\t') { if (e.current.length < MAX_LINE_LENGTH) e.current += '  '; continue; }
+      if (e.current.length < MAX_LINE_LENGTH) e.current += ch; // überlange Zeilen ohne Umbruch werden gekappt
     }
   }
 
@@ -85,8 +98,10 @@ function createOutputBuffer({ maxLines = 2000, maxRawBytes = 256 * 1024 } = {}) 
     if (typeof data !== 'string' || data === '') return;
     const e = entryFor(String(terminalId));
     feed(e, data);
-    e.raw += data;
-    trimRaw(e);
+    if (keepRaw(String(terminalId))) {
+      e.raw += data;
+      trimRaw(e);
+    }
   }
 
   function tail(terminalId, lines = DEFAULT_TAIL_LINES) {
@@ -95,7 +110,8 @@ function createOutputBuffer({ maxLines = 2000, maxRawBytes = 256 * 1024 } = {}) 
     let n = Math.floor(Number(lines));
     if (!Number.isFinite(n) || n < 1) n = DEFAULT_TAIL_LINES;
     n = Math.min(n, MAX_TAIL_LINES);
-    const all = e.current.trim() ? [...e.lines, e.current.replace(/\s+$/, '')] : e.lines;
+    const cur = e.current.slice(0, MAX_LINE_LENGTH).replace(/\s+$/, '');
+    const all = e.current.trim() ? [...e.lines, cur] : e.lines;
     return all.slice(-n);
   }
 

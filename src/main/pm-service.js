@@ -66,7 +66,7 @@ function countActiveReservations(text) {
   let inBlock = false;
   let status = null;
   const close = () => {
-    if (inBlock && !(status && /^(abgeschlossen|erledigt|freigegeben)/i.test(status))) count += 1;
+    if (inBlock && status && /^(in arbeit|blockiert|pausiert|übergabe angefragt)/i.test(status)) count += 1;
   };
   for (let i = start + 1; i < lines.length; i++) {
     const l = lines[i];
@@ -225,6 +225,7 @@ function createPmService(deps = {}) {
         ok: true,
         project,
         capturedAt: Date.now(),
+        agentStatusEnabled: typeof deps.agentStatusEnabled === 'function' ? !!deps.agentStatusEnabled() : null,
         terminals,
         worktrees: wts,
         changes,

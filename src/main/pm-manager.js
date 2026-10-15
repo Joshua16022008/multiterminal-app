@@ -30,7 +30,7 @@ function createPmManager({ dataDir, roleSource, ptys, getProject, sessions, outp
   function commandFor(projectId, rolePath) {
     const nativeId = sessions.get(projectId);
     let command = `claude --append-system-prompt "$(cat ${shellQuote(rolePath)})"`;
-    if (nativeId) command += ` --resume ${shellQuote(nativeId)}`;
+    if (nativeId) command += ` --resume=${shellQuote(nativeId)}`;
     return { command, resumed: Boolean(nativeId) };
   }
 
@@ -75,7 +75,8 @@ function createPmManager({ dataDir, roleSource, ptys, getProject, sessions, outp
     if (isRunning(projectId)) ptys.resize(managerIdFor(projectId), cols, rows);
   }
 
-  async function restart(projectId) {
+  async function restart(projectId, { fresh = false } = {}) {
+    if (fresh) sessions.forget(projectId); // neues Gespräch: gespeicherte ID verwerfen
     const id = managerIdFor(projectId);
     if (isRunning(projectId)) expectedExit.add(projectId);
     ptys.kill(id);

@@ -12,9 +12,13 @@
 
   function num(v) { return Number.isFinite(v) ? v : null; }
 
-  function terminalState(t) {
+  function terminalState(t, statusEnabled) {
     if (!t.running) return { kind: 'ended', text: 'beendet' };
-    if (!t.agent) return { kind: 'none', text: 'kein Agent' };
+    if (!t.agent) {
+      // Ohne eingeschalteten Agentenstatus kommen keine Ereignisse: dann ist der Zustand unbekannt, nicht "kein Agent".
+      if (statusEnabled === false) return { kind: 'unknown', text: 'Agentenzustand unbekannt (Agentenstatus aus)' };
+      return { kind: 'none', text: 'kein Agentenereignis' };
+    }
     const entry = STATE_TEXT[t.agent.state] || STATE_TEXT.unknown;
     return { kind: entry[0], text: entry[1] };
   }
@@ -50,7 +54,7 @@
       return { ok: false, error: (state && state.error) || 'Lagebild nicht verfügbar.' };
     }
     const terminals = (Array.isArray(state.terminals) ? state.terminals : []).map(t => {
-      const st = terminalState(t);
+      const st = terminalState(t, state.agentStatusEnabled);
       const ws = t.workspace ? (t.workspace.branch || t.workspace.workspaceId || null) : null;
       return {
         id: t.id,

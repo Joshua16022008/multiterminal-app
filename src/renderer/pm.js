@@ -70,7 +70,7 @@
     n.append(el('p', 'pm-meta', 'Aktive Reservierungen: ' + (m.reservations === null ? 'unbekannt' : m.reservations)));
     root.append(n);
 
-    root.append(el('p', 'pm-foot', 'Stand ' + m.capturedAt + (m.manager.running ? ' · Manager läuft' + (m.manager.resumed ? ' (Gespräch fortgesetzt)' : '') : ' · Manager beendet')));
+    root.append(el('p', 'pm-foot', 'Stand ' + m.capturedAt + (m.manager.running ? ' · Manager läuft' + (m.manager.resumed ? ' (Fortsetzung angefordert)' : '') : ' · Manager beendet')));
   }
 
   let refreshing = false;
@@ -99,12 +99,12 @@
   pm.onData(d => term.write(d));
   pm.onExit(() => { $('pm-exit').hidden = false; });
 
-  async function startManager(restart) {
+  async function startManager(restart, fresh) {
     $('pm-exit').hidden = true;
     safeFit();
     if (restart) term.reset(); // vor dem Neustart leeren, damit frühe Ausgabe des neuen Prozesses bleibt
     let res;
-    try { res = restart ? await pm.restart() : await pm.start(term.cols, term.rows); }
+    try { res = restart ? await pm.restart(fresh === true) : await pm.start(term.cols, term.rows); }
     catch (e) { res = { ok: false, error: (e && e.message) || String(e) }; }
     if (!res || res.ok === false) {
       term.write('\r\n\x1b[31mManager konnte nicht gestartet werden: ' + ((res && res.error) || 'unbekannter Fehler') + '\x1b[0m\r\n');
@@ -119,6 +119,8 @@
   $('pm-refresh').onclick = refresh;
   $('pm-restart').onclick = () => startManager(true);
   $('pm-exit-restart').onclick = () => startManager(true);
+  $('pm-fresh').onclick = () => startManager(true, true);
+  $('pm-exit-fresh').onclick = () => startManager(true, true);
 
   let resizeTimer = null;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(safeFit, 60); });

@@ -25,7 +25,7 @@ const git = (...a) => execFileSync('git', a, { cwd: project, encoding: 'utf8' })
 git('init', '-q', '-b', 'main'); git('config', 'user.email', 'qa@example.com'); git('config', 'user.name', 'QA');
 fs.writeFileSync(path.join(project, 'a.txt'), 'eins\n');
 fs.writeFileSync(path.join(project, 'PROJECT_STATUS.md'), '# Status\n\n## Nächster Schritt\n\nProjektmanager-QA abschließen.\n\n## Blocker\n\n- keine\n');
-fs.writeFileSync(path.join(project, 'WORK_IN_PROGRESS.md'), '# WIP\n\n## Aktive Reservierungen\n\n### T-1\n- Status: aktiv\n\n### T-2\n- Status: abgeschlossen\n');
+fs.writeFileSync(path.join(project, 'WORK_IN_PROGRESS.md'), '# WIP\n\n## Aktive Reservierungen\n\n### T-1\n- Status: in Arbeit\n\n### T-2\n- Status: abgeschlossen\n');
 fs.writeFileSync(path.join(project, 'PROGRESS.md'), '# Fortschritt\n\n- QA-Eintrag Projektmanager\n');
 git('add', '.'); git('commit', '-q', '-m', 'init');
 fs.writeFileSync(path.join(project, 'a.txt'), 'zwei\n');
@@ -145,7 +145,7 @@ app.on('browser-window-created', (_event, win) => {
       assert.equal(call.argv[0], '--append-system-prompt');
       assert.match(call.argv[1], /Du bist der Projektmanager dieses Projekts/);
       assert.match(call.argv[1], /mt-pm send/);
-      assert.deepEqual(call.argv.slice(2), ['--resume', RESUME_ID], 'stored conversation is resumed');
+      assert.deepEqual(call.argv.slice(2), ['--resume=' + RESUME_ID], 'stored conversation is resumed');
       assert.equal(call.argv.includes('--continue'), false);
       assert.ok(call.token && call.socket && call.socket.endsWith('.pm.sock'), 'manager gets pm socket and token');
       assert.ok(call.path.split(':').some((d) => fs.existsSync(path.join(d, 'mt-pm'))), 'mt-pm on PATH');
@@ -166,7 +166,7 @@ app.on('browser-window-created', (_event, win) => {
       const port = await (async () => { await until(() => fs.existsSync(portFile), 'server tile port'); return JSON.parse(fs.readFileSync(portFile, 'utf8')); })();
       let st;
       await until(async () => { st = await pmRun('window.pm.state()'); return st.ok && st.ports.some((p) => p.port === port.port) && st.worktrees.length === 1; }, 'state with port and worktree', 20000);
-      assert.deepEqual(Object.keys(st).sort(), ['capturedAt', 'changes', 'docs', 'manager', 'ok', 'ports', 'project', 'terminals', 'worktrees']);
+      assert.deepEqual(Object.keys(st).sort(), ['agentStatusEnabled', 'capturedAt', 'changes', 'docs', 'manager', 'ok', 'ports', 'project', 'terminals', 'worktrees']);
       assert.deepEqual(st.project, { id: 'qa-pm', name: 'PM-Projekt', path: project });
       assert.deepEqual(st.terminals.map((t) => t.id).sort(), ['qa-alpha', 'qa-beta', 'qa-dead', 'qa-server']);
       assert.equal(st.terminals.some((t) => t.id.startsWith('pm-')), false, 'manager not listed as a tile');
@@ -184,7 +184,7 @@ app.on('browser-window-created', (_event, win) => {
       await until(() => pmRun("document.getElementById('pm-situation').textContent.includes(':" + port.port + "')"), 'port rendered');
       const side = await pmRun("document.getElementById('pm-situation').textContent");
       for (const part of ['Alpha', 'Beta', 'Server', 'feature/pm-qa', 'Projektmanager-QA abschließen.', 'Aktive Reservierungen: 1', 'Manager läuft']) assert.ok(side.includes(part), 'Lagebild misses ' + part);
-      assert.match(side, /kein Agent/);
+      assert.match(side, /kein Agentenereignis|Agentenstatus aus/);
       assert.ok(side.includes('Kachel ' + st.terminals.find((t) => t.id === portEntry.terminalId).title), 'port shows the tile title');
       assert.equal(await pmRun("document.getElementById('pm-title').textContent"), 'Projektmanager · PM-Projekt');
       assert.match(await pmRun("document.getElementById('pm-hint').textContent"), /nichts wird ohne deine Bestätigung eingefügt/);
@@ -261,7 +261,7 @@ app.on('browser-window-created', (_event, win) => {
       await pmRun("document.getElementById('pm-restart').click()");
       await until(() => jsonl(calls).length === 2, 'restarted manager', 20000);
       await until(() => !alive(managerPid), 'old manager ended');
-      assert.deepEqual(jsonl(calls)[1].argv.slice(2), ['--resume', RESUME_ID]);
+      assert.deepEqual(jsonl(calls)[1].argv.slice(2), ['--resume=' + RESUME_ID]);
       await until(() => pmText().then((t) => t.includes('FAKE_CLAUDE_BEREIT')), 'new manager output');
       assert.equal(await pmRun("document.getElementById('pm-exit').hidden"), true, 'restart shows no exit notice');
       r = await mtpm('mt-pm status');

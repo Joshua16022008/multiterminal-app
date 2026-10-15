@@ -55,12 +55,17 @@ const STATUS = {
   manager: { running: true, resumed: false },
 };
 
+test('Textausgabe: Agentenstatus aus -> Zustand unbekannt', () => {
+  const f = cli.formatResponse({ cmd: 'status', json: false }, { ok: true, result: { ...STATUS, agentStatusEnabled: false } });
+  assert.match(f.out, /Tests \[t2\] beendet; Agentenzustand unbekannt \(Agentenstatus aus\)/);
+});
+
 test('Textausgabe des Lagebilds ist deutsch und ehrlich bei Unbekanntem', () => {
   const f = cli.formatResponse({ cmd: 'status', json: false }, { ok: true, result: STATUS });
   const t = f.out;
   assert.match(t, /Projekt: Demo/);
   assert.match(t, /Backend \[t1\] läuft; claude: wartet auf dich/);
-  assert.match(t, /Tests \[t2\] beendet; kein Agent/);
+  assert.match(t, /Tests \[t2\] beendet; kein Agentenereignis/);
   assert.match(t, /Frei \[t3\] läuft; Agent: unbekannt/);
   assert.match(t, /Arbeitskopie feature\/a/);
   assert.match(t, /alt \[w2\]: Ordner fehlt/);

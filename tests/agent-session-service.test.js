@@ -10,6 +10,12 @@ const ID1 = 'a1b2c3d4-0000-4000-8000-111111111111';
 const ID2 = 'a1b2c3d4-0000-4000-8000-222222222222';
 const rec = (o = {}) => ({ provider: 'claude', accountId: 'acc1', projectId: 'p1', nativeSessionId: ID1, observedAt: 100, ...o });
 
+test('Gesprächs-IDs mit führendem Bindestrich werden abgelehnt (Optionseinschleusung)', () => {
+  assert.equal(isValidSessionId('--dangerously-skip-permissions'), false);
+  assert.equal(isValidSessionId('-abcdefgh'), false);
+  assert.equal(isValidSessionId('abcdefgh-1234'), true);
+});
+
 test('ID validation is strict', () => {
   assert.equal(isValidSessionId(ID1), true);
   for (const bad of ['', 'short', 'a'.repeat(129), 'abc def ghi', 'abcdefgh;id', 'abcdefgh$(id)', "abcdefgh'", 'abcdefgh\n', '../../etc/passwd', null, 42, undefined]) {

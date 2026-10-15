@@ -486,7 +486,11 @@ function finishQuit() {
 }
 
 function menuAction(action) {
-  return () => sendToWindow('menu:action', action);
+  // PM: bei fokussiertem Manager-Fenster nicht ans Hauptfenster weiterreichen
+  return () => {
+    if (pm && pm.handleMenuAction(action, BrowserWindow.getFocusedWindow())) return;
+    sendToWindow('menu:action', action);
+  };
 }
 
 // Extra bindings use hidden twins so they also work with xterm/webview focus.

@@ -23,7 +23,7 @@ const SEND_TIMEOUT_MS = 15000;
 
 function createPmMain(ctx) {
   const { BrowserWindow, ipcMain, shell } = ctx.electron;
-  const outputBuffer = createOutputBuffer();
+  const outputBuffer = createOutputBuffer({ keepRaw: (id) => id.startsWith('pm-') }); // Rohrest nur für Manager
   const windows = new Map(); // projectId -> BrowserWindow
   const windowProject = new Map(); // webContents.id -> projectId
   const pendingSends = new Map(); // requestId -> { resolve, timer }
@@ -85,6 +85,7 @@ function createPmMain(ctx) {
       diffs,
       ports: ctx.getPorts(),
       outputBuffer,
+      agentStatusEnabled: () => ctx.statusEnabled(),
       managerResumed: (id) => (manager ? manager.wasResumed(id) : false),
     });
     const socketPath = pickSocketPath();
@@ -230,7 +231,7 @@ function createPmMain(ctx) {
     pmListen('pm:write', (projectId, data) => manager.write(projectId, data));
     pmHandle('pm:resize', (projectId, cols, rows) => { manager.resize(projectId, Number(cols), Number(rows)); return true; });
     pmListen('pm:resize', (projectId, cols, rows) => manager.resize(projectId, Number(cols), Number(rows)));
-    pmHandle('pm:restart', (projectId) => manager.restart(projectId));
+    pmHandle('pm:restart', (projectId, fresh) => manager.restart(projectId, { fresh: fresh === true }));
     pmHandle('pm:state', (projectId) => service.state(projectId));
   }
 
@@ -276,9 +277,17 @@ function createPmMain(ctx) {
   function handleAgentEvent(terminalId, entry) {
     const meta = ctx.getTerminalMeta().get(String(terminalId));
     if (!meta || !meta.manager) return false;
-    if (entry && entry.nativeSessionId && sessionsStore) {
+    // Nur bei eingeschaltetem Agentenstatus annehmen (Ereignisse sind sonst nicht vertrauenswürdig zuordenbar).
+    if (entry && entry.nativeSessionId && sessionsStore && ctx.statusEnabled()) {
       sessionsStore.observe(meta.projectId, entry.nativeSessionId, entry.observedAt);
     }
+    return true;
+  }
+
+  // Menükürzel bei fokussiertem Manager-Fenster: nur Schließen gilt, Kachelaktionen gehören dem Hauptfenster.
+  function handleMenuAction(action, win) {
+    if (!win || win.isDestroyed() || ![...windows.values()].includes(win)) return false;
+    if (action === 'close-terminal') win.close();
     return true;
   }
 
@@ -301,7 +310,7 @@ function createPmMain(ctx) {
   }
 
   return {
-    registerIpc, startBridge, onPtyData, onPtyExit, handleAgentEvent, withoutManagers, removeProject, shutdown,
+    registerIpc, startBridge, handleMenuAction, onPtyData, onPtyExit, handleAgentEvent, withoutManagers, removeProject, shutdown,
     openWindow, isManager: (id) => Boolean((ctx.getTerminalMeta().get(String(id)) || {}).manager), managerIdFor,
   };
 }

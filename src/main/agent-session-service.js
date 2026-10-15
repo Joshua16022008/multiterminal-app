@@ -12,7 +12,7 @@
 // syntax but no belegte ID, so they stay on "letztes Gespräch" with a visible note.
 
 const PROVIDERS = Object.freeze(['claude', 'codex', 'kimi']);
-const SESSION_ID_RE = /^[A-Za-z0-9_-]{8,128}$/;
+const SESSION_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{7,127}$/; // kein führendes "-": sonst als Option gelesen
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 const ARGV = Object.freeze({

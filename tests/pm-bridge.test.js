@@ -193,3 +193,23 @@ test('stop widerruft alle Tokens und entfernt den Socket', async () => {
   assert.deepStrictEqual(ctx.bridge.envFor('p1'), {});
   fs.rmSync(ctx.dir, { recursive: true, force: true });
 });
+
+test('Antworten über 1 MB werden durch einen Fehler ersetzt', async () => {
+  const dir = fs.mkdtempSync('/tmp/mtpm-');
+  const service = {
+    state: async () => ({ ok: true, big: 'x'.repeat(2 * 1024 * 1024) }),
+    output: async () => ({ ok: true }), changes: async () => ({ ok: true }), ports: async () => ({ ok: true }), docs: async () => ({ ok: true }),
+    resolveTerminal: () => ({ ok: false, error: 'x' }),
+  };
+  const bridge = createPmBridge({ socketPath: path.join(dir, 's', 'pm.sock'), service, requestSend: async () => ({ ok: true }) });
+  await bridge.start();
+  try {
+    const token = bridge.register('p1');
+    const r = await ask(bridge.socketPath, { token, cmd: 'status', args: {} });
+    assert.strictEqual(r.ok, false);
+    assert.match(r.error, /zu groß/);
+  } finally {
+    await bridge.stop();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

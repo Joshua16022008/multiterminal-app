@@ -60,7 +60,7 @@ function setup() {
     getBrowserBridge: () => null,
     getBinDir: () => null,
     getZdotdir: () => null,
-    statusEnabled: () => false,
+    statusEnabled: () => statusFlag.on,
     forgetTerminal: (id) => terminalMeta.delete(String(id)),
     createDiffService: () => ({ listChanges: async () => ({ ok: true, branch: 'main', files: [] }) }),
   });
@@ -68,6 +68,8 @@ function setup() {
   const eventFrom = (win) => ({ sender: win.webContents, senderFrame: win.webContents.mainFrame });
   return { pm, handlers, listeners, mainWin, windowsCreated, terminalMeta, eventFrom, killed, dataDir };
 }
+
+const statusFlag = { on: true }; // Agentenstatus eingeschaltet (Standard dieser Tests)
 
 test('Fenster: pro Projekt höchstens eines, Pfade und Sicherheitsoptionen', async () => {
   const c = setup();
@@ -157,6 +159,30 @@ test('Agentenereignisse des Managers nur als Gesprächs-ID, aus der Liste gefilt
   assert.strictEqual(JSON.parse(fs.readFileSync(path.join(c.dataDir, 'pm', 'sessions.json'), 'utf8')).p1.nativeSessionId, 'abcd1234-ef56');
   const list = [{ terminalId: 'pm-p1' }, { terminalId: 't1' }];
   assert.deepStrictEqual(c.pm.withoutManagers(list), [{ terminalId: 't1' }]);
+});
+
+test('Agentenereignisse des Managers werden bei ausgeschaltetem Agentenstatus nicht gespeichert', () => {
+  const c = setup();
+  c.terminalMeta.set('pm-p1', { projectId: 'p1', manager: true });
+  statusFlag.on = false;
+  try {
+    assert.strictEqual(c.pm.handleAgentEvent('pm-p1', { nativeSessionId: 'abcd1234-ef56', observedAt: 5 }), true);
+    assert.ok(!fs.existsSync(path.join(c.dataDir, 'pm', 'sessions.json')));
+  } finally { statusFlag.on = true; }
+});
+
+test('Menükürzel bei fokussiertem Manager-Fenster: ⌘W schließt dieses Fenster, Kachelaktionen bleiben aus', async () => {
+  const c = setup();
+  await c.handlers.get('pm:openWindow')(c.eventFrom(c.mainWin), 'p1');
+  const pmWin = c.windowsCreated[1];
+  let closed = 0;
+  pmWin.close = () => { closed += 1; };
+  assert.strictEqual(c.pm.handleMenuAction('new-terminal', pmWin), true);
+  assert.strictEqual(closed, 0);
+  assert.strictEqual(c.pm.handleMenuAction('close-terminal', pmWin), true);
+  assert.strictEqual(closed, 1);
+  assert.strictEqual(c.pm.handleMenuAction('close-terminal', c.mainWin), false); // Hauptfenster: normal weiterreichen
+  assert.strictEqual(c.pm.handleMenuAction('close-terminal', null), false);
 });
 
 test('Projekt entfernen schließt das Fenster und beendet den Manager', async () => {

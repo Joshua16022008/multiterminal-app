@@ -78,3 +78,28 @@ test('Terminals sind getrennt; forget und unbekannte IDs', () => {
   b.append('x', '');
   assert.deepStrictEqual(b.tail('x', 5), []);
 });
+
+test('Überlange Zeile ohne Umbruch wird gekappt (Speicher und tail)', () => {
+  const b = createOutputBuffer();
+  for (let i = 0; i < 2000; i++) b.append('x', 'a'.repeat(4096));
+  const t = b.tail('x', 1);
+  assert.strictEqual(t.length, 1);
+  assert.ok(t[0].length <= 2000);
+  b.append('x', '\nnext\n');
+  assert.deepStrictEqual(b.tail('x', 1), ['next']);
+});
+
+test('keepRaw: Rohrest nur für gewählte Terminals; Zeilen bleiben für alle', () => {
+  const b = createOutputBuffer({ keepRaw: (id) => id === 'pm-p' });
+  b.append('pm-p', 'eins\n');
+  b.append('t1', 'zwei\n');
+  assert.strictEqual(b.raw('pm-p'), 'eins\n');
+  assert.strictEqual(b.raw('t1'), '');
+  assert.deepStrictEqual(b.tail('t1', 5), ['zwei']);
+});
+
+test('Schneller Textpfad liefert dasselbe bei Steuerzeichen', () => {
+  const b = createOutputBuffer();
+  b.append('t', 'ab\x1b[31mrot\x1b[0m\tx\r\nneu\rUEB\n');
+  assert.deepStrictEqual(b.tail('t', 5), ['abrot  x', 'UEB']);
+});

@@ -34,7 +34,7 @@ function make(over = {}) {
     ] }) },
     readDocs: () => ({
       projectStatus: '# Status\n\n## Nächster Schritt\n\nJoshua prüft den Build.\nZweite Zeile.\n\nAnderer Absatz.\n',
-      workInProgress: '## Aktive Reservierungen\n\n### A\n- Status: läuft\n\n### B\n- Status: abgeschlossen und geprüft\n\n### C\n- Status: pausiert\n',
+      workInProgress: '## Aktive Reservierungen\n\n### A\n- Status: in Arbeit\n\n### B\n- Status: abgeschlossen und geprüft\n\n### C\n- Status: pausiert\n',
       progress: 'P',
     }),
     gitInfo: async () => ({ log: 'abc123 Erster\n', branches: '* main\n' }),
@@ -146,5 +146,7 @@ test('parseNextStep und countActiveReservations', () => {
   assert.strictEqual(parseNextStep(null), null);
   assert.strictEqual(countActiveReservations('## Aktive Reservierungen\n\n'), 0);
   assert.strictEqual(countActiveReservations('# x'), null);
-  assert.strictEqual(countActiveReservations('## Aktive Reservierungen\n### A\n- Status: Erledigt\n### B\nohne Status\n## Andere\n### C\n'), 1);
+  assert.strictEqual(countActiveReservations('## Aktive Reservierungen\n### A\n- Status: Erledigt\n### B\nohne Status\n## Andere\n### C\n'), 0); // ohne eindeutigen Status nicht als aktiv geraten
+  const real = '## Aktive Reservierungen\n### A\n- Status: umgesetzt und geprüft; Reservierungen freigegeben\n### B\n- Status: lesende Prüfung abgeschlossen\n### C\n- Status: Build und Paketprüfung abgeschlossen\n### D\n- Status: in Arbeit\n### E\n- Status: blockiert (wartet)\n### F\n- Status: Übergabe angefragt\n';
+  assert.strictEqual(countActiveReservations(real), 3);
 });

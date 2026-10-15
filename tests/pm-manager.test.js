@@ -58,12 +58,22 @@ test('Start im Projektordner mit Rollen-Prompt, ohne --resume und niemals --cont
   assert.strictEqual(c.mgr.wasResumed('p1'), false);
 });
 
+test('Neues Gespräch: restart mit fresh verwirft die gespeicherte ID', async () => {
+  const c = setup();
+  c.sessions.observe('p1', 'abcd1234-ef56');
+  await c.mgr.start('p1');
+  const r = await c.mgr.restart('p1', { fresh: true });
+  assert.deepStrictEqual(r, { ok: true, resumed: false });
+  assert.ok(!c.created.at(-1).command.includes('--resume'));
+  assert.strictEqual(c.sessions.get('p1'), null);
+});
+
 test('Mit belegter Gesprächs-ID: --resume <id>, resumed:true', async () => {
   const c = setup();
   c.sessions.observe('p1', 'abcd1234-ef56');
   const r = await c.mgr.start('p1');
   assert.strictEqual(r.resumed, true);
-  assert.match(c.created[0].command, / --resume 'abcd1234-ef56'$|--resume abcd1234-ef56$/);
+  assert.match(c.created[0].command, / --resume='abcd1234-ef56'$|--resume=abcd1234-ef56$/);
   assert.ok(!c.created[0].command.includes('--continue'));
   assert.strictEqual(c.mgr.wasResumed('p1'), true);
 });

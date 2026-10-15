@@ -27,11 +27,17 @@ test('Lagebild: Kachelzustände ehrlich dargestellt', () => {
   const m = View.describe(sample, NOW);
   assert.equal(m.ok, true);
   assert.deepEqual(m.terminals.map(t => [t.kind, t.stateText]), [
-    ['needs-input', 'wartet auf dich'], ['none', 'kein Agent'], ['ended', 'beendet'], ['unknown', 'unbekannt'],
+    ['needs-input', 'wartet auf dich'], ['none', 'kein Agentenereignis'], ['ended', 'beendet'], ['unknown', 'unbekannt'],
   ]);
   assert.equal(m.terminals[0].since, 'seit 2 min');
   assert.equal(m.terminals[0].branch, 'feat/x');
   assert.equal(m.terminals[2].since, null);
+});
+
+test('Lagebild: ohne Agentenstatus ist der Zustand unbekannt, nicht "kein Agent"', () => {
+  const m = View.describe({ ...sample, agentStatusEnabled: false }, NOW);
+  assert.equal(m.terminals[1].kind, 'unknown');
+  assert.match(m.terminals[1].stateText, /Agentenstatus aus/);
 });
 
 test('Lagebild: Arbeitskopien, Änderungen, Ports, nächster Schritt', () => {
