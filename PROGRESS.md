@@ -20,6 +20,36 @@
 
 Neue Ergebniseinträge oben ergänzen; bestehende Einträge erhalten. Ungeprüfte Umsetzung ausdrücklich als solche kennzeichnen.
 
+### 15.10.2026, 13:32 +02:00 – NEWPROJ-QA-CODEX-20261015-01: Gemeinsamen aktuellen Quellstand geprüft
+
+- Erledigter Schritt: eigener frischer `npm test` nach hinzugekommener HOTKEYS-Integration: Exit 0, 368/368 bestanden, keine fehlgeschlagen/übersprungen; `git diff --check` erfolgreich. Dies ersetzt den früheren 355er Ausgangslauf als aktuellen Gesamtnachweis, ist aber keine HOTKEYS-Bedienabnahme.
+- Installationsvorbereitung: eigene native Prozessabfrage bestätigt laufende `/Applications/Multiterminal.app/Contents/MacOS/Multiterminal` (PID 58447). Keine Prozesse beendet, keine installierten Dateien ersetzt. Build-Temp-Umstellung vorbereitet; auf ausdrückliche HOTKEYS-Freigabe warten.
+- Nächste Aktion: nach HOTKEYS-Freigabe gemeinsamen Build mit verlagertem Temp-Verzeichnis ausführen.
+
+### 15.10.2026, 13:31 +02:00 – NEWPROJ-QA-CODEX-20261015-01: Build-Temp auf Projektvolume umgestellt
+
+- Erledigter Schritt: `scripts/build.js` setzt den vorhandenen Packager-Parameter `tmpdir` auf `dist/.build-tmp`. Damit liegen Electron-Entpacken und Ausgabe auf demselben Volume; das volle interne Temp-Verzeichnis wird für diesen Build nicht mehr genutzt. Keine Produktdateien oder fremden Temp-Dateien verändert/gelöscht.
+- Prüfung: Packager-Implementierung/Typen lokal gelesen (`baseTempDir` unterstützt den Pfad), `node --check scripts/build.js` und gezieltes `git diff --check` erfolgreich. Voller Wiederholungsbuild wartet auf ausdrücklich angeforderte HOTKEYS-Produktfreigabe, nicht auf weitere Grundsatzentscheidung von Joshua.
+- Offen: gemeinsamer Build/Paketprüfung/Installation. Interne SSD hat weiterhin nur rund 281 MiB frei; installierte App belegt rund 301 MiB. Sichere Installation muss diesen Platzbedarf berücksichtigen und laufende Terminals erhalten.
+- Nächste Aktion: nach HOTKEYS-Freigabe gemeinsamen Build mit verlagertem Temp-Verzeichnis ausführen.
+
+### 15.10.2026, 13:02 +02:00 – NEWPROJ-QA-CODEX-20261015-01: Projektplanung in Electron bestanden
+
+- Erledigter Schritt (Codex `/root`): `node_modules/.bin/electron scripts/qa-project-planning.js` außerhalb Sandbox, Exit 0 / `passed`. Echter Renderer/Preload/IPC/PTY: Formular/Agentwahl, Abbruch ohne Projekt, ungültiger Name, alle drei eingebauten Agenten als lokale Fakes mit exaktem Eröffnungsargument und richtigem CWD, Git `main` mit genau einem Commit und drei Planungsdateien, aktive sichtbare Kachel sowie Duplikat ohne Überschreiben bestanden.
+- GitHub-Dialog mit Abbruch-Stub geprüft (privat vorausgewählt); kein `gh`-Aufruf und kein Remote. Erwartete Negativtest-Fehler im Electron-Log sind Bestandteil des bestandenen Laufs. Keine echten Provider-/Veröffentlichungsnachweise.
+- Sichtprüfung: `/var/folders/dz/mbg87p4x3pbf1v207rr8f1t80000gp/T/mt-project-planning-qa-45UDxk/project-planning-dialog.png` selbst geöffnet; lesbarer Dialog, Projektname, Codex-Auswahl und beide Aktionen sichtbar.
+- Buildblocker: nativer Build scheitert mit `No space left on device (os error 28)` beim Electron-Framework im internen Temp-Verzeichnis; `df` zeigt 268 MiB frei intern, 3.6 TiB auf M4MegaDiva. Installierte App unverändert; fremde Dateien nicht gelöscht. Nächster Versuch nutzt temporäre Builddateien auf dem Projektvolume.
+- Nächste Aktion: nach HOTKEYS-Freigabe stabilen gemeinsamen Build mit externem Temp-Verzeichnis erstellen.
+
+### 15.10.2026, 13:00 +02:00 – NEWPROJ-QA-CODEX-20261015-01: Ausgangsprüfung und Bedienprüfung vorbereitet
+
+- Agent/Sitzung: Codex `/root`, Fortsetzung auf Joshuas Auftrag; Unteragent `/root/planning_qa` (Sol 6.1) ausschließlich neue `scripts/qa-project-planning.js`.
+- Erledigter Schritt: aktueller Ausgangsstand mit eigenem `npm test` geprüft: Exit 0, 355/355 bestanden, keine fehlgeschlagen/übersprungen. Isolierte Bedienprüfung erstellt und vom Hauptagenten gelesen; echte Renderer/Preload/IPC/PTY mit Temp-Home und lokalen Fake-Agenten, keine Provider oder Veröffentlichung.
+- Build: eingeschränkter Versuch scheitert mit `TypeError: fetch failed`; freigegebener Wiederholungslauf außerhalb Sandbox läuft. Paralleler HOTKEYS-Auftrag inzwischen aktiv; vor Freigabe vollständigen stabilen Produktstand und dessen Abschluss prüfen.
+- Dateien: neue QA-Datei, eigene Koordinationseinträge; Produktänderungen anderer Sitzungen erhalten.
+- Offen: Electron-Bedienlauf, stabiler Paketabgleich, Installation; keine Nutzerterminals beendet.
+- Nächste Aktion: isolierten Electron-Bedienlauf ausführen.
+
 ### 15.10.2026 – CODEXLABEL-CLAUDE-20261015-01: Codex-Nutzungsbeschriftung korrigiert (geprüft, Bedienabnahme offen)
 
 - Agent/Sitzung: Claude Code (Sonnet 5.5), Sitzung vom 15.10.2026.

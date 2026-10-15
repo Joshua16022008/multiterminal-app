@@ -47,4 +47,12 @@
 .settings-load label { display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
 .settings-warn { color: var(--err); }
 .settings-warn[hidden] { display: none; }
+.hotkey-list { margin-top: 20px; }
+.hotkey-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.hotkey-info { flex: 1; min-width: 180px; }
+.hotkey-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hotkey-pair { display: inline-flex; gap: 3px; }
+#settings-panel .hotkey-binding { min-width: 90px; font-family: var(--mono); }
+#settings-panel .hotkey-recording { border-color: var(--accent); color: var(--accent); }
+.hotkey-save { flex-wrap: wrap; position: sticky; bottom: -40px; padding: 16px 0; background: var(--bg); }
 .settings-sort { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 8px; color: var(--dim); cursor: pointer; }

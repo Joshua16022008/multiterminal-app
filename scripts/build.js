@@ -25,6 +25,9 @@ async function main() {
     name: APP_NAME,
     icon: path.join(ROOT, 'assets', 'icon.icns'),
     out: path.join(ROOT, 'dist'),
+    // Keep Electron extraction beside the output, also when the project lives on
+    // an external volume and the system's temporary volume has little free space.
+    tmpdir: path.join(ROOT, 'dist', '.build-tmp'),
     platform: 'darwin',
     arch: process.arch,
     asar: false, // node-pty needs real files (prebuilds, spawn-helper with exec bit)

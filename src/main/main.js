@@ -12,6 +12,8 @@ const { createAccountStore } = require('./account-store');
 const { createUsageService } = require('./usage-service');
 const { createUsageSetup } = require('./usage-setup');
 const { createSettingsService } = require('./settings-service');
+const { createHotkeyStore } = require('./hotkey-store');
+const hotkeyModel = require('../renderer/hotkeys');
 const { createAgentProfile } = require('./agent-profile');
 const progressFiles = require('./progress-files');
 const { createGitService } = require('./git-service');
@@ -41,6 +43,7 @@ let accounts;
 let usage;
 let usageSetup;
 let settings;
+let hotkeys;
 let agentProfile;
 let sessions;
 let ptys;
@@ -276,6 +279,19 @@ function registerIpc() {
   handle('usage:claudeEnable', () => usageSetup.enable());
   handle('usage:claudeDisable', () => usageSetup.disable());
 
+  handle('hotkeys:get', () => ({ bindings: hotkeys.get(), defaults: hotkeyModel.defaults(process.platform), platform: process.platform }));
+  handle('hotkeys:save', (bindings) => {
+    const saved = hotkeys.save(bindings);
+    buildMenu();
+    sendToWindow('hotkeys:changed', saved);
+    return saved;
+  });
+  handle('hotkeys:capture', (enabled) => {
+    if (typeof enabled !== 'boolean') throw new Error('Ungültiger Aufnahmezustand.');
+    mainWindow.webContents.setIgnoreMenuShortcuts(enabled);
+    return true;
+  });
+
   handle('settings:overview', (projectId) => settings.overview({
     projectPath: projectId ? requireProject(projectId).path : undefined,
     accounts: accounts.list(),
@@ -340,6 +356,26 @@ function registerIpc() {
     const { path: folder } = await git.cloneRepo(String(nameWithOwner));
     return projects.add({ name: path.basename(folder), path: folder });
   });
+  // A new project to plan: folder + git init + planning files. Returns the stored project.
+  handle('projects:createDraft', async (name) => {
+    const created = await git.createLocalProject(String(name));
+    const project = projects.add({ name: created.name, path: created.path });
+    return { project, message: created.message };
+  });
+  // Publishing is outward-facing: the confirmation lives here, not in the page.
+  handle('projects:publish', async (projectId) => {
+    const project = requireProject(projectId);
+    const { response } = await dialog.showMessageBox(mainWindow, {
+      type: 'question',
+      buttons: ['Privat anlegen', 'Öffentlich anlegen', 'Abbrechen'],
+      defaultId: 0,
+      cancelId: 2,
+      message: `„${project.name}“ als GitHub-Repo anlegen?`,
+      detail: 'Das Repo wird in deinem GitHub-Konto erstellt und der aktuelle Stand hochgeladen. Öffentliche Repos kann jeder sehen.',
+    });
+    if (response === 2) return null;
+    return git.publishRepo(project.path, { isPrivate: response === 0 });
+  });
   handle('git:status', (projectId) => git.status(requireProject(projectId).path));
   handle('git:pull', (projectId) => git.pull(requireProject(projectId).path));
   handle('git:sync', (projectId) => git.sync(requireProject(projectId).path));
@@ -383,17 +419,24 @@ function menuAction(action) {
   return () => sendToWindow('menu:action', action);
 }
 
-// Terminal 1..9 and 10 (key 0): a visible Cmd entry plus a hidden Ctrl twin,
-// since a menu item carries only one accelerator. Menu accelerators fire even
-// while xterm or a webview has the keyboard focus.
+// Extra bindings use hidden twins so they also work with xterm/webview focus.
+function shortcutItems(action, label) {
+  const bindings = hotkeys.get()[action];
+  const click = menuAction(action);
+  return [
+    { label, accelerator: bindings[0], click },
+    ...bindings.slice(1).map(accelerator => ({ label: label + ' (Alternative)', accelerator, click, visible: false, acceleratorWorksWhenHidden: true })),
+  ];
+}
+
 function terminalJumpItems() {
   const visible = [];
   const hidden = [];
   for (let i = 1; i <= 10; i++) {
     const key = String(i % 10);
-    const click = menuAction('focus-terminal:' + key);
-    visible.push({ label: 'Terminal ' + i, accelerator: 'Cmd+' + key, click });
-    hidden.push({ label: 'Terminal ' + i + ' (Ctrl)', accelerator: 'Ctrl+' + key, click, visible: false, acceleratorWorksWhenHidden: true });
+    const [primary, ...alternatives] = shortcutItems('focus-terminal:' + key, 'Terminal ' + i);
+    visible.push(primary);
+    hidden.push(...alternatives);
   }
   return { visible, hidden };
 }
@@ -404,7 +447,7 @@ function buildMenu() {
     { label: app.name, submenu: [
       { role: 'about' },
       { type: 'separator' },
-      { label: 'Einstellungen…', accelerator: 'CmdOrCtrl+,', click: menuAction('settings') },
+      ...shortcutItems('settings', 'Einstellungen…'),
       { type: 'separator' },
       { role: 'services' },
       { type: 'separator' },
@@ -414,11 +457,11 @@ function buildMenu() {
     {
       label: 'Terminal',
       submenu: [
-        { label: 'Neues Terminal', accelerator: 'CmdOrCtrl+T', click: menuAction('new-terminal') },
-        { label: 'Terminal schließen', accelerator: 'CmdOrCtrl+W', click: menuAction('close-terminal') },
+        ...shortcutItems('new-terminal', 'Neues Terminal'),
+        ...shortcutItems('close-terminal', 'Terminal schließen'),
         { type: 'separator' },
         { label: 'Zu Terminal springen', submenu: jump.visible },
-        { label: 'Zur nächsten Rückmeldung springen', accelerator: 'CmdOrCtrl+J', click: menuAction('next-attention') },
+        ...shortcutItems('next-attention', 'Zur nächsten Rückmeldung springen'),
         ...jump.hidden,
       ],
     },
@@ -426,7 +469,7 @@ function buildMenu() {
     {
       label: 'Darstellung',
       submenu: [
-        { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' },
+        { role: 'resetZoom', accelerator: null }, { role: 'zoomIn' }, { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
         { role: 'toggleDevTools' },
@@ -527,6 +570,8 @@ function createWindow() {
   });
 
   const { webContents } = mainWindow;
+  mainWindow.on('blur', () => webContents.setIgnoreMenuShortcuts(false));
+  webContents.on('did-start-loading', () => webContents.setIgnoreMenuShortcuts(false));
   webContents.setWindowOpenHandler(({ url }) => {
     if (isWebUrl(url)) shell.openExternal(url);
     return { action: 'deny' };
@@ -610,6 +655,7 @@ if (!app.requestSingleInstanceLock()) {
     });
     agentProfile = createAgentProfile({ dataDir, readProfile: (scope) => settings.readProfile(scope) });
     settings = createSettingsService({ dataDir, loadsAtStart: (scope) => agentProfile.isEnabled(scope) });
+    hotkeys = createHotkeyStore({ filePath: path.join(dataDir, 'hotkeys.json') });
     accounts = createAccountStore({
       filePath: path.join(dataDir, 'accounts.json'),
       profilesDir: path.join(dataDir, 'profiles'),

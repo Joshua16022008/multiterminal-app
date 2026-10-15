@@ -3,7 +3,11 @@
   'use strict';
   const D = (window.DeckApp = window.DeckApp || {}), h = D.h;
   const labels = { claude: 'Claude Code', codex: 'Codex', kimi: 'Kimi' };
-  const tabs = { profile: 'Profil', quota: 'Kontingente', skills: 'Skills', plugins: 'Plugins', mods: 'Mods', libraries: 'Bibliotheken' };
+  const tabs = { profile: 'Profil', quota: 'Kontingente', skills: 'Skills', plugins: 'Plugins', mods: 'Mods', libraries: 'Bibliotheken', hotkeys: 'Hotkeys' };
+  const HK = window.DeckHotkeys;
+  let hotkeyDraft = null, hotkeyOriginal = null, hotkeyDefaults = null, hotkeyPlatform = 'darwin', recording = null, recordingGeneration = 0;
+  const copyBindings = value => Object.fromEntries(Object.entries(value).map(([id, bindings]) => [id, [...bindings]]));
+  function hotkeyDirty() { return hotkeyDraft && JSON.stringify(hotkeyDraft) !== JSON.stringify(hotkeyOriginal); }
   const drafts = new Map();
   let root, opts = {}, open = false, scope = 'claude', tab = 'profile', overview = [], error = '', message = '';
   let overviewGeneration = 0, generation = 0, quotaGeneration = 0, previewGeneration = 0, timer, previousFocus, search = '', page = 0, busy = false;
@@ -11,7 +15,7 @@
   function button(text, action, props = {}) { return h('button', { class: 'btn-small', text, onclick: action, type: 'button', ...props }); }
   function note(text) { return h('p', { class: 'settings-note', text }); }
   function fail(e) { error = D.errText(e); }
-  function dirty() { const d = drafts.get(scope); return d && d.text !== d.original; }
+  function dirty() { if (tab === 'hotkeys') return hotkeyDirty(); const d = drafts.get(scope); return d && d.text !== d.original; }
   function mayLeave() { return !dirty() || window.confirm('Deine Änderungen sind noch nicht gespeichert. Ansicht wechseln? Der Entwurf bleibt bis zum Schließen der App erhalten.'); }
   function provider() { return overview.find(p => p.id === scope || p.provider === scope); }
   async function reloadOverview() {
@@ -64,11 +68,78 @@
   }
   function select(nextScope, nextTab) {
     if (!mayLeave()) return;
+    stopRecording();
     scope = nextScope; tab = nextTab;
     generation++; previewGeneration++; search = ''; page = 0; error = ''; message = '';
     render(); syncTimer();
     if (tab === 'profile') loadProfile();
     if (tab === 'quota') loadQuota();
+    if (tab === 'hotkeys') loadHotkeys();
+  }
+  async function loadHotkeys() {
+    if (hotkeyDraft) return;
+    const my = generation;
+    try {
+      const result = await window.deck.hotkeys.get();
+      if (!open || my !== generation || tab !== 'hotkeys') return;
+      hotkeyDraft = copyBindings(result.bindings); hotkeyOriginal = copyBindings(result.bindings);
+      hotkeyDefaults = result.defaults; hotkeyPlatform = result.platform; error = '';
+    } catch (e) { if (my === generation) fail(e); }
+    if (open && my === generation) render();
+  }
+  function stopRecording() {
+    recordingGeneration++;
+    const hadRecording = !!recording;
+    recording = null;
+    if (hadRecording) window.deck.hotkeys.capture(false).catch(fail);
+  }
+  async function recordHotkey(action, index) {
+    stopRecording();
+    const my = recordingGeneration;
+    recording = { action, index, ready: false }; error = ''; message = ''; render();
+    try {
+      await window.deck.hotkeys.capture(true);
+      if (my !== recordingGeneration || !open || tab !== 'hotkeys') return;
+      recording.ready = true; render();
+      root.querySelector('.hotkey-recording')?.focus();
+    } catch (e) { stopRecording(); fail(e); if (open) render(); }
+  }
+  function changeHotkey(action, bindings) {
+    try {
+      hotkeyDraft = HK.validate({ ...hotkeyDraft, [action]: bindings }, hotkeyPlatform);
+      error = ''; message = '';
+    } catch (e) { fail(e); }
+    render();
+  }
+  async function saveHotkeys() {
+    if (busy || !hotkeyDraft) return;
+    stopRecording(); busy = true; error = ''; message = ''; render();
+    try {
+      const saved = await window.deck.hotkeys.save(hotkeyDraft);
+      hotkeyDraft = copyBindings(saved); hotkeyOriginal = copyBindings(saved);
+      message = 'Hotkeys gespeichert. Die Belegung ist sofort aktiv.';
+    } catch (e) { fail(e); }
+    busy = false; if (open) render();
+  }
+  function hotkeysView(body) {
+    body.append(h('h2', { text: 'Hotkeys' }), note('Gilt für die gesamte App und alle Agenten. Klicke auf ein Kürzel und drücke die neue Kombination mit ⌘ oder Strg. Esc bricht die Aufnahme ab. Bis zu zwei Kürzel pro Aktion.'), note('Änderungen werden erst mit „Hotkeys speichern“ aktiv. Bearbeitungs- und Systemkürzel bleiben reserviert.'));
+    if (!hotkeyDraft) { body.append(note(error ? 'Hotkeys konnten nicht geladen werden.' : 'Hotkeys werden geladen …')); return; }
+    const list = h('div', { class: 'hotkey-list' });
+    for (const { id, label } of HK.actions) {
+      const bindings = hotkeyDraft[id], controls = h('div', { class: 'hotkey-controls' });
+      bindings.forEach((binding, index) => {
+        const active = recording && recording.action === id && recording.index === index;
+        controls.append(h('span', { class: 'hotkey-pair' }, button(active ? (recording.ready ? 'Kombination drücken …' : 'Aufnahme startet …') : HK.format(binding), () => recordHotkey(id, index), { class: 'btn-small hotkey-binding' + (active ? ' hotkey-recording' : ''), disabled: busy, 'aria-label': label + ': ' + (active ? 'Kombination aufnehmen' : 'Kürzel ' + (index + 1) + ' ändern'), 'data-action': id, 'data-index': index }), button('×', () => { stopRecording(); changeHotkey(id, bindings.filter((_, i) => i !== index)); }, { disabled: busy, 'aria-label': label + ': Kürzel ' + (index + 1) + ' entfernen' })));
+      });
+      if (bindings.length < 2) {
+        const active = recording && recording.action === id && recording.index === bindings.length;
+        controls.append(button(active ? (recording.ready ? 'Kombination drücken …' : 'Aufnahme startet …') : '+ Kürzel', () => recordHotkey(id, bindings.length), { class: 'btn-small hotkey-binding' + (active ? ' hotkey-recording' : ''), disabled: busy, 'aria-label': label + ': Kürzel hinzufügen', 'data-action': id, 'data-index': bindings.length }));
+      }
+      controls.append(button('Standard', () => { stopRecording(); changeHotkey(id, [...hotkeyDefaults[id]]); }, { disabled: busy, 'aria-label': label + ': Standard wiederherstellen' }));
+      list.append(h('div', { class: 'hotkey-row', 'data-hotkey-action': id }, h('div', { class: 'hotkey-info' }, h('strong', { text: label }), note('Standard: ' + hotkeyDefaults[id].map(HK.format).join(' / ')), !bindings.length ? note('Deaktiviert') : null), controls));
+    }
+    body.append(list, h('div', { class: 'settings-save hotkey-save' }, button(busy ? 'Speichert …' : 'Hotkeys speichern', saveHotkeys, { class: 'btn-primary', disabled: busy || !hotkeyDirty() || !!recording }), button('Alle auf Standard zurücksetzen', () => { stopRecording(); hotkeyDraft = copyBindings(hotkeyDefaults); error = ''; message = ''; render(); }, { disabled: busy }), hotkeyDirty() ? note('Ungespeicherte Änderungen') : null));
+    if (recording) body.append(button('Aufnahme abbrechen', () => { stopRecording(); render(); }));
   }
   async function preview(item) {
     const my = ++previewGeneration;
@@ -253,7 +324,7 @@
     const nav = h('nav', { class: 'settings-nav', 'aria-label': 'Anbieter' }, h('div', { class: 'settings-nav-title', text: 'Einstellungen' }));
     for (const [id, name] of Object.entries(labels)) nav.append(button(name, () => select(id, tab), { class: 'settings-provider' + (scope === id ? ' active' : ''), 'aria-current': scope === id ? 'page' : null }));
     const main = h('section', { class: 'settings-main' });
-    main.append(h('div', { class: 'settings-top' }, h('strong', { class: 'settings-top-title', text: labels[scope] }), button('Übersicht aktualisieren', reloadOverview), button('Schließen', () => toggle(false), { 'aria-label': 'Einstellungen schließen' })));
+    main.append(h('div', { class: 'settings-top' }, h('strong', { class: 'settings-top-title', text: tab === 'hotkeys' ? 'App-Einstellungen' : labels[scope] }), tab === 'hotkeys' ? null : button('Übersicht aktualisieren', reloadOverview), button('Schließen', () => toggle(false), { 'aria-label': 'Einstellungen schließen' })));
     {
       const tablist = h('div', { class: 'settings-tabs', role: 'tablist', 'aria-label': 'Bereiche' });
       for (const [id, name] of Object.entries(tabs)) tablist.append(button(name, () => select(scope, id), { class: 'settings-tab' + (tab === id ? ' active' : ''), role: 'tab', 'aria-selected': String(tab === id), 'aria-controls': 'settings-content', tabindex: tab === id ? 0 : -1, onkeydown: e => { if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return; e.preventDefault(); const ids = Object.keys(tabs), index = ids.indexOf(id), next = e.key === 'Home' ? 0 : e.key === 'End' ? ids.length - 1 : (index + (e.key === 'ArrowRight' ? 1 : -1) + ids.length) % ids.length; select(scope, ids[next]); root.querySelector('[role=tab][aria-selected=true]').focus(); } }));
@@ -262,7 +333,7 @@
     const body = h('div', { id: 'settings-content', class: 'settings-content', role: 'tabpanel', 'aria-label': tabs[tab] });
     if (error) body.append(h('div', { class: 'settings-error', role: 'alert', text: error }));
     if (message) body.append(h('div', { class: 'settings-message', role: 'status', text: message }));
-    if (tab === 'profile') profileView(body); else if (tab === 'quota') quotaView(body); else inventoryView(body);
+    if (tab === 'profile') profileView(body); else if (tab === 'quota') quotaView(body); else if (tab === 'hotkeys') hotkeysView(body); else inventoryView(body);
     body.append(h('section', { class: 'settings-preview', hidden: true, 'aria-label': 'Quellvorschau' })); main.append(body); root.replaceChildren(nav, main);
     if (focusKey) {
       const replacement = [...root.querySelectorAll('button,input,textarea')].find(el => el.tagName === focusKey.tag && el.getAttribute('aria-label') === focusKey.label && (focusKey.label || el.textContent === focusKey.text));
@@ -273,13 +344,15 @@
     const next = typeof force === 'boolean' ? force : !open;
     if (next === open) return open;
     if (!next && !mayLeave()) return open;
+    stopRecording();
     open = next; generation++; overviewGeneration++; previewGeneration++; quotaGeneration++;
-    if (!open) { syncTimer(); render(); if (previousFocus && previousFocus.isConnected) previousFocus.focus(); if (opts.onClose) opts.onClose(); return false; }
+    if (!open) { syncTimer(); render(); if (opts.onClose) opts.onClose(); if (previousFocus && previousFocus.isConnected) previousFocus.focus(); return false; }
     previousFocus = document.activeElement; error = ''; render(); syncTimer();
     root.querySelector('.settings-provider.active').focus();
     reloadOverview();
     if (tab === 'profile') loadProfile();
     if (tab === 'quota') loadQuota();
+    if (tab === 'hotkeys') loadHotkeys();
     return open;
   }
   function init(options = {}) {
@@ -288,6 +361,17 @@
     root.hidden = true;
     root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'Einstellungen');
     root.addEventListener('keydown', e => {
+      if (recording) {
+        e.preventDefault(); e.stopPropagation();
+        if (e.key === 'Escape') { stopRecording(); render(); return; }
+        if (!recording.ready || e.repeat || e.isComposing || ['Meta', 'Control', 'Alt', 'Shift'].includes(e.key)) return;
+        const accelerator = HK.eventAccelerator(e);
+        const { action, index } = recording;
+        stopRecording();
+        if (!accelerator) { error = 'Bitte eine Kombination mit ⌘ oder Strg verwenden.'; render(); return; }
+        const bindings = [...hotkeyDraft[action]]; bindings[index] = accelerator;
+        changeHotkey(action, bindings); return;
+      }
       if (e.key === 'Escape' && open) { e.preventDefault(); toggle(false); }
       if (e.key === 'Tab' && open) {
         const controls = [...root.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), summary, [tabindex="0"]')].filter(el => el.getClientRects().length && el.tabIndex >= 0);
@@ -296,6 +380,7 @@
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     });
+    window.addEventListener('blur', () => { if (recording) { stopRecording(); if (open) render(); } });
   }
   D.settingsPanel = { init, toggle, isOpen: () => open };
 })();

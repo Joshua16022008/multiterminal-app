@@ -9,6 +9,12 @@ function subscribe(channel, callback) {
 }
 
 contextBridge.exposeInMainWorld('deck', {
+  hotkeys: {
+    get: () => ipcRenderer.invoke('hotkeys:get'),
+    save: bindings => ipcRenderer.invoke('hotkeys:save', bindings),
+    capture: enabled => ipcRenderer.invoke('hotkeys:capture', enabled),
+    onChange: callback => subscribe('hotkeys:changed', callback),
+  },
   agents: {
     list: () => ipcRenderer.invoke('agents:list'),
     onChange: callback => subscribe('agents:changed', callback),
@@ -34,6 +40,8 @@ contextBridge.exposeInMainWorld('deck', {
   projects: {
     list: () => ipcRenderer.invoke('projects:list'),
     add: () => ipcRenderer.invoke('projects:add'),
+    createDraft: name => ipcRenderer.invoke('projects:createDraft', name),
+    publish: id => ipcRenderer.invoke('projects:publish', id),
     rename: (id, name) => ipcRenderer.invoke('projects:rename', id, name),
     remove: (id) => ipcRenderer.invoke('projects:remove', id),
   },

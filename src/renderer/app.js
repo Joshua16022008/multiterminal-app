@@ -16,6 +16,14 @@
   });
   const $ = (id) => document.getElementById(id);
   const panesOf = (pid) => S.panes.get(pid) || [];
+  let hotkeyBindings = window.DeckHotkeys.defaults();
+  const hotkeyLabel = action => (hotkeyBindings[action] || []).map(window.DeckHotkeys.format).join(' / ');
+  function applyHotkeys(bindings) {
+    window.DeckHotkeys.setBindings(bindings); hotkeyBindings = bindings;
+    for (const pid of S.panes.keys()) syncGrid(pid);
+    renderHeader();
+    $('btn-attention').title = 'Rückmeldungen der Agenten' + (hotkeyLabel('next-attention') ? ': ' + hotkeyLabel('next-attention') + ' springt zur nächsten' : '');
+  }
 
   /* ---------- Agentenstatus (F01): Zustand kommt gepusht aus dem Hauptprozess ---------- */
   const A = (D.attention = {
@@ -120,7 +128,11 @@
     }
     g.classList.toggle('has-max', list.some((p) => p.maxed));
     // Reihenfolge nur per CSS-Platz: Knoten bleiben im DOM stehen (webview lädt sonst neu).
-    list.forEach((p, i) => { p.el.style.order = i; p.setNumber(window.DeckHotkeys.keyForIndex(i)); });
+    list.forEach((p, i) => {
+      p.el.style.order = i; p.setNumber(window.DeckHotkeys.keyForIndex(i));
+      const badge = p.el.querySelector('.tile-num'), label = hotkeyLabel(window.DeckHotkeys.actionFor(i));
+      if (badge) badge.title = label ? 'Zum Terminal springen: ' + label : 'Kein Hotkey zugewiesen';
+    });
     if (pid === S.activeId) renderHeader();
     renderSidebar();
   }
@@ -334,13 +346,67 @@
 
   function addFromGithub() { D.openGithubPicker({ projects: () => S.projects, onPicked: adoptProject }); }
 
-  /* Kleines Menü unter einem Knopf: Ordner wählen oder von GitHub. */
+  /* Neues Projekt planen: Ordner mit git init und Planungsdateien, darin ein Agent-Terminal zum Besprechen. */
+  function openPlanForm() {
+    const modal = $('modal');
+    const name = h('input', { placeholder: 'z. B. Mein-neues-Projekt', required: true });
+    const agent = h('select', null, ...S.presets.map((p) => h('option', { value: p.id, text: p.label })));
+    const close = () => { modal.hidden = true; modal.replaceChildren(); };
+    const form = h('form', null,
+      h('h2', { text: 'Neues Projekt planen' }),
+      h('p', { class: 'hint', text: 'Legt einen Git-Ordner an und öffnet einen Chat mit dem Agenten, in dem ihr das Projekt besprecht. Auf GitHub veröffentlichst du es später über „+ Projekt“.' }),
+      h('label', { text: 'Projektname' }, name),
+      h('label', { text: 'Agent' }, agent),
+      h('div', { class: 'row' },
+        h('button', { type: 'button', class: 'btn-small', text: 'Abbrechen', onclick: close }),
+        h('button', { type: 'submit', class: 'btn-primary', text: 'Planen' })));
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const v = name.value.trim();
+      if (!v) return;
+      const created = await guard(() => api.projects.createDraft(v));
+      if (!created || !created.project) return;
+      close();
+      if (created.message) notify(created.message);
+      const p = created.project;
+      if (!S.projects.some((x) => x.id === p.id)) S.projects.push(p);
+      const preset = S.presets.find((x) => x.id === agent.value);
+      if (preset) {
+        // Only the built-in agents take the opening sentence; the plan itself is in CLAUDE.md / AGENTS.md.
+        const command = preset.builtin ? `${preset.command} "Starte die Projektplanung wie in CLAUDE.md beschrieben."` : preset.command;
+        newTerminal(p.id, { ...preset, command });
+      }
+      selectProject(p.id);
+    });
+    modal.onmousedown = (e) => { if (e.target === modal) close(); };
+    modal.onkeydown = (e) => { if (e.key === 'Escape') close(); };
+    modal.replaceChildren(form);
+    modal.hidden = false;
+    name.focus();
+  }
+
+  async function publishActiveProject() {
+    const project = activeProject();
+    if (!project) return;
+    const r = await guard(() => api.projects.publish(project.id));
+    if (r) notify(`GitHub-Repo angelegt: ${r.repo}`, 'ok');
+    D.git.onSelect(project);
+  }
+
+  /* Kleines Menü unter einem Knopf: Ordner wählen, von GitHub, neu planen oder veröffentlichen. */
   function openAddMenu(btn) {
     const m = $('menu');
     if (!m.hidden && m.dataset.owner === btn.id) { closeMenu(); return; }
-    m.replaceChildren(
+    const items = [
+      h('div', { class: 'menu-item', text: 'Neues Projekt planen…', onclick: () => { closeMenu(); openPlanForm(); } }),
       h('div', { class: 'menu-item', text: 'Ordner wählen…', onclick: () => { closeMenu(); addProject(); } }),
-      h('div', { class: 'menu-item', text: 'Von GitHub…', onclick: () => { closeMenu(); addFromGithub(); } }));
+      h('div', { class: 'menu-item', text: 'Von GitHub…', onclick: () => { closeMenu(); addFromGithub(); } }),
+    ];
+    if (activeProject()) {
+      items.push(h('hr'),
+        h('div', { class: 'menu-item', text: 'Aktives Projekt auf GitHub anlegen…', onclick: () => { closeMenu(); publishActiveProject(); } }));
+    }
+    m.replaceChildren(...items);
     m.dataset.owner = btn.id;
     const r = btn.getBoundingClientRect();
     m.hidden = false;
@@ -414,7 +480,7 @@
     const tip = full ? `Maximal ${MAX} Terminals pro Projekt erreicht. Schließe eines, um ein neues zu öffnen.` : '';
     $('btn-plus').disabled = full;
     $('btn-menu').disabled = full;
-    $('btn-plus').title = full ? tip : 'Neues Terminal (⌘T)';
+    $('btn-plus').title = full ? tip : 'Neues Terminal' + (hotkeyLabel('new-terminal') ? ' (' + hotkeyLabel('new-terminal') + ')' : '');
     $('btn-menu').title = full ? tip : 'Schnellstart-Menü';
   }
 
@@ -670,12 +736,14 @@
       }
     });
     api.onMenu((action) => {
+      if (D.settingsPanel.isOpen() && action !== 'settings') return;
       if (action === 'settings') showSettings(true);
       else if (action === 'new-terminal') newTerminal(S.activeId, null);
       else if (action === 'close-terminal') { const a = activePane(); if (a) closePane(a); }
       else if (action === 'next-attention') jumpToNextAttention();
       else focusTerminalAt(action);
     });
+    api.hotkeys.onChange(applyHotkeys);
     api.onBeforeQuit(async () => {
       D.portsPanel.dispose();
       try { await saveSessionNow(); await saveAllScrollback(); } finally { api.quitReady(); }
@@ -683,6 +751,8 @@
     window.addEventListener('resize', () => panesOf(S.activeId).forEach((p) => p.refit()));
     setInterval(saveAllScrollback, 30000);
 
+    const hotkeySettings = await api.hotkeys.get();
+    applyHotkeys(hotkeySettings.bindings);
     const [projects, presets, session] = await Promise.all([
       guard(() => api.projects.list(), []),
       guard(() => api.presets.list(), []),

@@ -44,3 +44,81 @@ test('shifted or alt digits are not hotkeys', () => {
   assert.strictEqual(hk.isHotkeyEvent({ key: '1' }), false);
   assert.strictEqual(hk.isHotkeyEvent({ ctrlKey: true, key: 'a' }), false);
 });
+
+test('full platform defaults preserve primary commands and ten terminal aliases', () => {
+  assert.strictEqual(hk.actions.length, 14);
+  assert.deepStrictEqual(hk.defaults().settings, ['Cmd+,']);
+  assert.deepStrictEqual(hk.defaults()['focus-terminal:0'], ['Cmd+0', 'Ctrl+0']);
+  assert.deepStrictEqual(hk.defaults('linux')['focus-terminal:0'], ['Ctrl+0']);
+  for (const platform of ['darwin', 'win32', 'linux']) assert.deepStrictEqual(hk.validate(hk.defaults(platform), platform), hk.defaults(platform));
+  const copy = hk.defaults();
+  copy.settings.push('Cmd+F1');
+  assert.deepStrictEqual(hk.defaults().settings, ['Cmd+,']);
+});
+
+test('validation canonicalizes aliases and modifier order without changing input', () => {
+  const input = hk.defaults();
+  input.settings = ['shift+control+command+alt+f12'];
+  const result = hk.validate(input);
+  assert.deepStrictEqual(result.settings, ['Cmd+Ctrl+Alt+Shift+F12']);
+  assert.deepStrictEqual(input.settings, ['shift+control+command+alt+f12']);
+  input.settings = ['Ctrl+quote'];
+  assert.deepStrictEqual(hk.validate(input).settings, ["Ctrl+'"]);
+});
+
+test('validation rejects incomplete, foreign, invalid and duplicate bindings', () => {
+  for (const input of [null, [], 'Cmd+T', {}]) assert.throws(() => hk.validate(input));
+  const missing = hk.defaults();
+  delete missing.settings;
+  assert.throws(() => hk.validate(missing), /fehlt/);
+  assert.throws(() => hk.validate({ ...hk.defaults(), foreign: [] }), /Unbekannte/);
+  for (const settings of [['T'], ['Alt+T'], ['Cmd+Cmd+T'], ['Cmd+F25'], ['Cmd++'], ['Cmd+Escape'], [null], ['Cmd+F1', 'Cmd+F2', 'Cmd+F3'], 'Cmd+T']) {
+    assert.throws(() => hk.validate({ ...hk.defaults(), settings }));
+  }
+  assert.throws(() => hk.validate({ ...hk.defaults(), settings: ['command+t'] }), /Konflikt.*Neues Terminal/);
+  assert.throws(() => hk.validate({ ...hk.defaults(), settings: ['Cmd+F1', 'Cmd+F1'] }), /Konflikt/);
+});
+
+test('standard editing, system management and zoom combinations remain reserved', () => {
+  for (const combo of ['Cmd+C', 'Ctrl+V', 'Cmd+Shift+Z', 'Cmd+Q', 'Ctrl+Q', 'Cmd+H', 'Cmd+M', 'Cmd+Space', 'Cmd+Tab', 'Cmd+-', 'Ctrl+Shift+Equal', 'Ctrl+Alt+F4', 'Cmd+Alt+I', 'Ctrl+Cmd+F', 'Cmd+Ctrl+Space', 'Cmd+Alt+Shift+V']) {
+    assert.throws(() => hk.validate({ ...hk.defaults(), settings: [combo] }), /reserviert/, combo);
+  }
+  for (const combo of ['Ctrl+Shift+I', 'Ctrl+Shift+V']) assert.throws(() => hk.validate({ ...hk.defaults('linux'), settings: [combo] }, 'linux'), /reserviert/);
+  assert.deepStrictEqual(hk.validate({ ...hk.defaults(), settings: ['Cmd+Shift+T'] }).settings, ['Cmd+Shift+T']);
+  assert.deepStrictEqual(hk.validate(hk.defaults())['focus-terminal:0'], ['Cmd+0', 'Ctrl+0']);
+});
+
+test('event accelerators handle modifiers, named keys and shifted punctuation', () => {
+  assert.strictEqual(hk.eventAccelerator({ key: 't', metaKey: true, shiftKey: true }), 'Cmd+Shift+T');
+  assert.strictEqual(hk.eventAccelerator({ key: 'ArrowDown', ctrlKey: true, altKey: true }), 'Ctrl+Alt+Down');
+  assert.strictEqual(hk.eventAccelerator({ key: '+', code: 'Equal', metaKey: true, shiftKey: true }), 'Cmd+Shift+=');
+  assert.strictEqual(hk.eventAccelerator({ key: '!', code: 'Digit1', ctrlKey: true, shiftKey: true }), 'Ctrl+Shift+1');
+  assert.strictEqual(hk.eventAccelerator({ key: ';', code: 'Comma', metaKey: true }), 'Cmd+;');
+  assert.strictEqual(hk.eventAccelerator({ key: ';', code: 'Comma', metaKey: true, shiftKey: true }), 'Cmd+Shift+;');
+  assert.strictEqual(hk.eventAccelerator({ key: ',', code: 'Semicolon', ctrlKey: true }), 'Ctrl+,');
+  assert.strictEqual(hk.eventAccelerator({ key: ' ', ctrlKey: true }), 'Ctrl+Space');
+  for (const event of [null, {}, { key: 'Shift', metaKey: true }, { key: 't' }, { key: 't', ctrlKey: true, isComposing: true }, { key: 't', ctrlKey: true, getModifierState: () => true }]) assert.strictEqual(hk.eventAccelerator(event), null);
+});
+
+test('remapping and disabling release old events, resetting restores defaults', () => {
+  try {
+    const bindings = hk.defaults();
+    bindings['new-terminal'] = ['Cmd+Shift+N'];
+    bindings['focus-terminal:1'] = [];
+    hk.setBindings(bindings);
+    assert.strictEqual(hk.isHotkeyEvent({ metaKey: true, key: 't' }), false);
+    assert.strictEqual(hk.isHotkeyEvent({ metaKey: true, shiftKey: true, key: 'n' }), true);
+    assert.strictEqual(hk.isHotkeyEvent({ metaKey: true, key: '1' }), false);
+    assert.strictEqual(hk.isHotkeyEvent({ ctrlKey: true, key: '1' }), false);
+    assert.throws(() => hk.setBindings({}));
+    assert.strictEqual(hk.isHotkeyEvent({ metaKey: true, shiftKey: true, key: 'n' }), true);
+  } finally { hk.setBindings(hk.defaults()); }
+  assert.strictEqual(hk.isHotkeyEvent({ metaKey: true, key: 't' }), true);
+  assert.strictEqual(hk.isHotkeyEvent({ ctrlKey: true, key: '1' }), true);
+});
+
+test('shortcut labels show modifier and key names clearly', () => {
+  assert.strictEqual(hk.format('Cmd+Shift+T'), '⌘ + ⇧ + T');
+  assert.strictEqual(hk.format('Ctrl+Down'), '⌃ + ↓');
+  assert.strictEqual(hk.format(''), 'Nicht belegt');
+});

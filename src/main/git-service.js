@@ -4,6 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFile } = require('child_process');
+const { slugify, seedFiles } = require('./project-seed');
 
 const REPO_NAME = /^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/;
 const MAX_REPOS = 300;
@@ -189,7 +190,48 @@ function createGitService({ cloneDir }) {
     return { ...after, pulled: pulled.pulled, pushed: true, message: null };
   }
 
-  return { githubStatus, listRepos, cloneRepo, status, pull, sync };
+  // A new local project: its own folder under cloneDir, git init, planning files, first commit.
+  // A missing git identity only skips the commit; the folder is usable either way.
+  async function createLocalProject(name) {
+    const slug = slugify(name);
+    if (!slug) throw new Error('Ungültiger Projektname. Erlaubt sind Buchstaben, Ziffern, Leerzeichen, „-“, „_“ und „.“.');
+    const target = path.join(cloneDir, slug);
+    if (fs.existsSync(target)) throw new Error(`Der Ordner „${slug}“ existiert bereits.`);
+    fs.mkdirSync(target, { recursive: true });
+    for (const [file, content] of Object.entries(seedFiles(slug))) {
+      fs.writeFileSync(path.join(target, file), content, 'utf8');
+    }
+    const init = await run('git', ['-C', target, 'init', '-b', 'main']);
+    if (!init.ok) {
+      return { path: target, name: slug, isRepo: false, committed: false, message: `git init fehlgeschlagen: ${lastLine(init.stderr)}` };
+    }
+    await run('git', ['-C', target, 'add', '-A']);
+    const commit = await run('git', ['-C', target, 'commit', '-m', 'Projekt angelegt (Planungsstand)']);
+    return {
+      path: target, name: slug, isRepo: true, committed: commit.ok,
+      message: commit.ok ? null : `Erster Commit fehlgeschlagen: ${lastLine(commit.stderr)}`,
+    };
+  }
+
+  // Creates the GitHub repo for an existing local project and pushes it.
+  // The visibility is always passed explicitly by the caller.
+  async function publishRepo(projectPath, { isPrivate }) {
+    const local = await status(projectPath);
+    if (!local.isRepo) throw new Error('Dieser Ordner ist kein Git-Repo.');
+    if (await originOf(projectPath)) throw new Error('Dieses Projekt hat bereits ein GitHub-Repo (origin).');
+    const name = path.basename(projectPath);
+    if (!/^[A-Za-z0-9_.-]{1,100}$/.test(name)) {
+      throw new Error('Der Ordnername ist als Repo-Name ungeeignet (nur Buchstaben, Ziffern, „-“, „_“, „.“).');
+    }
+    const result = await run('gh', [
+      'repo', 'create', name, isPrivate ? '--private' : '--public',
+      '--source', projectPath, '--remote', 'origin', '--push',
+    ], { timeout: 120000 });
+    if (!result.ok) throw new Error(lastLine(result.stderr) || 'Repo konnte nicht angelegt werden.');
+    return { ...(await status(projectPath)), repo: lastLine(result.stdout) || name };
+  }
+
+  return { githubStatus, listRepos, cloneRepo, status, pull, sync, createLocalProject, publishRepo };
 }
 
 module.exports = { createGitService, parseStatus, normalizeRemote, REPO_NAME };

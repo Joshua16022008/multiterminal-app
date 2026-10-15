@@ -12,7 +12,9 @@ updatedBy: codex
 Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt bis zu 30 echte Terminals mit eigenem Mini-Browser für parallel laufende Terminal-Agenten bereitstellt.
 
 ## Aktueller Stand
-HOTKEYS-CODEX-20261015-01: vorhandene Menü-Hotkeys bestätigt; Einstellungen-Tab zum Umbinden in Arbeit. Getrennte Umsetzung von Belegungsmodell/Persistenz und Oberfläche; vorhandene Fremdänderungen bleiben erhalten. Noch keine Produktprüfung dieses Auftrags. Nächster Auftragsschritt: Oberfläche und zentrale Belegung integrieren; keine Blocker.
+NEWPROJ-QA-CODEX-20261015-01: eigener aktueller Gesamtlauf 368/368 und isolierte Projektplanungs-Electron-QA mit drei lokalen Fake-Agenten bestanden, Dialog selbst visuell geprüft. Nach Buildfehler am vollen internen Temp-Speicher `scripts/build.js` auf `dist/.build-tmp` umgestellt, Syntax/Diff geprüft. Nächster Auftragsschritt nach ausdrücklich angeforderter HOTKEYS-Freigabe: stabiler gemeinsamer Build. Installierte App läuft (eigene Prozessprüfung), keine Nutzerterminals beendet, keine Installation.
+
+HOTKEYS-CODEX-20261015-01: Einstellungen-Tab „Hotkeys“ mit zwei Belegungen je Aktion, Konfliktprüfung, Deaktivierung, Standards und atomarer Speicherung umgesetzt/geprüft. 368/368 eigener Gesamtlauf und isolierte Electron-QA mit echten Menüs/IPC/PTY grün; Screenshot visuell geprüft. Belegung greift sofort, bleibt nach Neuladen erhalten; Fokus und Terminal-10-/Zoom-Kollision korrigiert. Produktfreigabe an NEWPROJ-Build bestätigt. Physische OS-Tastendrücke und Installation dieses Stands bleiben offen. Nächster Auftragsschritt: im gemeinsamen Build paketieren; keine Produktblocker.
 
 NEWPROJ-CLAUDE-20261015-01 (15.10.2026): „+ Projekt“ → „Neues Projekt planen…“ legt einen Git-Ordner mit Planungsdateien an und startet darin den gewählten Agenten; „Aktives Projekt auf GitHub anlegen…“ (privat/öffentlich per Dialog). 355/355 Tests grün; nicht gebaut, nicht in der laufenden App bedient. Bericht in `PROGRESS.md`.
 
