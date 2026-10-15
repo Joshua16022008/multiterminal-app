@@ -32,6 +32,7 @@ const { createAgentStatusStore, createAgentSettings } = require('./agent-events'
 const { createAgentSessionService, resumePlan: planResume } = require('./agent-session-service'); // F02
 const { claudeWrapperScript, eventWrapperScript, zdotdirZshenv } = require('./agent-wrapper');
 const attentionLabels = require('../renderer/attention-panel');
+const { createPmMain } = require('./pm-main'); // PM: Projektmanager
 
 const BROWSER_PARTITION = 'persist:minibrowser';
 const QUIT_FLUSH_TIMEOUT_MS = 2000;
@@ -61,6 +62,7 @@ let ports;
 let browserBridge = null; // null when it could not start; terminals then simply get no mt-browser
 let browserBinDir = null;
 let browserReady = Promise.resolve();
+let pm = null; // PM: Projektmanager (Fenster, Manager-Terminal, mt-pm-Brücke)
 // Agent status (F01): state per terminal, switches, and what the page reports as visible.
 let agentStore;
 const agentSessions = createAgentSessionService(); // F02
@@ -168,6 +170,7 @@ function agentEventHandler(terminalId, args) {
   const result = agentStore.ingest(terminalId, args, { projectId: meta.projectId, accountId: meta.accountId, provider: 'claude' },
     { visible: isTerminalSeen(terminalId) });
   attentionLog('event', String(terminalId), args.hook_event_name, result.changed ? 'changed' : 'ignored');
+  if (pm && pm.handleAgentEvent(terminalId, result.entry)) return; // PM: Manager nur Gesprächs-ID, keine Benachrichtigung
   if (result.notify && result.entry) notifyAgent(result.entry);
   // F02: a reported conversation ID is remembered per tile and handed to the page, which stores it in the session file.
   if (result.entry && result.entry.nativeSessionId) {
@@ -184,7 +187,7 @@ function forgetTerminal(id) {
 }
 
 function registerIpc() {
-  handle('agents:list', () => agentStore.list());
+  handle('agents:list', () => pm.withoutManagers(agentStore.list())); // PM
   // F02: how a tile is resumed; the command is built here from the validated ID only.
   handle('agents:resumePlan', (req) => planResume({
     provider: req && req.provider, stored: req && req.nativeSession,
@@ -258,6 +261,7 @@ function registerIpc() {
     });
     if (response !== 0) return false;
     ptys.killProject(project.id);
+    pm.removeProject(project.id); // PM: Manager beenden, Fenster schließen, Token widerrufen
     return projects.remove(project.id);
   });
 
@@ -467,6 +471,7 @@ function registerIpc() {
 
   listen('browser:response', (reqId, response) => rendererLink.respond(reqId, response));
   listen('app:quit-ready', finishQuit);
+  pm.registerIpc(); // PM
 }
 
 function finishQuit() {
@@ -475,6 +480,7 @@ function finishQuit() {
   dictation.shutdown();
   ptys.killAll();
   if (browserBridge) browserBridge.stop().catch(() => {});
+  if (pm) pm.shutdown().catch(() => {}); // PM
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.destroy();
   app.quit();
 }
@@ -559,7 +565,7 @@ function removeStaleSockets(dir) {
   let names = [];
   try { names = fs.readdirSync(dir); } catch { return; }
   for (const name of names) {
-    const m = /^(\d+)\.sock$/.exec(name);
+    const m = /^(\d+)(?:\.pm)?\.sock$/.exec(name); // PM: auch die Sockets des Projektmanagers
     if (!m) continue;
     let alive = true;
     try { process.kill(Number(m[1]), 0); } catch (err) { alive = err.code !== 'ESRCH'; }
@@ -748,18 +754,43 @@ if (!app.requestSingleInstanceLock()) {
       cloneDir: fs.existsSync(SECOND_BRAIN_PROJECTS) ? SECOND_BRAIN_PROJECTS : path.join(os.homedir(), 'Multiterminal'),
     });
     ptys = createPtyManager({
-      onData: (id, data) => sendToWindow('terminals:data', id, data),
+      onData: (id, data) => {
+        if (pm.onPtyData(id, data)) return; // PM: Ausgabe des Managers geht ins Manager-Fenster
+        sendToWindow('terminals:data', id, data);
+      },
       onExit: (id, exitCode) => {
+        if (pm.onPtyExit(id, exitCode)) return; // PM
         if (browserBridge) browserBridge.unregister(String(id));
         forgetTerminal(id);
         sendToWindow('terminals:exit', id, exitCode);
       },
     });
     ports = createPortService({ getTerminals: () => ptys.snapshot() });
-    agentStore = createAgentStatusStore({ onChange: (list) => sendToWindow('agents:changed', list) });
+    agentStore = createAgentStatusStore({ onChange: (list) => sendToWindow('agents:changed', pm.withoutManagers(list)) }); // PM
     agentSettings = createAgentSettings({ dataDir, mtEventPath: path.join(dataDir, 'bin', 'mt-event') });
     try { agentSettings.sync(); } catch (err) { console.error('Agentenstatus: Hook-Datei nicht aktuell:', err.message); }
     browserReady = startBrowserBridge(dataDir).catch((err) => console.error('mt-browser nicht verfügbar:', err.message));
+    // PM: Projektmanager-Brücke erst, wenn bin-Ordner und Wrapper stehen
+    pm = createPmMain({
+      electron: { BrowserWindow, ipcMain, shell },
+      getMainWindow: () => mainWindow,
+      getDataDir: () => dataDir,
+      getProjects: () => projects,
+      getSessions: () => sessions,
+      getPtys: () => ptys,
+      getWorktrees: () => worktrees,
+      getPorts: () => ports,
+      getAgentStore: () => agentStore,
+      getAccounts: () => accounts,
+      getTerminalMeta: () => terminalMeta,
+      getBrowserBridge: () => browserBridge,
+      getBinDir: () => browserBinDir,
+      getZdotdir: () => zdotdirPath,
+      statusEnabled: () => agentSettings.get().statusEnabled,
+      forgetTerminal,
+      createDiffService,
+    });
+    browserReady = browserReady.then(() => pm.startBridge(dataDir)).catch((err) => console.error('mt-pm nicht verfügbar:', err.message));
 
     const testAudio = process.env.MULTITERMINAL_DICTATION_TEST_AUDIO;
     dictation = createDictation({
