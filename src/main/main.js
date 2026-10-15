@@ -23,6 +23,7 @@ const { createAttachmentStore, MAX_IMAGE_BYTES } = require('./attachment-store')
 const { createDictation } = require('./dictation');
 const { createPortService } = require('./port-service');
 const { createDiffService } = require('./diff-service'); // F04
+const { createSecondBrainTasks, resolveBaseUrl } = require('./second-brain-tasks'); // F10
 const { createBrowserBridge, MAX_SOCKET_PATH_BYTES } = require('./browser-bridge');
 const { createBrowserControl, createConsoleStore, createRendererLink } = require('./browser-control');
 const mtBrowserCli = require('./mt-browser-cli');
@@ -218,6 +219,10 @@ function registerIpc() {
     const { cwd } = await diffCwd(projectId, workspaceId);
     return diffs.fileDiff(cwd, file, mode);
   });
+  // F10: Second Brain nur lesend, ausschließlich im Main-Prozess (kein Origin-Header)
+  const secondBrain = createSecondBrainTasks({ baseUrl: resolveBaseUrl(process.env.MULTITERMINAL_SECOND_BRAIN_URL) });
+  handle('secondBrain:listTasks', () => secondBrain.list());
+  handle('secondBrain:getTask', (id) => secondBrain.get(id));
   handle('ports:list', () => ports.list());
   handle('ports:resolve', async (id) => {
     if (typeof id !== 'string' || id.length > 512) return { ok: false, error: 'Ungültiger Port.' };

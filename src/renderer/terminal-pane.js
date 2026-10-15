@@ -171,7 +171,11 @@
       agentEntry = entry || null;
       if (statusDot) statusDot.update(agentEntry);
     };
-    const head = h('div', { class: 'tile-head' }, numEl, titleEl, statusDot ? statusDot.el : null, acctChip, wtChip, resumeBtn, h('span', { class: 'spacer' }), bDictCancel, bMic, seg, bBrowser, bSnap, bMax, bClose);
+    // F10: verknüpfte Second-Brain-Aufgabe (nur Lesen; gespeichert wird die ID)
+    const taskLink = window.DeckTaskLink && api.secondBrain
+      ? window.DeckTaskLink.createTaskLink({ desc, api, h, onChange: () => hooks.onChange(), focusTerminal: () => term.focus() })
+      : null;
+    const head = h('div', { class: 'tile-head' }, numEl, titleEl, statusDot ? statusDot.el : null, acctChip, wtChip, taskLink ? taskLink.el : null, resumeBtn, h('span', { class: 'spacer' }), bDictCancel, bMic, seg, bBrowser, bSnap, bMax, bClose);
 
     const termEl = h('div', { class: 'term' });
     const exitMsg = h('span', { text: 'beendet' });
@@ -638,6 +642,7 @@
     /* Aufräumen */
     pane.dispose = function () {
       pane.disposed = true;
+      if (taskLink) taskLink.close(false); // F10
       if (feedback) feedback.dispose(); // F05
       clearTimeout(roTimer);
       if (dictUnregister) dictUnregister();

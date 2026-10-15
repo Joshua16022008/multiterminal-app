@@ -1,0 +1,31 @@
+/* F10: Aufgaben-Chip im Kachelkopf und Popover */
+.task-chip { flex: 0 1 auto; min-width: 0; max-width: 28%; display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; padding: 0 6px; height: 16px; font: inherit; font-size: 10px; line-height: 16px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--dim); cursor: pointer; white-space: nowrap; overflow: hidden; }
+.task-chip:hover { color: var(--text); border-color: var(--accent); }
+.task-chip.empty { border-color: transparent; opacity: 0; }
+.tile:hover .task-chip.empty, .tile.active .task-chip.empty, .task-chip.empty:focus-visible { opacity: .55; }
+.tile .task-chip.empty:hover { opacity: 1; }
+.task-label { overflow: hidden; text-overflow: ellipsis; }
+.task-dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--dim); }
+.task-chip[data-status="open"] .task-dot { background: var(--accent); }
+.task-chip[data-status="today"] .task-dot { background: var(--warn); }
+.task-chip[data-status="overdue"] .task-dot, .task-chip[data-status="error"] .task-dot { background: var(--err); }
+.task-chip[data-status="done"] .task-dot { background: var(--ok); }
+.task-chip[data-status="offline"] .task-dot, .task-chip[data-status="missing"] .task-dot { background: transparent; border: 1px solid var(--dim); }
+.task-pop { position: fixed; z-index: 60; width: 330px; max-height: 420px; display: flex; flex-direction: column; gap: 6px; padding: 8px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 28px rgba(0, 0, 0, .5); color: var(--text); font-size: 12px; }
+.task-pop-head { display: flex; align-items: center; }
+.task-pop-head .spacer { flex: 1; }
+.task-search { width: 100%; box-sizing: border-box; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 4px 6px; font: inherit; outline: none; }
+.task-search:focus { border-color: var(--accent); }
+.task-spaces { display: flex; gap: 4px; }
+.task-spaces .on { border-color: var(--accent); color: var(--accent); }
+.task-list { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; min-height: 40px; }
+.task-item { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; padding: 4px 6px; border: 0; border-radius: 4px; background: none; color: inherit; font: inherit; cursor: pointer; }
+.task-item:hover, .task-item:focus-visible { background: var(--bg-3); outline: none; }
+.task-item-title { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.task-item-meta, .task-note, .task-meta { color: var(--dim); font-size: 11px; }
+.task-detail p, .task-note { margin: 2px 0; }
+.task-title { font-weight: 600; word-break: break-word; }
+.task-status[data-status="overdue"], .task-status[data-status="error"] { color: var(--err); }
+.task-status[data-status="today"] { color: var(--warn); }
+.task-status[data-status="done"] { color: var(--ok); }
+.task-actions { display: flex; gap: 6px; margin-top: 4px; }

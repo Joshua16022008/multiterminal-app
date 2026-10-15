@@ -598,6 +598,7 @@
       color: Number.isInteger(d.color) ? d.color : undefined,
       titleLocked: d.titleLocked === true ? true : undefined,
       nativeSession: d.nativeSession && typeof d.nativeSession === 'object' ? d.nativeSession : undefined, // F02
+      secondBrainTodoId: typeof d.secondBrainTodoId === 'string' && d.secondBrainTodoId ? d.secondBrainTodoId : undefined, // F10
     };
   }
 

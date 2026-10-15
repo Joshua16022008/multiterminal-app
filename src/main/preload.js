@@ -39,6 +39,10 @@ contextBridge.exposeInMainWorld('deck', {
     list: (projectId, workspaceId) => ipcRenderer.invoke('diff:list', projectId, workspaceId || null),
     file: (projectId, workspaceId, file, mode) => ipcRenderer.invoke('diff:file', projectId, workspaceId || null, file, mode),
   },
+  secondBrain: { // F10
+    listTasks: () => ipcRenderer.invoke('secondBrain:listTasks'),
+    getTask: id => ipcRenderer.invoke('secondBrain:getTask', id),
+  },
   ports: {
     list: () => ipcRenderer.invoke('ports:list'),
     resolve: id => ipcRenderer.invoke('ports:resolve', id),
