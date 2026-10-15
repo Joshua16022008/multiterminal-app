@@ -191,6 +191,51 @@ Alle elf Recherchepunkte sind genau einem Paket zugeordnet. **Frei** bedeutet hi
 
 **Fertig, wenn:** Ablage und Grenzen entscheidbar beschrieben sind. Ein umgesetztes Aufgabenmanagement darf daraus noch nicht behauptet werden.
 
+### F10 – Aufgabenablage (Konzept)
+
+**Stand:** 14.10.2026. Nur Konzept; keine Produkt-, Vault- oder Datenänderung. Wer die Aufgabenoberfläche baut, braucht eine Freigabe von Joshua.
+
+**Ausgangslage — in Multiterminal vorhanden (Belege):**
+- PROGRESS.md-Anzeige: `src/main/progress-files.js:72` (`ensureProgress`, Vorlage mit Stand, nächstem Schritt, Erledigt, Offenen Fragen) und `:92` (`readProgress`). `src/renderer/progress-panel.js:6,11`: nur Anzeige plus Leseauftrag ins aktive Terminal.
+- Projekte: `src/main/project-store.js:91` speichert nur id, name, path.
+- Kacheln: `src/main/session-store.js:39` speichert je Kachel Titel, Befehle, Browser, Konten, Farbe, Arbeitskopie-ID. Scrollback liegt getrennt (`:129`). Kein Aufgabenfeld.
+- Agentenstatus: `src/renderer/attention-panel.js:75,108` zeigt Zustände je Kachel (arbeitet, wartet, Antwort fertig), keine Aufgabe.
+
+**Vorhandener Hinweis — Second Brain (nur lesen, nicht geprüft am Live-Stand):**
+- Aufgaben liegen in `_System/todos.json` (Liste). Felder laut Stichprobe: id, type, title, space, createdAt, done, dueDate, priority, goalId, stepId, source, horizon. Typen: todo, goal, daily, weekly, idee. Quelle: Second_Brain/CLAUDE.md, Abschnitt „Wie Notizen, Ziele und Aufgaben zusammenhängen“.
+- Web-App (localhost:4321): `GET /api/todos`, `POST /api/todos`, `PATCH /api/todos?id=…` zum Ändern. **Leerer Body `{}` = Abhaken (Toggle)**; unbekannte Schlüssel gelten ebenfalls als Abhaken. Quelle: `…/web-interface-manager/API.md`, Abschnitt „Mission Control“.
+- Erledigte Aufgaben mit `horizon` und ohne Ziel verlassen `todos.json` sofort und landen in `GET /api/todos/erledigt` (max. vier Einträge).
+- Die App ist nur bei laufendem Mac und LaunchAgent erreichbar. Laut CLAUDE.md lehnt sie fremde Origins mit 403 ab; ein Aufruf aus Multiterminal ist nicht getestet.
+
+**Variante A — reine Verknüpfung**
+- Kachel speichert nur `secondBrainTodoId` (gleiches ID-Format wie `session-store.js:5`, `[A-Za-z0-9_-]{1,64}`). Titel und Status werden nicht gespeichert.
+- Verbindliche Quelle: `todos.json` bzw. die Web-App-API. Multiterminal liest beim Öffnen des Kachelpanels und per ⟳-Knopf, ohne Hintergrund-Polling.
+- Schreiben: Erst Phase 2. Abhaken nur nach Klick, mit vorherigem GET auf den aktuellen `done`-Stand, damit der Toggle nicht gegen einen zwischenzeitlich geänderten Zustand läuft.
+- Web-App nicht erreichbar: Panel zeigt „Second Brain nicht erreichbar, Verknüpfung bleibt gespeichert“ mit der ID. Das Terminal bleibt unberührt.
+- Eintrag fehlt in `todos.json`: „nicht mehr offen oder entfernt“, Hinweis auf `/api/todos/erledigt`. Verknüpfung wird nicht automatisch gelöscht.
+- Aufwand: klein (nur Lesen), mittel (Schreiben mit Konfliktprüfung).
+- Risiken: Abhängigkeit vom Mac-Lauf und vom API-Schema der Web-App; Toggle-Fehler bei falscher Body-Form; Origin-Schutz.
+
+**Variante B — appinterne Kachelnotiz**
+- Pro Kachel ein optionales Feld `task: { title (max. 120), status: offen | wartet | zur-pruefung | erledigt, updatedAt }` in `session.json` (Prüfung wie `sanitizeTerminal`).
+- Verbindliche Quelle: Multiterminal. Second Brain wird nicht gelesen und nicht beschrieben.
+- Doppelpflege vermeiden: kein Spiegeln. Optional „An Second Brain senden“ als bewusste Einmalaktion über den dafür noch zu klärenden Eingangsweg; danach keine Verbindung mehr, nur „gesendet am …“.
+- Fehlerfall: `session-store.js:117` gibt bei kaputter Datei eine leere Sitzung zurück, und `save` überschreibt dann. Aufgaben würden also still verloren gehen. Vor Umsetzung eine Sicherungskopie wie im `project-store` (`.corrupt`) ergänzen.
+- Aufwand: mittel (Datenfeld, UI, Tests, Sicherung).
+- Risiken: zweite Aufgabenwelt neben Second Brain, genau das, was Recherche Punkt 10 vermeiden will; Doppelpflege; für Second Brain unsichtbar.
+
+**UI-Skizze (Wort-Skizze, beide Varianten)**
+- Kachelkopf: kleiner Chip mit Aufgabentitel (gekürzt) und Statuspunkt. Ohne Aufgabe nur ein dezentes „+ Aufgabe“.
+- Klick auf den Chip öffnet ein Panel am Kachelrand mit Titel, Bereich und Fälligkeit (A: aus Second Brain, B: frei), Knöpfen „Aktualisieren“, „Verknüpfung lösen“ bzw. „Status ändern“ und, nur A in Phase 2, „Abhaken“.
+- Variante A: Knopf „Aufgabe verknüpfen“ öffnet ein Suchfeld über offene Aufgaben (`GET /api/todos`, Filter nach Bereich).
+- Variante B: im Projektpanel neben PROGRESS.md eine Liste aller Projektaufgaben mit Statusfilter.
+
+**Empfehlung:** Variante A, zunächst nur lesend. Second Brain ist schon die Aufgabenwelt mit Inbox, Fälligkeit und Zielen; eine zweite Welt würde Doppelpflege erzeugen. Variante B nur, wenn die App ohne Mac-Lauf der Web-App funktionieren muss.
+
+**Offene Entscheidung für Joshua:** Sollen Kacheln nur auf bestehende Second-Brain-Aufgaben verweisen (Variante A), oder soll Multiterminal eigene Kachelaufgaben führen (Variante B)?
+
+Grenzen: keine Modellaufrufe, keine Änderung an `todos.json` oder an der Web-App, kein Spiegeln, keine Umsetzung in dieser Lieferung.
+
 ### F11 – Devserver- und Portübersicht
 
 **Eigentümer:** CODEX-B. **Quelle:** Recherche 11. **Eigene neue Dateien:** `src/main/port-service.js`, `src/renderer/ports-panel.js`, `src/renderer/ports.css`, `tests/port-service.test.js`. **Abgestimmte Integration:** `main.js`, `preload.js`, `app.js`, `index.html`; Browser-Öffnung wiederverwenden.
