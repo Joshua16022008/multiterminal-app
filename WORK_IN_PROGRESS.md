@@ -39,7 +39,7 @@ Vor Arbeitsbeginn zusammen mit `AGENTS.md`, `PROJECT_STATUS.md` und `PROGRESS.md
 - Arbeitskopie: Worktrees der Workflow-Agenten; im gemeinsamen Checkout erst bei der Integration.
 - Reservierte Bereiche: neu `src/main/pm-*.js`, `src/main/output-buffer.js`, `src/main/mt-pm-cli.js`, `src/renderer/pm*.{html,js,css}`, Tests/QA dazu; Integration `main.js`, `preload.js`, `app.js`, `index.html`, `hotkeys.js`, `styles.css`. Keine Änderung an `~/.claude`, keine bezahlten Provider-Tests (Attrappen statt echtem claude), kein Push/Build/Installation ohne Joshua.
 - Blocker: keine.
-- Nächste Aktion: Joshua entscheidet über Push/Build; danach Bedienabnahme.
+- Nächste Aktion: Joshua installiert den Build (`90d6f92`, gepackt geprüft); danach Bedienabnahme.
 
 ### TOPMENU-CODEX-20261016-01 – Obere Optionen als ausklappbare Leiste
 
