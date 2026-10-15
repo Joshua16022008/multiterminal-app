@@ -25,6 +25,7 @@ const { createBrowserBridge, MAX_SOCKET_PATH_BYTES } = require('./browser-bridge
 const { createBrowserControl, createConsoleStore, createRendererLink } = require('./browser-control');
 const mtBrowserCli = require('./mt-browser-cli');
 const { createAgentStatusStore, createAgentSettings } = require('./agent-events');
+const { createAgentSessionService, resumePlan: planResume } = require('./agent-session-service'); // F02
 const { claudeWrapperScript, eventWrapperScript, zdotdirZshenv } = require('./agent-wrapper');
 const attentionLabels = require('../renderer/attention-panel');
 
@@ -57,6 +58,7 @@ let browserBinDir = null;
 let browserReady = Promise.resolve();
 // Agent status (F01): state per terminal, switches, and what the page reports as visible.
 let agentStore;
+const agentSessions = createAgentSessionService(); // F02
 let agentSettings;
 const terminalMeta = new Map(); // terminalId -> { projectId, accountId }
 let visibleTerminal = null;
@@ -149,16 +151,28 @@ function agentEventHandler(terminalId, args) {
     { visible: isTerminalSeen(terminalId) });
   attentionLog('event', String(terminalId), args.hook_event_name, result.changed ? 'changed' : 'ignored');
   if (result.notify && result.entry) notifyAgent(result.entry);
+  // F02: a reported conversation ID is remembered per tile and handed to the page, which stores it in the session file.
+  if (result.entry && result.entry.nativeSessionId) {
+    const rec = agentSessions.observe(result.entry);
+    if (rec) sendToWindow('agents:session', String(terminalId), rec);
+  }
 }
 
 function forgetTerminal(id) {
   terminalMeta.delete(String(id));
+  agentSessions.forget(id); // F02
   agentStore.terminalClosed(String(id));
   if (visibleTerminal === String(id)) visibleTerminal = null;
 }
 
 function registerIpc() {
   handle('agents:list', () => agentStore.list());
+  // F02: how a tile is resumed; the command is built here from the validated ID only.
+  handle('agents:resumePlan', (req) => planResume({
+    provider: req && req.provider, stored: req && req.nativeSession,
+    currentAccountId: req && typeof req.accountId === 'string' ? req.accountId : null,
+    projectId: req && typeof req.projectId === 'string' ? req.projectId : null,
+  }));
   handle('agents:getSettings', () => { const { hooksFile, ...rest } = agentSettings.get(); return rest; });
   handle('agents:setSettings', (patch) => { const { hooksFile, ...rest } = agentSettings.set(patch || {}); return rest; });
   handle('agents:markRead', (id) => agentStore.markRead(String(id)));

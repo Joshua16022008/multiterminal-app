@@ -90,6 +90,7 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .tile.drop-target { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
 .tile-title-edit { width: 140px; background: var(--bg); border: 1px solid var(--accent); border-radius: 4px; padding: 0 4px; font-size: 12px; outline: none; }
 .btn-resume { flex: 0 1 auto; min-width: 0; margin-left: 8px; font-size: 11px; padding: 0 8px; line-height: 18px; border: 1px solid var(--accent); border-radius: 9px; background: none; color: var(--accent); max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-resume.resume-loose { border-style: dashed; } /* F02: keine feste Gesprächszuordnung */
 .btn-resume:hover { background: var(--accent-bg); color: var(--text); }
 .tile-body { flex: 1; min-height: 0; display: flex; }
 .term-wrap { position: relative; flex: 1 1 0; min-width: 0; }

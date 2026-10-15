@@ -319,26 +319,53 @@
     };
 
     /* Fortsetzen / Neu starten: <Label> */
+    // F02: exact conversation per tile. The plan comes from the main process (validated ID, account, project);
+    // without a belegte ID the old "letztes Gespräch" command stays, but the button says so.
+    const RESUME_PROVIDERS = ['claude', 'codex', 'kimi'];
+    let resumeInfo = { exact: false, command: null, reason: '' };
+    async function planResume() {
+      const provider = RESUME_PROVIDERS.includes(desc.presetId) ? desc.presetId : null;
+      if (!provider || !api.agents || !api.agents.resumePlan) { resumeInfo = { exact: false, command: null, reason: '' , provider }; return; }
+      const plan = await D.guard(() => api.agents.resumePlan({
+        provider, nativeSession: desc.nativeSession || null,
+        accountId: desc.accounts ? desc.accounts[provider] : null, projectId: project.id,
+      }), null);
+      resumeInfo = Object.assign({ exact: false, command: null, reason: '' }, plan || {}, { provider });
+    }
     function refreshResume() {
-      const cmd = desc.resumeCommand || desc.command;
+      const cmd = (resumeInfo.exact && resumeInfo.command) || desc.resumeCommand || desc.command;
       const show = pane.canResume && !!cmd;
       resumeBtn.hidden = !show;
       if (show) {
-        resumeBtn.textContent = desc.resumeCommand ? 'Fortsetzen' : 'Neu starten: ' + (hooks.presetLabel(desc) || desc.command);
-        resumeBtn.title = cmd;
+        const generic = !resumeInfo.exact && !!desc.resumeCommand && RESUME_PROVIDERS.includes(resumeInfo.provider);
+        resumeBtn.textContent = resumeInfo.exact ? 'Fortsetzen'
+          : generic ? 'Fortsetzen: letztes Gespräch'
+          : desc.resumeCommand ? 'Fortsetzen' : 'Neu starten: ' + (hooks.presetLabel(desc) || desc.command);
+        resumeBtn.title = resumeInfo.exact ? 'Dieses Gespräch (feste Zuordnung): ' + cmd
+          : generic ? 'Keine feste Zuordnung (' + (resumeInfo.reason || 'keine Gesprächs-ID') + '): setzt das zuletzt geänderte Gespräch dieses Ordners fort: ' + cmd
+          : cmd;
+        resumeBtn.classList.toggle('resume-loose', generic);
       }
     }
+    pane.setNativeSession = function (rec) {
+      desc.nativeSession = rec || undefined;
+      planResume().then(refreshResume);
+      hooks.onChange();
+    };
     async function resume() {
-      const cmd = desc.resumeCommand || desc.command;
-      if (!cmd) return;
+      if (!(resumeInfo.exact && resumeInfo.command) && !desc.resumeCommand && !desc.command) return;
       pane.canResume = false;
       refreshResume();
       if (pane.status !== 'running' && !(await start())) return;
+      await planResume(); // after start(): the account the tile really runs with
+      const cmd = (resumeInfo.exact && resumeInfo.command) || desc.resumeCommand || desc.command;
+      if (!cmd) return;
       // App-own command: the main process may add the profile flag; raw input (pane.type) is never rewritten.
       if (api.terminals.runBuiltin && pane.status === 'running') api.terminals.runBuiltin(id, cmd);
       else pane.type(cmd + '\r');
       term.focus();
     }
+    planResume().then(refreshResume);
     refreshResume();
 
     /* Diktat: Zustand kommt aus D.dictation, die Kachel spiegelt ihn nur */

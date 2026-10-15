@@ -191,3 +191,23 @@ test('browserMode is kept only for the non-default modes', () => {
   const modes = createSessionStore(dir).load().projects.p1.terminals.map((t) => t.browserMode);
   assert.deepStrictEqual(modes, ['terminal', 'browser', undefined, undefined, undefined]);
 });
+
+// F02
+test('nativeSession round trip, old files without the field and invalid values', () => {
+  const dir = tmp();
+  const store = createSessionStore(dir);
+  const ns = { provider: 'claude', accountId: 'acc1', projectId: 'p1', nativeSessionId: 'a1b2c3d4-0000-4000-8000-123456789abc', observedAt: 1700000000000 };
+  store.save({ version: 1, activeProjectId: 'p1', projects: { p1: { terminals: [
+    term('a', { nativeSession: ns }), term('b'),
+    term('c', { nativeSession: { ...ns, nativeSessionId: 'x; rm -rf ~' } }),
+    term('d', { nativeSession: { ...ns, provider: 'evil' } }),
+    term('e', { nativeSession: 'str' }),
+  ] } } });
+  const t = store.load().projects.p1.terminals;
+  assert.deepStrictEqual(t[0].nativeSession, ns);
+  for (const x of t.slice(1)) assert.ok(!('nativeSession' in x), x.id);
+  fs.writeFileSync(path.join(dir, 'session.json'), JSON.stringify({ version: 1, activeProjectId: 'p1', projects: { p1: { terminals: [{ id: 'old', title: 'Alt', command: 'claude', resumeCommand: 'claude --continue' }] } } }));
+  const old = store.load().projects.p1.terminals[0];
+  assert.equal(old.id, 'old');
+  assert.ok(!('nativeSession' in old));
+});
