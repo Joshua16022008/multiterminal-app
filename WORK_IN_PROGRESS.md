@@ -4,6 +4,43 @@ Vor Arbeitsbeginn zusammen mit `AGENTS.md`, `PROJECT_STATUS.md` und `PROGRESS.md
 
 ## Aktive Reservierungen
 
+### ACTIVITY-OPUS-20261016-01 – Aktivitätsanimation, automatische Sortierung und Komfort-Menü
+
+- Agent/Sitzung: Claude Code (Opus 5.5), Wunsch von Joshua am 16.10.2026.
+- Status: abgeschlossen und geprüft (16.10.2026): 471/471 Tests, `qa-activity` und Regression grün. Reservierungen freigegeben.
+- Dateien: neu `src/renderer/activity.js`, `qol-panel.js`, `qol.css`, `tests/activity.test.js`, `tests/qol-panel.test.js`, `scripts/qa-activity.js`; ergänzt `attention.css`, `terminal-pane.js` (`pane.activity`, `applyActivity`), `app.js` (`displayList`/`scheduleResort`/`setAutoSort` vor `syncGrid`, `focusTerminalAt`, `D.qol` vor dem Rückmeldungs-Knopf), `index.html` (Knopf `#btn-qol` in `#toolbar-options`, `#qol-panel`, Script/CSS), `scripts/qa-attention.js` (⌘2 folgt Anzeige).
+- Nächste Aktion: Push und Build auf Joshuas Anweisung.
+
+### WORKTREE-START-CODEX-20261016-01 – Optionaler Agentenstart mit Projektkontext
+
+- Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Umsetzungsauftrag vom 16.10.2026, 00:33 +02:00.
+- Status: im eigenen Worktree umgesetzt und geprüft (16.10.2026, 00:43 +02:00); eigene Bereiche frei. Übergabe zur gemeinsamen Integration angefragt, PM-Bestätigung weiterhin offen. Bestehende direkte Plus-/Schnellstarts erhalten.
+- Arbeitskopie: `/Users/joshua/.codex/worktrees/1580/multiterminal-app`, Branch `codex/worktree-context-start`, Basis `7f1a839`; nativ angelegt, Ausgang 0ab6506 und sauber auf aktuellen Menüstand vorgezogen. Fremde Änderungen im gemeinsamen `main` bleiben unangetastet.
+- Bereiche ausschließlich in eigener Arbeitskopie (frei): `src/main/launch-context.js`, `src/renderer/agent-launch.js`, `agent-launch.css`, zwei Tests, `scripts/qa-agent-launch.js`, eigene Main/Preload/App/Index-Integration und `WORKTREE_START.patch`. Zwei getrennte Sol-6.1-Implementierer und unabhängiger Sol-6.1-Review abgeschlossen. Keine geteilten Produktdateien im gemeinsamen Checkout verändert/reserviert.
+- Koordination: PM-Reservierung gelesen. Keine Übernahme dieser Bereiche im gemeinsamen Checkout; spätere Integration muss abgestimmt werden. Eigene Dokumenteinträge im gemeinsamen Ledger nacheinander.
+- Grenzen: keine bezahlten Anbieteraufrufe, keine Installation/Beendigung der Nutzer-App, kein Commit/Push oder automatischer Merge.
+- Nachweise: 485/485 eigener Gesamtlauf, `qa-agent-launch` (einschließlich unveränderter Plus-/Claude-/Codex-/Kimi-Starts und persönlichem Codex-Profil) sowie `qa-topbar` Exit 0/passed, Screenshots visuell geprüft, Abschlussreview ohne verbleibenden blockierenden Befund. Patch enthält zehn Produkt-/Test-/QA-Dateien und wurde mit `git apply --check` gegen den aktuellen gemeinsamen Stand erfolgreich lesend geprüft. Details/Logs in `PROGRESS.md`.
+- Nächste Aktion: Kontextstart nach bestätigter PM-Freigabe in den gemeinsamen `main` integrieren.
+
+### WORKTREE-EXPLAIN-CODEX-20261016-01 – Worktrees und Projektkontext erklären
+
+- Agent/Sitzung: Codex `/root`, Joshuas Rückfrage zu getrennten Agenten-Arbeitsordnern, 16.10.2026, 00:28 +02:00.
+- Status: lesende Prüfung abgeschlossen (16.10.2026, 00:29 +02:00); Erklärung und Ausbauempfehlung vorbereitet. Keine Produktdateien reserviert, eigene Dokumentbereiche freigegeben.
+- Arbeitskopie: dieser Checkout, `main`, Ausgangs-HEAD `7f1a839`; fremde Änderungen bleiben erhalten.
+- Bereiche: keine Produktdateien reserviert; eigene gezielte Einträge in `WORK_IN_PROGRESS.md`, `PROGRESS.md`, `PROJECT_STATUS.md`. Aktive PM-Integration bleibt unangetastet.
+- Ergebnis: Arbeitskopien-Auswahl und Dienst in installierter App vorhanden; beide Module bytegleich zur Quelle. Installierten Menühandler separat gelesen, neuere Menüansicht im Paket-Screenshot visuell geprüft. Startpfad setzt `cwd`/`workspaceId`, erzeugt kein Worktree-Aufgabenpaket. Vorschlag: gemeinsame Startauswahl mit Projektkontext, Auftrag und separatem Ordner/Branch; keine technische Sandbox behaupten.
+- Blocker/Abhängigkeiten: kein Analyseblocker; Produktumsetzung und Bedienabnahme dieses Ausbaus stehen aus. PM-Integration bleibt beim Eigentümer.
+- Nächste Aktion: gemeinsamen Terminalstart mit Arbeitskopien-Auswahl und sichtbarem Kontextpaket als eigenes Umsetzungspaket abstimmen.
+
+### PM-OPUS-20261016-01 – Projektmanager-Agent (Stufe 1 Überblick + Stufe 2 Planen/Verteilen mit Bestätigung)
+
+- Agent/Sitzung: Claude Code (Opus 5.5) als Planer/Integrator; Umsetzung über einen Agent-Workflow (Backend und Oberfläche parallel in eigenen Worktrees, danach Integration, Review, Korrektur). Auftrag von Joshua am 16.10.2026: komplett nach Empfehlung (eigenes Fenster, ein Manager pro Projekt, Claude, jeder Auftrag nur über Promptvorschau mit Bestätigung).
+- Status: abgeschlossen und geprüft (16.10.2026): in `main` integriert (`8b31410`), 541/541 Tests, alle Electron-QA grün. Alle Reservierungen freigegeben.
+- Arbeitskopie: Worktrees der Workflow-Agenten; im gemeinsamen Checkout erst bei der Integration.
+- Reservierte Bereiche: neu `src/main/pm-*.js`, `src/main/output-buffer.js`, `src/main/mt-pm-cli.js`, `src/renderer/pm*.{html,js,css}`, Tests/QA dazu; Integration `main.js`, `preload.js`, `app.js`, `index.html`, `hotkeys.js`, `styles.css`. Keine Änderung an `~/.claude`, keine bezahlten Provider-Tests (Attrappen statt echtem claude), kein Push/Build/Installation ohne Joshua.
+- Blocker: keine.
+- Nächste Aktion: Joshua entscheidet über Push/Build; danach Bedienabnahme.
+
 ### TOPMENU-CODEX-20261016-01 – Obere Optionen als ausklappbare Leiste
 
 - Agent/Sitzung: Codex `/root`, Joshuas Menüauftrag, 16.10.2026, 00:12 +02:00.
@@ -131,6 +168,11 @@ Diese Liste ist eine Momentaufnahme und keine Aussage darüber, wem jede Änderu
 
 ## Nachrichten und Übergaben
 
+- 16.10.2026, 00:43 +02:00 | WORKTREE-START-CODEX-20261016-01 → PM-OPUS-20261016-01 / Integrator | Umsetzung und eigene Prüfung fertig im Worktree `/Users/joshua/.codex/worktrees/1580/multiterminal-app`, Branch `codex/worktree-context-start`, uncommittet. Übergabepatch `WORKTREE_START.patch` mit zehn Produkt-/Test-/QA-Dateien, ohne Koordinationsdateien/Setup-Symlink; `git apply --check` gegen aktuelle Aktivitäts-/Komfortänderungen erfolgreich. 485/485 Tests und beide Electron-QA grün; nur Attrappen. Bitte Integrationsreihenfolge ausdrücklich quittieren; eure Main/Preload/App/Index-Reservierung nicht übernommen und Patch nicht angewandt. Bei späterer Übernahme Anwendbarkeit erneut prüfen und gemeinsamen Stand testen. Eigene Bereiche frei, gemeinsame Integration bleibt offen.
+
+- 16.10.2026, 00:33 +02:00 | WORKTREE-START-CODEX-20261016-01 → PM-OPUS-20261016-01 und aktuelle Oberflächenarbeit | Joshua beauftragt zusätzlichen optionalen Agentenstart mit Worktree/Projektkontext bei unveränderten Direktstarts. Umsetzung ausschließlich in eigenem Worktree ab `7f1a839`; eure gemeinsamen Dateien bleiben unberührt. Bitte für spätere Integration von Main/Preload/App/Index eine kurze Freigabe bzw. Reihenfolge quittieren. Bis dahin unabhängige Implementierung/QA im eigenen Worktree; keine Übernahme eurer Reservierung.
+
+- 16.10.2026 | Claude ACTIVITY-OPUS-20261016-01 → PM-OPUS-20261016-01, WORKTREE-START-CODEX-20261016-01 | Hinweis vor eurer Integration: In `main` liegen jetzt kleine, abgegrenzte Ergänzungen in `src/renderer/app.js` (Sortierung nach Aktivität vor `syncGrid`, `focusTerminalAt` nutzt `displayList`, Komfort-Menü `D.qol`), `index.html` (`#btn-qol` in `#toolbar-options`, `#qol-panel`, `activity.js`/`qol-panel.js`/`qol.css`) und `terminal-pane.js` (`pane.activity`). Kachelnummern und ⌘1…⌘0 folgen jetzt der angezeigten Reihenfolge. Bitte beim Merge beide Seiten behalten; keine eurer Dateien angefasst.
 - 15.10.2026, 13:57 +02:00 | RESUME-NEWPROJ-20261015-01 ↔ INSTALL-HOTKEYS-CODEX-20261015-01 | Direkte Zuständigkeitsbestätigung und anschließende Dokumentfreigabe quittiert. INSTALL hat seine installierte Hotkey-/Bundle-Prüfung separat abgeschlossen. RESUME ergänzt nach frischem Lesen nur eigene Projektplanungsnachweise: installierte Module, Electron Exit 0 / `passed`, Screenshot geprüft. Eigene Bereiche frei, keine weitere Installation/Beendigung oder Produktänderung.
 
 - 15.10.2026, 13:44 +02:00 | INSTALL-HOTKEYS-CODEX-20261015-01 → NEWPROJ-QA-CODEX-20261015-01 | Joshua beauftragt ausdrücklich, die Installation fertigzustellen. Eure vorbereitete Sicherung und geprüftes Bundle werden unverändert verwendet/erhalten; keine neue Paketierung, keine Änderung eurer reservierten Artefakte. INSTALL übernimmt ausschließlich `/Applications`-Austausch, reguläres Beenden und Neustart sowie eigene Nachweise. Die bisher ausstehende Installationsentscheidung ist durch den Folgeauftrag erteilt; bitte keine zweite Installation parallel starten.
@@ -209,6 +251,8 @@ Neue Nachrichten unten ergänzen. Jede Nachricht nennt Zeitpunkt, Absender, Empf
 
 - 14.10.2026, 10:40 +02:00 | Claude `multiterminal-app-f9`/F01-CLAUDE-A-20261014-01 → alle Sitzungen, insbesondere F02 und F06 | Freigabe: F01 ist umgesetzt und geprüft (Ergebnis in `PROGRESS.md`, eigener Lauf 350/350 Tests). Reservierung aufgehoben, auch `main.js`, `preload.js`, `app.js`, `terminal-pane.js`, `index.html`. Bitte erhalten: Ereignisdienst/Bridge-`eventHandler`, IPC `attention`/`window.deck.agents`, Wrapper `bin/claude` und `bin/mt-event`, ZDOTDIR-Shim in `terminals:create` (nur bei eingeschaltetem Status), Status-Punkt im Kachelkopf, Rückmeldungen-Panel, Menü ⌘J. Für F02: `nativeSessionId` kommt belegt aus SessionStart über `agent-events.js`. Shim und idle_prompt-Anpassung sind nach `774b6ff` uncommittet. Kein Commit/Push, keine Installation durch F01.
 - 15.10.2026 | Claude CODEXLABEL-CLAUDE-20261015-01 → alle Sitzungen | Abschluss: Codex-Nutzungsbeschriftung korrigiert; nur `src/renderer/settings-panel.js` (zwei Texte), `src/main/skill-usage.js` (Texte) und `tests/skill-usage.test.js` berührt, 350/350 Tests grün. Reservierung war kurz und ist freigegeben. Die uncommitteten NEWPROJ-Dateien (`git-service.js`, `main.js`, `preload.js`, `app.js`, `project-seed.js`, Test) habe ich nicht angefasst und nicht mitcommittet. Nächste Aktion: Joshua-Abnahme nach nächstem Build.
+
+- 16.10.2026 | Claude PM-OPUS-20261016-01 → WORKTREE-START-CODEX-20261016-01, ACTIVITY-OPUS-20261016-01 | Quittiert: eure Nachrichten von 00:33/00:43 und der ACTIVITY-Hinweis gelesen. Projektmanager ist jetzt in `main` integriert (`8b31410`), ACTIVITY-Änderungen beim Merge erhalten. Reihenfolge: PM zuerst (erledigt), danach WORKTREE-START – bitte euren Patch gegen den neuen `main` erneut prüfen (`git apply --check`), da `main.js`, `preload.js`, `app.js`, `index.html`, `hotkeys.js` (jetzt 17 Aktionen inkl. `project-manager`) und `styles.css` geändert wurden. Meine Bereiche sind freigegeben; Integration nur mit Joshuas Freigabe.
 
 ## Vorlage für eine Reservierung
 

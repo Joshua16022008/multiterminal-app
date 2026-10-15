@@ -2,7 +2,7 @@
 schemaVersion: 1
 projectId: multiterminal-app
 state: active
-updatedAt: 2026-10-16T00:29:00+02:00
+updatedAt: 2026-10-16T00:43:00+02:00
 updatedBy: codex
 ---
 
@@ -12,6 +12,10 @@ updatedBy: codex
 Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt bis zu 30 echte Terminals mit eigenem Mini-Browser für parallel laufende Terminal-Agenten bereitstellt.
 
 ## Aktueller Stand
+PM-OPUS-20261016-01 (16.10.2026): Projektmanager-Agent – je Projekt ein Claude-Manager in eigenem Fenster mit Lagebild und Werkzeug `mt-pm`; Aufträge an Kacheln nur als Promptvorschau mit Bestätigung. Öffnen über ◆ in der Seitenleiste, Knopf „◆ Projektmanager“ oder ⌘⇧O. In `main` integriert (`8b31410`), 541/541 Tests und alle Electron-QA grün; nicht gepusht/gebaut, kein Test mit echtem claude.
+
+WORKTREE-START-CODEX-20261016-01: optionaler Menüpunkt „Agent mit Kontext starten…“ im eigenen Worktree `/Users/joshua/.codex/worktrees/1580/multiterminal-app`, Branch `codex/worktree-context-start`, umgesetzt und geprüft; Hauptcheckout/PM-/Aktivitätsarbeit erhalten. Claude/Codex mit Projektordner/neuer/vorhandener Arbeitskopie, Auftrag und bearbeitbarer Vorschau; bisherige Plus-/Claude-/Codex-/Kimi-Direktstarts unverändert. Eigener Abschluss: 485/485 Tests, Kontextstart-/Menü-Electron-QA grün, Review ohne blockierenden Befund. Übergabepatch `WORKTREE_START.patch` lesend gegen aktuellen gemeinsamen Checkout geprüft. PM-Freigabe zur Integration noch unbestätigt; kein eigener Build/Installation/Commit/Push. Details in `PROGRESS.md`, eigene Bereiche frei.
+
 ACTIVITY-OPUS-20261016-01: Kopfleisten-Animation (arbeitet / wartet / inaktiv) und automatische Sortierung (wartet vorne, arbeitet Mitte, inaktiv hinten) sowie Komfort-Menü zum Ein-/Ausschalten umgesetzt und geprüft; gebaut, Installation durch Joshua offen.
 
 WORKTREE-EXPLAIN-CODEX-20261016-01: Arbeitskopien-Auswahl und Dienst lesend gegen installierte App bestätigt, neuere Menüansicht im vorhandenen Paket-Screenshot geprüft. Startpfad setzt Arbeitsordner/Branchzuordnung, erzeugt noch kein Worktree-Aufgabenpaket. Gemeinsame Startauswahl samt Projekt-/Aufgabenkontext empfohlen; Erklärung, keine Produktumsetzung oder neue Bedienprüfung. Details in `PROGRESS.md`, eigene Bereiche frei; aktive PM-Aufgabe unverändert.
@@ -51,7 +55,7 @@ Agentenkommunikation als Projektdokumentation eingerichtet: `WORK_IN_PROGRESS.md
 Version 0.1.0: Terminal-Raster, Diktat, Kontenverwaltung, Verbrauchsanzeige, Terminal-Namen und Farben sind im Quellstand vorhanden. Tastenkürzel, Drag-and-drop, Mini-Browser-Steuerung und Settings liegen als lokale Änderungen vor. Bisherige Prüfungen stehen unter Nachweise; Alltagstests und Joshuas Abnahme bleiben offen. Der installierte Build wurde in COMMIT-CHECK-20261014-01 lesend mit den aktuellen Produktdateien abgeglichen; keine neue App-Bedienung in dieser Prüfrunde. Entwicklungsentwurf: `ENTWICKLUNGSPLAN.md`.
 
 ## Nächster Schritt
-Geprüften Menüleisten-Build bei nächster freigegebener App-Aktualisierung installieren.
+Kontextstart nach bestätigter PM-Freigabe in den gemeinsamen `main` integrieren.
 
 ## Aktive Aufgaben
 - F11-Build/Installation abgeschlossen; Joshuas manuelle Abnahme offen. RELEASE-20261015-01 meldet Joshuas Aufhebung der verwaisten F06-/CLAUDE-PROFILE-Reservierungen; deren historische Einträge erhalten. Unabhängige Claude-Profil-Abnahme bleibt fachlich unvollständig. Kein Ausbau für andere Nutzer. Flüsterflow ruht weiterhin.
