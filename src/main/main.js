@@ -22,6 +22,7 @@ const { createWorktreeService } = require('./worktree-service');
 const { createAttachmentStore, MAX_IMAGE_BYTES } = require('./attachment-store');
 const { createDictation } = require('./dictation');
 const { createPortService } = require('./port-service');
+const { createDiffService } = require('./diff-service'); // F04
 const { createBrowserBridge, MAX_SOCKET_PATH_BYTES } = require('./browser-bridge');
 const { createBrowserControl, createConsoleStore, createRendererLink } = require('./browser-control');
 const mtBrowserCli = require('./mt-browser-cli');
@@ -198,6 +199,24 @@ function registerIpc() {
   listen('agents:reportVisible', (id) => {
     visibleTerminal = typeof id === 'string' && id ? id : null;
     if (visibleTerminal && windowIsFocused()) agentStore.markRead(visibleTerminal);
+  });
+  // F04: read-only Git changes of a project or of one of its working copies (F07).
+  // The folder always comes from the stored project/worktree, never from the page.
+  const diffs = createDiffService();
+  async function diffCwd(projectId, workspaceId) {
+    const project = requireProject(projectId);
+    if (!workspaceId) return { cwd: project.path, scope: { kind: 'project', label: 'Projektordner' } };
+    const wt = await worktrees.resolveCwd(String(workspaceId), project.id, project.path);
+    if (!wt.ok) throw new Error(wt.error);
+    return { cwd: wt.cwd, scope: { kind: 'worktree', label: 'Arbeitskopie ⑂ ' + (wt.worktree.branch || wt.worktree.workspaceId) } };
+  }
+  handle('diff:list', async (projectId, workspaceId) => {
+    const { cwd, scope } = await diffCwd(projectId, workspaceId);
+    return { ...(await diffs.listChanges(cwd)), scope };
+  });
+  handle('diff:file', async (projectId, workspaceId, file, mode) => {
+    const { cwd } = await diffCwd(projectId, workspaceId);
+    return diffs.fileDiff(cwd, file, mode);
   });
   handle('ports:list', () => ports.list());
   handle('ports:resolve', async (id) => {

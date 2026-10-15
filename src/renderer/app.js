@@ -327,6 +327,7 @@
         if (!list.some((p) => p.id === S.activeByProject[id]) && list[0]) S.activeByProject[id] = list[0].id;
         const a = activePane();
         if (a) setActive(a, true);
+        if (D.diffPanel.isOpen()) D.diffPanel.refresh(); // F04: anderes Projekt neu lesen
       });
     }
     renderHeader();
@@ -625,6 +626,7 @@
       $('btn-ports').setAttribute('aria-expanded', String(open));
       if (open) {
         showAttention(false);
+        if (D.diffPanel.isOpen()) showDiff(false); // F04
         $('btn-accounts').classList.toggle('on', D.accountsPanel.toggle(false));
         $('btn-progress').classList.toggle('on', D.progressPanel.toggle(false));
       }
@@ -632,7 +634,7 @@
     }
     function showSettings(force) {
       const open = D.settingsPanel.toggle(force);
-      if (open) { showPorts(false); showAttention(false); }
+      if (open) { showPorts(false); showAttention(false); if (D.diffPanel.isOpen()) showDiff(false); } // F04: diff
       $('btn-settings').classList.toggle('on', open);
       $('btn-settings').setAttribute('aria-expanded', String(open));
       $('sidebar').inert = open;
@@ -688,6 +690,31 @@
         if (result && result.ok === false) throw new Error(result.error || 'HTTP-Adresse konnte nicht geöffnet werden.');
       },
     });
+    // F04: Projektänderungen (lesend). Bereich = Arbeitskopie der aktiven Kachel, sonst der Projektordner.
+    function showDiff(force) {
+      const open = D.diffPanel.toggle(force);
+      $('btn-diff').classList.toggle('on', open);
+      $('btn-diff').setAttribute('aria-expanded', String(open));
+      if (open) { showPorts(false); showAttention(false); }
+      requestAnimationFrame(() => panesOf(S.activeId).forEach((p) => p.refit()));
+      return open;
+    }
+    D.diffPanel.init({
+      getContext: () => {
+        const project = activeProject(), pane = activePane();
+        if (!project) return null;
+        const ws = pane && pane.desc && pane.desc.workspaceId;
+        return { projectId: project.id, projectName: project.name, workspaceId: ws || null };
+      },
+      getTargets: () => {
+        const act = activePane();
+        return panesOf(S.activeId).filter((p) => p.status === 'running')
+          .map((p) => ({ id: p.id, label: p.desc.title + (p === act ? ' (aktiv)' : ''), active: p === act }));
+      },
+      openDraft: (opts) => D.promptDraft.open(opts),
+      onClose: () => showDiff(false),
+    });
+    $('btn-diff').onclick = () => { closeMenu(); showSettings(false); showDiff(); };
     /* Rückmeldungen der Agenten: Liste, Zähler am Knopf, Sprung zur Kachel */
     let attSettings = { statusEnabled: false, desktopNotification: false, sound: false };
     let attList = [];
@@ -732,6 +759,7 @@
       $('btn-attention').setAttribute('aria-expanded', String(open));
       if (open) {
         showPorts(false);
+        if (D.diffPanel.isOpen()) showDiff(false); // F04
         attPanel.update(attList, attSettings);
       }
       requestAnimationFrame(() => panesOf(S.activeId).forEach((p) => p.refit()));

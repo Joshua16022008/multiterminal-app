@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="handoff.css"><!-- F09 -->
   <link rel="stylesheet" href="worktree.css">
   <link rel="stylesheet" href="attention.css">
+  <link rel="stylesheet" href="diff.css"><!-- F04 -->
   <link rel="stylesheet" href="search.css"><!-- F03 -->
   <link rel="stylesheet" href="workspace-templates.css"><!-- F08 -->
   <link rel="stylesheet" href="browser-feedback.css">
@@ -37,6 +38,7 @@
         <span class="spacer"></span>
         <button id="btn-settings" class="btn-small" aria-expanded="false" aria-controls="settings-panel" title="Persönliches Profil und Agent-Einstellungen">Einstellungen</button>
         <button id="btn-attention" class="btn-small" aria-expanded="false" aria-controls="attention-panel" title="Rückmeldungen der Agenten: wartet auf dich, Antwort fertig, Fehler (⌘J springt zur nächsten)">Rückmeldungen <span id="attention-count" class="attn-badge" hidden></span></button>
+        <button id="btn-diff" class="btn-small" aria-expanded="false" aria-controls="diff-panel" title="Lokale Git-Änderungen ansehen und kommentieren">Änderungen</button><!-- F04 -->
         <button id="btn-ports" class="btn-small" aria-expanded="false" aria-controls="ports-panel" title="Lokale Devserver und lauschende Ports">Ports</button>
         <div id="ws-actions">
           <div class="split">
@@ -54,6 +56,7 @@
         <aside id="accounts-panel" hidden></aside>
         <aside id="progress-panel" hidden></aside>
         <aside id="attention-panel" hidden aria-label="Rückmeldungen der Agenten"></aside>
+        <aside id="diff-panel" hidden aria-label="Projektänderungen"></aside><!-- F04 -->
         <aside id="ports-panel" hidden aria-label="Devserver und Ports"></aside>
         <section id="settings-panel" hidden aria-label="Einstellungen"></section>
         <div id="empty-main" hidden>
@@ -86,6 +89,7 @@
   <script src="usage-view.js"></script>
   <script src="accounts-panel.js"></script>
   <script src="ports-panel.js"></script>
+  <script src="diff-panel.js"></script><!-- F04 -->
   <script src="settings-panel.js"></script>
   <script src="github-panel.js"></script>
   <script src="worktree-picker.js"></script>

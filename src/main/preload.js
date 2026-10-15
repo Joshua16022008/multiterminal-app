@@ -35,6 +35,10 @@ contextBridge.exposeInMainWorld('deck', {
     reportVisible: id => ipcRenderer.send('agents:reportVisible', id),
     userInput: id => ipcRenderer.send('agents:userInput', id),
   },
+  diff: { // F04
+    list: (projectId, workspaceId) => ipcRenderer.invoke('diff:list', projectId, workspaceId || null),
+    file: (projectId, workspaceId, file, mode) => ipcRenderer.invoke('diff:file', projectId, workspaceId || null, file, mode),
+  },
   ports: {
     list: () => ipcRenderer.invoke('ports:list'),
     resolve: id => ipcRenderer.invoke('ports:resolve', id),
