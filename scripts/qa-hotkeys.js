@@ -58,7 +58,7 @@ app.on('browser-window-created', (_event, win) => {
       await wait(`${panes}?.length===2 && ${panes}.every(p=>p.plainText().includes('HOTKEY_QA_READY'))`);
       assert.equal(item('Neues Terminal').accelerator, 'Cmd+T');
       assert.equal(item('Terminal 10').accelerator, 'Cmd+0');
-      assert.ok(!menuItems().find(i => i.role?.toLowerCase() === 'resetzoom').accelerator, 'Zoom reset does not compete with Terminal 10');
+      assert.ok(!item('Originalgröße').accelerator, 'Zoom reset does not compete with Terminal 10');
       await run(`${panes}[0].term.focus()`);
       await open();
       stage = 'capture and conflict';

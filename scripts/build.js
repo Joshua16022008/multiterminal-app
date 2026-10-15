@@ -42,6 +42,8 @@ async function main() {
       /^\/\.git($|\/)/,
       /^\/scripts\/build\.js$/,
       /^\/node_modules\/node-pty\/prebuilds\/win32-/,
+      // Local test fixtures/caches can contain dangling account-setting symlinks.
+      /^\/node_modules\/\.cache($|\/)/,
     ],
     quiet: false,
   });

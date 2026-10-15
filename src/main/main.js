@@ -469,7 +469,9 @@ function buildMenu() {
     {
       label: 'Darstellung',
       submenu: [
-        { role: 'resetZoom', accelerator: null }, { role: 'zoomIn' }, { role: 'zoomOut' },
+        // Electron restores the role's Cmd+0 even with accelerator:null.
+        { label: 'Originalgröße', click: () => { const focused = webContents.getFocusedWebContents(); if (focused) focused.setZoomLevel(0); } },
+        { role: 'zoomIn' }, { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
         { role: 'toggleDevTools' },

@@ -4,6 +4,8 @@
 
 ## Aktueller Stand
 
+- NEWPROJ-QA-CODEX-20261015-01: gemeinsamer Build mit Projektplanung und Hotkeys fertig, 55 Produktdateien bytegleich, Quellmanifest stabil. Eigener abschließender Gesamtlauf 368/368 und beide Electron-QA-Scripte gegen gepackte Module grün, beide Screenshots selbst geprüft. Native Bundle-Binärdatei lädt `node-pty`; bisher installierte App vollständig extern gesichert. Installation wartet auf Joshuas Freigabe zum Schließen/Neustarten der laufenden App; keine Benutzerterminals beendet.
+
 - RELEASE-20261015-01 (Claude `multiterminal-app-f9`, auf Joshuas Anweisung): Stand nach `774b6ff` mit F01-zsh-Aufsatz, idle_prompt-Anpassung und F06-Maximierungskorrektur gemeinsam committet, gepusht, gebaut und nach `/Applications` installiert. Vorher `npm test` 350/350 grün, `scripts/qa-attachments.js` vollständig grün, `git diff --check` sauber. Reservierungen F06-CODEX-A und CLAUDE-PROFILE von Joshua als verwaist erklärt; unabhängige Claude-Profil-Prüfung bleibt unvollständig. Nächste Aktion: Joshua testet Rückmeldungen und Promptvorschau in der installierten App.
 - F06-CODEX-A-20261014-01: Datei-/Bildübergabe und gemeinsame Promptvorschau im Entwicklungsstand abgeschlossen und geprüft. F01-Sichtbarkeitskorrektur selbst gegengeprüft; eigener aktueller Gesamtlauf 350/350 und vollständiger Electron-Regressionstest einschließlich anderer maximierter Kachel grün, Screenshot visuell geprüft. Alle eigenen Bereiche freigegeben; Nutzerabnahme im nächsten gemeinsamen Build offen.
 - F11-BUILD-CODEX-B-20261014-02: gemeinsamer App-Build mit F11 fertig geprüft; eigener aktueller Gesamtlauf 350/350 und echter Electron-Test gegen gepackte Module grün, Screenshot geprüft. Parallele RELEASE-Sitzung hat inzwischen installiert/committet/gepusht; eigene Nachprüfung bestätigt alle 53 Produktdateien unter `/Applications` bytegleich und GitHub-HEAD `f6b0f81`. Rückfrage zum Schließen/Ersetzen hinfällig, keine doppelte Installation oder Beendigung durch CODEX-B. Eigene Reservierungen freigegeben.
@@ -14,11 +16,59 @@
 
 ## Nächster Schritt
 
-- Joshua prüft Ports, Rückmeldungen und Promptvorschau im aktualisierten App-Stand.
+- Nach Joshuas Freigabe die laufende App regulär schließen, gesicherten geprüften Build installieren und neu starten.
 
 ## Erledigt
 
 Neue Ergebniseinträge oben ergänzen; bestehende Einträge erhalten. Ungeprüfte Umsetzung ausdrücklich als solche kennzeichnen.
+
+### 15.10.2026, 13:43 +02:00 – NEWPROJ-QA-CODEX-20261015-01: Paketprüfung abgeschlossen, Installation vorbereitet
+
+- Erledigter Schritt (Codex `/root`): Hotkey-QA mit `TMPDIR` auf Projektvolume und gepacktem `main.js`, Exit 0 / `passed`: 14 Aktionen, Tastaturaufnahme/Menüunterdrückung, Konflikte/reservierte Kürzel, Escape, Entwurf vs. live, IPC/Speicherung, Menüs, zweite Belegung entfernen, echte PTY mit neuer/alter Belegung, Deaktivierung, Renderer-Neuladen und Standards. Menüaktionen direkt ausgelöst; physische OS-Kürzel bleiben Nutzerabnahme.
+- Sichtnachweis: `node_modules/.cache/hotkeys-qa-20261015/mt-hotkeys-qa-cdWlpB/hotkeys.png` selbst geöffnet; lesbare Hotkey-Liste, Speichermeldung, Belegungen und Aktionen. Projektplanungs-Paket-Screenshot zuvor ebenfalls selbst geprüft.
+- Abschließender eigener `npm test` nach endgültiger Zoom-Menükorrektur: Exit 0, 368/368 grün, keine fehlgeschlagen/übersprungen. `git diff --check` sauber. Quellmanifest nach beiden Paketprüfungen weiterhin `f992f82b8ce5b271cfc8f7f7ea48e7a86316c26fa49e0420f806fad17ea4fc6c`; keine weiteren Produktänderungen.
+- Bereit: `dist/Multiterminal-darwin-arm64/Multiterminal.app` (304 MiB), vollständige geprüfte Sicherung `dist/Multiterminal-backup-20261015-1336.app`. Eigene Änderungen ausschließlich `scripts/build.js`, neue `scripts/qa-project-planning.js` und Koordination; fremde Produktarbeit erhalten. Keine Veröffentlichung/Provider/Commit/Push.
+- Offener letzter Schritt: Installation/Neustart. Installierte App läuft (PID 58447); reguläres Schließen beendet ihre Benutzerterminals. Deshalb vor diesem konkreten Schritt Joshuas Freigabe erfragen. Noch kein Beenden/Ersetzen vorgenommen. Interne SSD zuletzt 216 MiB frei; für Installation nach Freigabe vorhandenes Bundle auf externes Volume auslagern (geprüfte Sicherung vorhanden), neues Bundle kopieren und Zielinhalt prüfen, statt zwei vollständige Bundles intern vorzuhalten. `README.md:75` verlangt Beenden vor Ersetzen.
+- Koordination: Produkt-/QA-Dateien freigegeben, fertiges Bundle/Sicherung bis Installationsentscheidung erhalten. Unabhängige Claude-Profil-Abnahme und physische Nutzerabnahme bleiben offen; keine fremden Aufgaben übernommen.
+- Abschließender Zustandsabgleich: parallele Sitzung hat inzwischen `cdd5e70` committet (vorher `22c5a02`); keine Git-Mutation durch diese Sitzung. Produktmanifest weiterhin identisch zum geprüften Bundle. Lokale Zoom-Menükorrektur (`main.js`), Hotkey-QA-Nachbereitung, Cache-Ausschluss und Dokumentnotizen erhalten; keine erneute Paketierung nötig, da Produktbytes unverändert.
+- Nächste Aktion: nach Joshuas Freigabe laufende App regulär schließen, geprüften Build gesichert installieren und neu starten.
+
+### 15.10.2026, 13:40 +02:00 – NEWPROJ-QA-CODEX-20261015-01: Projektplanung gegen Paket bestanden
+
+- Erledigter Schritt: eigener `node_modules/.bin/electron scripts/qa-project-planning.js dist/Multiterminal-darwin-arm64/Multiterminal.app/Contents/Resources/app/src/main/main.js`, Exit 0 / `passed`; alle zuvor genannten Formular-/Git-/PTY-/Abbruch-/Duplikatfälle gegen gepackte Produktmodule bestanden. Lokale Fake-Agenten, GitHub-Dialog Abbruch-Stub, keine Provider/Veröffentlichung.
+- Paket-Screenshot `/var/folders/dz/mbg87p4x3pbf1v207rr8f1t80000gp/T/mt-project-planning-qa-JzaR68/project-planning-dialog.png` selbst visuell geprüft; Projektname/Agentwahl/Aktionen lesbar.
+- Native Bundle-Binärdatei selbst mit `ELECTRON_RUN_AS_NODE=1` gestartet: Electron 44.7.0, Node 24.21.0, arm64, natives `node-pty` aus Bundle geladen, Exit 0. macOS meldet dabei `task_name_for_pid ... failure (5)`; Laden/Exit erfolgreich. Dies ist kein regulärer Dock-/Applications-GUI-Neustart.
+- Nächste Aktion: Hotkey-Electron-QA gegen gepackte Module mit Tempdaten auf Projektvolume ausführen.
+
+### 15.10.2026, 13:39 +02:00 – NEWPROJ-QA-CODEX-20261015-01: Gemeinsamer Build erfolgreich
+
+- Erledigter Schritt: `npm run build` außerhalb Sandbox Exit 0, Electron 44.7.0/darwin-arm64; zwei ausführbare native `spawn-helper` geprüft. Build unter `dist/Multiterminal-darwin-arm64/Multiterminal.app`. Bekannte Warnung zum optionalen `.icon`-Format unverändert, kein Buildfehler.
+- Eigener Paketabgleich: alle 55 Produktdateien aus `src`/`assets` bytegleich, Projektplanung/Hotkeys/F01/F06/F07/F11 vorhanden. Quellmanifest aller 57 Dateien vor/nach unverändert: SHA-256 `f992f82b8ce5b271cfc8f7f7ea48e7a86316c26fa49e0420f806fad17ea4fc6c`. `node_modules/.cache` nicht im Bundle; Temp-Umstellung und Cache-Ausschluss damit im vollständigen Build bestätigt.
+- Offen: beide Electron-Bedienprüfungen gegen gepackte Produktmodule, anschließende sichere Installation; vorhandene Nutzer-App weiter unverändert.
+- Nächste Aktion: Projektplanungs-QA gegen gepacktes `main.js` ausführen.
+
+### 15.10.2026, 13:38 +02:00 – NEWPROJ-QA-CODEX-20261015-01: Build-Temp bestätigt, Fixture-Cache ausgeschlossen
+
+- Erledigter Schritt: erneuter nativer Build entpackt Electron erfolgreich unter `dist/.build-tmp`; interner Platzmangel damit für den Build umgangen. Abbruch danach beim Kopieren einer fehlenden Test-Fixture-Datei unter `node_modules/.cache/hotkeys-qa-20261015/.../settings.json` (`ENOENT`), keine Produktdatei betroffen. Quellmanifest von 57 Dateien vor/nach unverändert (`f992f82b8ce5b271cfc8f7f7ea48e7a86316c26fa49e0420f806fad17ea4fc6c`).
+- Gezielte Buildkorrektur: `scripts/build.js` schließt `node_modules/.cache` vom Paket aus; dortige QA-Fixtures gehören nicht zur App. Fremde Testdaten bleiben erhalten, keine Dateien gelöscht.
+- Nächste Aktion: Build mit ausgeschlossenem Fixture-Cache erneut ausführen und Paket prüfen.
+
+### 15.10.2026, 13:37 +02:00 – NEWPROJ-QA-CODEX-20261015-01: Installation gesichert, Produktfreigabe bestätigt
+
+- Erledigter Schritt: installierte App mit `ditto` nach `dist/Multiterminal-backup-20261015-1336.app` gesichert. Eigener Vergleich aller 822 Dateien und 14 Symlinks inklusive Ausführungsrechten ohne Abweichung. Laufende App/Nutzerdaten unverändert.
+- Koordination: endgültige HOTKEYS-Freigabe 13:37 einschließlich Zoom-Reset-Korrektur gelesen und quittiert; keine offenen Produktänderungen mehr gemeldet. Frühere Freigabe 13:33 wurde vor Buildbeginn durch Nachtrag 13:35 zurückgehalten; kein Zwischenstand paketiert.
+- Nächste Aktion: freigegebenen gemeinsamen Stand mit neuem Quellmanifest und externem Build-Temp paketieren.
+
+### 15.10.2026, 13:37 +02:00 – HOTKEYS-CODEX-20261015-01: Hotkeys in Einstellungen umbinden
+
+- Agent/Sitzung: Codex `/root`, Unteragent `/root/hotkey_model` (Sol 6.1); Checkout `main`, Ausgangs-HEAD `f6b0f81`. Vorhandene Änderungen einschließlich Projektplanung/Build erhalten.
+- Status: Quellstand umgesetzt und geprüft; sämtliche eigenen Reservierungen freigegeben. Paketierung an NEWPROJ-QA-CODEX-20261015-01 ausdrücklich übergeben; Installation und physische Nutzerabnahme dieses Stands offen.
+- Änderung: neuer Tab Einstellungen → Hotkeys, global für alle Anbieter. 14 Aktionen: Einstellungen, neues/schließen Terminal, nächste Rückmeldung, Terminals 1–10. Jeweils bis zu zwei Kürzel per Tastenaufnahme, einzelne entfernen/deaktivieren, Standard pro Aktion oder alle Standards, bewusstes Speichern mit sofortiger Wirkung. Ungespeicherte Entwürfe bleiben bei Navigation erhalten. Konflikte und reservierte Bearbeitungs-/Systemkombinationen werden auch im Hauptprozess abgewiesen.
+- Dateien: `src/renderer/hotkeys.js` (gemeinsames Modell), neu `src/main/hotkey-store.js` (atomare Speicherung in App-`hotkeys.json`), gezielte Integration in `main.js`, `preload.js`, `app.js`, `settings-panel.js`, `settings.css`; ergänzt `tests/hotkeys.test.js`, neu `tests/hotkey-store.test.js`, `scripts/qa-hotkeys.js` (optional Pfad zum gepackten Hauptmodul).
+- Entscheidung: Menüs bleiben der Auslöseweg auch bei Mini-Browser-Fokus; xterm nimmt dieselbe aktive Belegung aus und gibt freigewordene Kombinationen wieder an die Shell. Menü-Shortcuts während Aufnahme ausgesetzt, bei Abbruch/Fokusverlust wieder aktiv. Tooltips aktualisiert. Settings-Schließen stellt Fokus erst nach Aufhebung von `inert` wieder her. Native Zoom-Reset-Role setzte trotz `accelerator:null` Cmd+0 zurück; deshalb „Originalgröße“ als gleichwertige Menüaktion ohne Kürzel, damit Terminal 10 eindeutig belegt ist.
+- Eigene Prüfungen: gezielte Modell-/Persistenztests 20/20; Gesamtlauf 368/368 Exit 0 mit Temp auf Projektvolume und `GIT_CEILING_DIRECTORIES` (interner Temp zuerst ENOSPC, verschachteltes Temp danach drei Git-Erkennungsfehler, isolierte Wiederholung vollständig grün). Vollständige Electron-QA Exit 0: echte Oberfläche/Preload/IPC/Disk, Aufnahme über Electron-Eingabe, Konflikt/reserviertes Kürzel/Esc, Entwurf versus aktive Menüs, Speichern/Menüaktionen, Zweitbelegung entfernen, deaktivieren, DOM-Tasten an echte Recorder-PTY (neue Belegung wird abgefangen, alte Ctrl+3 wieder durchgereicht), Neuladen/Standards, Fokus und Zoom-Menükollision. Syntax und `git diff --check` sauber. Finaler Screenshot `node_modules/.cache/hotkeys-qa-20261015/mt-hotkeys-qa-8QesPg/hotkeys.png` visuell geprüft; Gesamttestlog im selben Cache-Stamm `tests.log`. Frühere Ctrl+2-Prüfung war ungeeignet: xterm erzeugt dafür im synthetischen Keydown keinen Text; deshalb echte Ctrl+3-Ausgabe verwendet.
+- Grenzen: Menüaktionen direkt ausgelöst; physischer OS-Tastendruck und Browser-/Betriebssystemlayout bleiben Nutzerabnahme. Kein eigener Build, Installation, Commit oder Push. Eigene temporäre Projekte/Recorder, keine Anbieteraufrufe oder Nutzerterminals verändert.
+- Nächste Aktion: NEWPROJ-QA erstellt den gemeinsamen Build und führt `scripts/qa-hotkeys.js` gegen dessen Module aus.
 
 ### 15.10.2026, 13:32 +02:00 – NEWPROJ-QA-CODEX-20261015-01: Gemeinsamen aktuellen Quellstand geprüft
 
