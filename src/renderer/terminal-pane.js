@@ -486,7 +486,7 @@
     pane.serialize = () => serializer.serialize({ scrollback: 1500 });
 
     /* Mini-Browser */
-    let browser, addr, bBack, bFwd, bToAgent;
+    let browser, addr, bBack, bFwd, bToAgent, feedback; // F05: feedback
     const modeOf = () => (BV ? BV.normalizeMode(desc.browserMode) : 'split');
     const browserOnly = () => !!desc.browserOpen && !!browser && modeOf() === 'browser';
     function buildBrowser() {
@@ -499,7 +499,9 @@
       addr.addEventListener('keydown', (e) => { if (e.key === 'Enter') navigate(addr.value); });
       addr.addEventListener('focus', () => addr.select());
       const host = h('div', { class: 'wv-host' });
-      browser = h('div', { class: 'browser' }, h('div', { class: 'browser-bar' }, bToAgent, bBack, bFwd, bReload, addr, bShut), host);
+      // F05: Knopf "Element kommentieren" (nur mit geladenem Modul)
+      feedback = D.browserFeedback ? D.browserFeedback.attach({ terminalId: id, getUrl: () => safeUrl(), host: null }) : null;
+      browser = h('div', { class: 'browser' }, h('div', { class: 'browser-bar' }, bToAgent, bBack, bFwd, bReload, addr, feedback ? feedback.button : null, bShut), host);
       wv = document.createElement('webview');
       wv.setAttribute('partition', 'persist:minibrowser');
       wv.setAttribute('allowpopups', '');
@@ -514,6 +516,7 @@
       wv.addEventListener('focus', () => hooks.onActivate(pane, false));
       host.append(wv);
       body.append(browser);
+      if (feedback) feedback.setHost(browser); // F05
     }
     function updateNav() {
       if (!wvReady) return;
@@ -635,6 +638,7 @@
     /* Aufräumen */
     pane.dispose = function () {
       pane.disposed = true;
+      if (feedback) feedback.dispose(); // F05
       clearTimeout(roTimer);
       if (dictUnregister) dictUnregister();
       ro.disconnect();

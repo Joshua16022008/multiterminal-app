@@ -28,6 +28,9 @@ Usage:
   mt-browser console [--limit n]    Print recent console messages of the page, one per line
                                     as "[level] message" (default: the last 100).
   mt-browser text [--limit n]       Print the visible text of the page (at most n characters).
+  mt-browser click <selector>       Click the element matching the CSS selector (must be visible).
+  mt-browser type <selector> <text> Set the text of an input, textarea or editable element and
+                                    fire its input/change events. Only these two page actions exist.
   mt-browser show | hide            Show or hide the browser in the tile.
   mt-browser --help                 This text.
 
@@ -72,6 +75,14 @@ function parseArgs(argv) {
   if (cmd === 'screenshot') {
     if (rest.length > 1) return { error: 'Aufruf: mt-browser screenshot [datei.png]' };
     return { cmd, args: rest.length ? { out: path.resolve(rest[0]) } : {} };
+  }
+  if (cmd === 'click') { // F05
+    if (rest.length !== 1) return { error: 'Aufruf: mt-browser click <selektor>' };
+    return { cmd, args: { selector: rest[0] } };
+  }
+  if (cmd === 'type') { // F05
+    if (rest.length !== 2) return { error: 'Aufruf: mt-browser type <selektor> <text> (Text in Anführungszeichen)' };
+    return { cmd, args: { selector: rest[0], text: rest[1] } };
   }
   if (cmd === 'console' || cmd === 'text') {
     const r = parseLimit(rest);

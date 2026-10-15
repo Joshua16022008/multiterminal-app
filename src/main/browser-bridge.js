@@ -17,8 +17,9 @@ const MAX_REQUEST_BYTES = 64 * 1024;
 const REQUEST_TIMEOUT_MS = 5000;
 const HANDLER_TIMEOUT_MS = 30000;
 const MAX_LIMIT = 10000;
+const { validateSelector, validateTypeText } = require('./browser-feedback'); // F05
 
-const COMMANDS = Object.freeze(['open', 'reload', 'back', 'forward', 'url', 'screenshot', 'console', 'text', 'show', 'hide']);
+const COMMANDS = Object.freeze(['open', 'reload', 'back', 'forward', 'url', 'screenshot', 'console', 'text', 'show', 'hide', 'click', 'type']); // F05: click, type
 
 // Same rules as normalizeUrl in terminal-pane.js: bare localhost addresses get
 // http://, other bare hosts https://, and only http(s) survives.
@@ -72,6 +73,9 @@ function validateCommand(cmd, args, isAllowedUrl) {
     }
     return a.out ? { out: a.out } : {};
   }
+  // F05
+  if (cmd === 'click') return { selector: validateSelector(a.selector) };
+  if (cmd === 'type') return { selector: validateSelector(a.selector), text: validateTypeText(a.text) };
   if (cmd === 'console' || cmd === 'text') {
     const limit = positiveInt(a.limit, 'limit');
     return limit === undefined ? {} : { limit };

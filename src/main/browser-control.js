@@ -10,6 +10,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { buildActionScript } = require('./browser-feedback'); // F05
 
 const DEFAULT_TEXT_LIMIT = 8000;
 const MAX_TEXT_LIMIT = 100000;
@@ -174,6 +175,16 @@ function createBrowserControl({ callRenderer, webContentsFromId, isOurWebview, c
     return wc.getURL();
   }
 
+  // F05: click/type. Der Browser muss offen und sichtbar sein; der Code ist fest, Argumente reichen nur als JSON hinein.
+  async function uiAction(id, kind, selector, text) {
+    const wc = await pageOf(id);
+    if (!(await callRenderer(id, 'visible'))) throw new Error('Der Mini-Browser ist gerade nicht sichtbar. Erst `mt-browser show` aufrufen (oder anderes Projekt aktiv?).');
+    const r = await wc.executeJavaScript(buildActionScript(kind, selector, text));
+    if (!r || typeof r !== 'object') throw new Error('Keine Antwort der Seite.');
+    if (!r.ok) throw new Error(String(r.error || 'Aktion fehlgeschlagen.'));
+    return kind === 'click' ? `Geklickt: <${r.tag}>${r.text ? ' "' + r.text + '"' : ''}` : `Eingegeben in <${r.tag}> (${r.text})`;
+  }
+
   const commands = {
     open: (id, args) => callRenderer(id, 'open', args.url).then((r) => {
       if (!r || !r.ok) throw new Error((r && r.error) || 'Seite konnte nicht geöffnet werden.');
@@ -208,6 +219,9 @@ function createBrowserControl({ callRenderer, webContentsFromId, isOurWebview, c
         message: e.source ? `${e.message} (${shortSource(e.source)}:${e.line ?? '?'})` : e.message,
       }));
     },
+    // F05: genau zwei begrenzte UI-Aktionen im Browser der eigenen Kachel.
+    async click(id, args) { return uiAction(id, 'click', args.selector); },
+    async type(id, args) { return uiAction(id, 'type', args.selector, args.text); },
     async screenshot(id, args) {
       // A hidden browser paints nothing: show it first (this also leaves "terminal only" mode).
       await callRenderer(id, 'show');
