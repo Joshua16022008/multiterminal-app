@@ -99,8 +99,8 @@
     if (!u || typeof u === 'string' || u.evidence === 'none') return 'Nutzung: keine Quelle';
     if (u.evidence === 'pending') return 'Nutzung: Auswertung läuft noch';
     if (u.evidence === 'failed') return 'Nutzung: Auswertung fehlgeschlagen';
-    if (!u.count) return u.evidence === 'read' ? 'Nutzung: kein Lesebeleg (kein Ausführungsbeleg)' : 'Nutzung: kein Beleg in den ausgewerteten Sitzungen';
-    return u.evidence === 'read' ? 'Datei gelesen ' + u.count + '× · zuletzt ' + ago(u.lastUsedAt) + ' (kein Ausführungsbeleg)' : 'Ausgeführt ' + u.count + '× · zuletzt ' + ago(u.lastUsedAt);
+    if (!u.count) return u.evidence === 'read' ? 'Nutzung: kein Hinweis in Tool-Aufrufen (kein Ausführungsbeleg)' : 'Nutzung: kein Beleg in den ausgewerteten Sitzungen';
+    return u.evidence === 'read' ? 'In Tool-Aufrufen erwähnt ' + u.count + '× · zuletzt ' + ago(u.lastUsedAt) + ' (kein Lese- oder Ausführungsbeleg)' : 'Ausgeführt ' + u.count + '× · zuletzt ' + ago(u.lastUsedAt);
   }
   function canAssign() { return !!(window.deck.settings.assignSkill && window.deck.settings.unassignSkill); }
   async function runAssignment(item, assign) {

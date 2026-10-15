@@ -3,7 +3,7 @@
 // Ermittelt aus lokalen Sitzungsprotokollen, welche Skills tatsächlich genutzt wurden.
 // Liefert nur die dritte Stufe (Fund / Aktivierung / Ausführung): den Beleg im Protokoll.
 //   Claude: evidence 'executed' – Skill-Tool-Aufruf oder Slash-Befehl.
-//   Codex:  evidence 'read'     – nur belegt, dass eine SKILL.md gelesen wurde.
+//   Codex:  evidence 'read'     – nur belegt, dass ein Tool-Aufruf einen SKILL.md-Pfad nennt.
 //   Kimi / unbekannt: evidence 'none', kein Scan.
 // Der Zwischenspeicher enthält ausschließlich Skill-Namen, Zähler und Zeitpunkte.
 
@@ -240,7 +240,7 @@ function createSkillUsage({ cacheFile, homeDir = os.homedir(), now = Date.now, l
     }
 
     const parts = [];
-    if (provider === 'codex') parts.push('Codex protokolliert kein Skill-Ereignis; belegt ist nur, dass eine SKILL.md gelesen wurde.');
+    if (provider === 'codex') parts.push('Codex protokolliert kein Skill-Ereignis; belegt ist nur, dass ein Tool-Aufruf einen SKILL.md-Pfad nennt (nicht, ob gelesen oder ausgeführt).');
     if (roots.size === 0) parts.push('Kein Protokollordner gefunden.');
     if (candidates.length > chosen.length) parts.push(`Nur die ${chosen.length} jüngsten von ${candidates.length} Protokolldateien ausgewertet.`);
     if (anyCut) parts.push('Sehr große Dateien wurden nur in ihrem letzten Abschnitt ausgewertet.');

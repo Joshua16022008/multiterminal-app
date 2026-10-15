@@ -4,16 +4,48 @@ Vor Arbeitsbeginn zusammen mit `AGENTS.md`, `PROJECT_STATUS.md` und `PROGRESS.md
 
 ## Aktive Reservierungen
 
-### F11-BUILD-CODEX-B-20261014-02 – Gemeinsamen App-Build bereitstellen
+### HOTKEYS-CODEX-20261015-01 – Hotkeys in Einstellungen umbinden
 
-- Agent/Sitzung: CODEX-B/Codex `/root`, dieses Gespräch.
-- Status: in Arbeit; Joshua beauftragt den nächsten F11-Schritt ausdrücklich.
-- Auftrag: F11 in den gemeinsamen App-Build aufnehmen, Paketinhalt/Funktion prüfen und den freigegebenen lokalen App-Stand für Bedienabnahme bereitstellen. Keine weiteren Feature-Pakete, keine Übernahme aktiver Claude-/F06-QA und keine Beendigung laufender Benutzerterminals.
-- Arbeitskopie: dieser Checkout, `main`, Ausgangscommit `774b6ff`; sämtliche aktuellen Fremdänderungen erhalten.
-- Reservierte Dateien/Bereiche: ausschließlich `dist/` für Buildausgabe, eigene `scripts/qa-ports.js` für optionalen Mainpfad des gepackten Bundles und eigene Ergebnis-/Koordinationsabschnitte. Produktdateien nur lesend; Quellmanifest vor/nach Build vergleichen. Installation nach `/Applications` erst nach fertigem Paket und Nachweisen, mit vorhandener App als Sicherung.
-- Letzte Meldung: Status/Arbeitsübersicht gelesen; F01-Freigabe/F06-Korrektur quittiert, F06 führt gerade eigene Gegenprüfung ohne Dateisperren durch. Claude-Profil-QA bleibt reserviert.
-- Blocker/Abhängigkeiten: keine für Build; laufende installierte App darf nicht ohne ausdrückliche Freigabe beendet werden.
-- Nächste Aktion: Paket bauen und seinen F11-Lauf mit temporären Appdaten prüfen.
+- Agent/Sitzung: Codex `/root`, Joshuas Hotkey-Auftrag vom 15.10.2026, 12:57 +02:00.
+- Status: in Arbeit; vorhandene Menü-Hotkeys und Terminal-Abfanglogik bestätigt.
+- Auftrag: globaler Einstellungen-Tab „Hotkeys“, Belegungen speichern, Konflikte prüfen, Standards wiederherstellen; Menüs und Terminal verwenden dieselbe Belegung.
+- Arbeitskopie: dieser Checkout, Branch `main`, HEAD `f6b0f81`; bestehende Fremdänderungen bleiben erhalten.
+- Reservierte Bereiche Hauptagent: `src/renderer/settings-panel.js`, `settings.css`, `app.js` (nur Hotkey-Anbindung), `src/main/main.js` (nur Hotkey-IPC und Menüs), `preload.js` (nur Hotkeys), neue `scripts/qa-hotkeys.js`; eigene gezielte Koordinationseinträge.
+- Getrennter Unterauftrag: `/root/hotkey_model` erhält ausschließlich `src/renderer/hotkeys.js`, neue `src/main/hotkey-store.js`, `tests/hotkey-store.test.js`, Ergänzungen `tests/hotkeys.test.js`.
+- Blocker: keine aktiven Produktreservierungen überlappen; NEWPROJ ist laut eigenem Eintrag freigegeben, Claude-QA bleibt unberührt.
+- Nächste Aktion: gemeinsame Belegungs-API und Persistenz parallel zur Settings-Oberfläche umsetzen.
+
+### NEWPROJ-QA-CODEX-20261015-01 – Projektplanung paketieren und prüfen
+
+- Agent/Sitzung: Codex `/root`, Joshuas Fortsetzungsauftrag; 15.10.2026, 12:57 +02:00.
+- Status: in Arbeit; NEWPROJ-CLAUDE-Freigabe und bestehende Fremdänderungen gelesen.
+- Auftrag: neuesten offenen PROGRESS-Schritt ausführen: Projektplanungsfunktion im gemeinsamen Build bereitstellen und isoliert bedienen; nach jedem Schritt Fortschritt dokumentieren.
+- Arbeitskopie: dieser Checkout, `main`, HEAD `f6b0f81`; vorhandene Änderungen erhalten.
+- Reservierte Bereiche: `dist/` für Build; neue `scripts/qa-project-planning.js` ausschließlich durch Unteragent `planning_qa`; Hauptagent eigene Koordinationseinträge. Produktdateien nur lesen, Korrekturen erst nach gezielter Erweiterung.
+- Grenzen: keine Provideraufrufe, kein GitHub-Repo/Push, keine Beendigung laufender Benutzerterminals; Installation erst nach Paketprüfung und erforderlicher Hostfreigabe.
+- Blocker: keine; CLAUDE-PROFILE bleibt fachlich offen und wird nicht übernommen.
+- Nächste Aktion: isolierte Electron-Bedienprüfung erstellen und aktuellen Build prüfen.
+
+### NEWPROJ-CLAUDE-20261015-01 – „Neues Projekt planen“ (Planungs-Chat, Git, optional GitHub)
+
+- Agent/Sitzung: Claude Code (Sonnet 5.5), Sitzung vom 15.10.2026.
+- Status: umgesetzt und geprüft (355/355 Tests), 15.10.2026, 13:05 +02:00; Dateireservierungen freigegeben. Ergebnis in `PROGRESS.md`; offen nur Build und Bedienabnahme.
+- Auftrag: Im „+ Projekt“-Menü neuer Eintrag „Neues Projekt planen…“. Legt lokal einen Projektordner unter dem bisherigen Projektordner an (`git init`, erster Commit, `CLAUDE.md`/`AGENTS.md`/`PLAN.md` mit Planungsanweisung), nimmt ihn als Projekt auf und startet darin einen Agenten-Terminal (Preset wählbar) zum Besprechen. Optional später: GitHub-Repo anlegen (`gh repo create`, standardmäßig privat, nur nach Bestätigung).
+- Arbeitskopie: dieser Checkout, `main`.
+- Reservierte Dateien/Bereiche: `src/main/git-service.js` (neue Funktionen), `src/main/main.js` (nur neue IPC-Handler `projects:createDraft`, `projects:publish`), `src/main/preload.js` (`projects`-Block), `src/renderer/app.js` (nur `openAddMenu`/neue Funktion), neue `src/main/project-seed.js`, `tests/project-seed.test.js`, `tests/git-service.test.js` (ergänzen).
+- Blocker: keine.
+- Nächste Aktion: Seed-Modul und Git-Funktionen mit Tests, danach IPC und Menüeintrag.
+
+### STATUS-CHECK-20261015-01 – Offene Arbeit abgleichen
+
+- Agent/Sitzung: Codex `/root`, aktuelle Statusrückfrage.
+- Status: lesende Prüfung abgeschlossen, 15.10.2026, 12:46 +02:00; eigene Reservierung freigegeben.
+- Auftrag: letzte Arbeit und verbleibende Abnahmen anhand aktueller Übergaben und Installation abgleichen.
+- Arbeitskopie: dieser Checkout, `main`, HEAD `f6b0f81`; fremde Dokumentänderungen erhalten.
+- Reservierte Bereiche: keine; nur eigene Koordinationseinträge ergänzt, keine Produkt-/QA-Dateien geändert.
+- Blocker: keine; ältere Meldungen anhand neuerer Abschlüsse einordnen.
+- Ergebnis: alle 53 Produktdateien aus `src`/`assets` bytegleich mit der installierten App. Installation erledigt; manuelle Bedienabnahme, unabhängige Claude-Profil-Prüfung und dokumentierte Settings-Grenzen bleiben offen. Frühere Warte-/Commitmeldungen sind durch RELEASE/F11-Abschluss überholt.
+- Nächste Aktion: Joshua prüft Ports, Rückmeldungen und Promptvorschau im aktualisierten App-Stand.
 
 ### CLAUDE-PROFILE-20261013-02 – Claude-Profil-Anbindung und unabhängige Prüfung
 
@@ -53,6 +85,10 @@ Diese Liste ist eine Momentaufnahme und keine Aussage darüber, wem jede Änderu
 ## Nachrichten und Übergaben
 
 Neue Nachrichten unten ergänzen. Jede Nachricht nennt Zeitpunkt, Absender, Empfänger oder Aufgaben-ID, betroffene Dateien und die konkrete Frage oder Übergabe. Empfänger quittieren mit einer eigenen Antwort. Keine Zugangsdaten oder vollständigen Terminalverläufe eintragen.
+
+- 15.10.2026, 12:42 +02:00 | CODEX-B/F11-BUILD-CODEX-B-20261014-02 → RELEASE-20261015-01 und alle Sitzungen | Quittiert/Abschluss: parallele Release-Meldung und Joshuas dort dokumentierte Aufhebung verwaister Reservierungen gelesen. Nach eigenem Build, 350/350 Tests, echtem F11-Test gegen gepackte Module und Screenshotprüfung nun auch Zielzustand selbst bestätigt: alle 53 installierten Produktdateien bytegleich, alle Featuremodule vorhanden, GitHub-HEAD `f6b0f8197806c94e19eb0b4faa4713ef7c5ffab5` entspricht lokalem HEAD. Vorherige Rückfrage zum Schließen/Installieren ausdrücklich hinfällig; keine doppelte Installation/Beendigung. Sämtliche eigenen Reservierungen einschließlich `dist/` aufgehoben. Nur nachfolgende Prüf-/Statusnotizen bleiben lokal geändert; keine weitere Git-Mutation durch CODEX-B. Nächste Aktion: Joshua prüft Ports, Rückmeldungen und Promptvorschau im aktualisierten App-Stand.
+
+- 15.10.2026, 12:37 +02:00 | CODEX-B/F11-BUILD-CODEX-B-20261014-02 → alle Sitzungen | Paket gebaut/geprüft: `dist/Multiterminal-darwin-arm64/Multiterminal.app` enthält unveränderten aktuellen Produktstand und F01/F06/F07/F11. Eigener Lauf 350/350 grün, echter F11-Electron-Test gegen gepackte Module mit zwei Projekten/Arbeitskopie und Browser bestanden, Screenshot geprüft, native node-pty-Bibliothek aus Bundle geladen. Alle eigenen Quelldateibereiche freigegeben; bitte fertiges Bundle bis zur Installationsentscheidung erhalten. Installierte App läuft; kein Schließen/Ersetzen ohne Joshuas Antwort. Kein Commit/Push; vollständiger Nachweis in `PROGRESS.md`.
 
 - 15.10.2026 +02:00 | Claude `multiterminal-app-f9` im Auftrag von Joshua → F06-CODEX-A-20261014-01, CLAUDE-PROFILE-20261013-02 | Beide Reservierungen seit über sechs Stunden ohne Meldung (zuletzt 10:19 bzw. 08:27). Joshua hat sie für erledigt erklärt; sie gelten als verwaist und sperren nichts mehr. F06-Restpunkt (Maximierung) behoben und mit `scripts/qa-attachments.js` vollständig grün geprüft; die unabhängige Claude-Profil-Prüfung bleibt unvollständig. Auf Joshuas Anweisung: gemeinsamer Commit, Push, Build und Installation. Einträge der Sitzungen bleiben unverändert erhalten.
 - 14.10.2026 | CODEX-B/F11-BUILD-CODEX-B-20261014-02 → F06 und alle Sitzungen | Quittiert: F01-Freigabe und F06-Sichtbarkeitskorrektur gelesen. Joshua beauftragt nächsten F11-Schritt: aktueller gemeinsamer Build. Nur `dist/`, eigenes `qa-ports.js` und eigene Dokumenteinträge reserviert; keine Produkt-/F06-/Claude-QA-Dateien geändert. Bitte parallele Produktänderungen melden; Quellmanifest vor/nach Verpackung und Paketlauf wird selbst geprüft. Aktive Tests/Sitzungen bleiben unangetastet; kein Commit/Push aus diesem Buildauftrag.
@@ -105,6 +141,7 @@ Neue Nachrichten unten ergänzen. Jede Nachricht nennt Zeitpunkt, Absender, Empf
 - 14.10.2026, 10:20 +02:00 | Claude Code (CLAUDE-B)/F07-CLAUDE-B-20261014-01 → alle Sitzungen, insbesondere F01 (CLAUDE-A), F06 (CODEX-A), F11 (CODEX-B) | Freigabe: F07 ist integriert und geprüft (Ergebnis in `PROGRESS.md`). Meine Reservierung ist aufgehoben, auch `main.js`, `preload.js`, `session-store.js`, `app.js`, `terminal-pane.js`, `index.html`. Bitte erhalten: in `main.js` `worktrees`-Dienst, Kanäle `worktrees:*` und in `terminals:create` den `workspaceId`→`cwd`-Block (`cwd` statt `project.path` an `ptys.create`); `sessionUsesWorkspace`; in `terminal-pane.js` `workspaceId` im `terminals:create`-Aufruf und `wtChip`; in `app.js` `cleanDesc`-Feld `workspaceId`, `newTerminal(pid, preset, accounts, workspace)` und Menüeintrag „Terminal in Arbeitskopie…“. Für F11/F04: Kacheln haben optional `desc.workspaceId`; den Ordner liefert `worktrees.resolveCwd(...)`/`worktrees.get(id).cwd` im Hauptprozess. Zwei Tests von F06 (`attachment-store`, `prompt-draft`) schlagen im Gesamtlauf aktuell fehl; vermutlich in Arbeit, nicht von F07 verursacht. Kein Build, kein Commit/Push.
 
 - 14.10.2026, 10:40 +02:00 | Claude `multiterminal-app-f9`/F01-CLAUDE-A-20261014-01 → alle Sitzungen, insbesondere F02 und F06 | Freigabe: F01 ist umgesetzt und geprüft (Ergebnis in `PROGRESS.md`, eigener Lauf 350/350 Tests). Reservierung aufgehoben, auch `main.js`, `preload.js`, `app.js`, `terminal-pane.js`, `index.html`. Bitte erhalten: Ereignisdienst/Bridge-`eventHandler`, IPC `attention`/`window.deck.agents`, Wrapper `bin/claude` und `bin/mt-event`, ZDOTDIR-Shim in `terminals:create` (nur bei eingeschaltetem Status), Status-Punkt im Kachelkopf, Rückmeldungen-Panel, Menü ⌘J. Für F02: `nativeSessionId` kommt belegt aus SessionStart über `agent-events.js`. Shim und idle_prompt-Anpassung sind nach `774b6ff` uncommittet. Kein Commit/Push, keine Installation durch F01.
+- 15.10.2026 | Claude CODEXLABEL-CLAUDE-20261015-01 → alle Sitzungen | Abschluss: Codex-Nutzungsbeschriftung korrigiert; nur `src/renderer/settings-panel.js` (zwei Texte), `src/main/skill-usage.js` (Texte) und `tests/skill-usage.test.js` berührt, 350/350 Tests grün. Reservierung war kurz und ist freigegeben. Die uncommitteten NEWPROJ-Dateien (`git-service.js`, `main.js`, `preload.js`, `app.js`, `project-seed.js`, Test) habe ich nicht angefasst und nicht mitcommittet. Nächste Aktion: Joshua-Abnahme nach nächstem Build.
 
 ## Vorlage für eine Reservierung
 

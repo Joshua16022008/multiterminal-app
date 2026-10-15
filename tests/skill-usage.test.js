@@ -114,7 +114,7 @@ test('Codex: SKILL.md im Befehl ergibt evidence read, Text-Erwaehnung zaehlt nic
   assert.equal(r.skills.demo.count, 2);
   assert.equal(r.skills.zwei.count, 1);
   assert.equal(r.skills.nurtext, undefined);
-  assert.match(r.note, /SKILL\.md gelesen/);
+  assert.match(r.note, /SKILL\.md-Pfad nennt/);
 });
 
 test('Kimi und unbekannte Anbieter: none ohne Scan', async () => {

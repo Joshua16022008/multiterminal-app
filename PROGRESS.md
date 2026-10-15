@@ -6,7 +6,7 @@
 
 - RELEASE-20261015-01 (Claude `multiterminal-app-f9`, auf Joshuas Anweisung): Stand nach `774b6ff` mit F01-zsh-Aufsatz, idle_prompt-Anpassung und F06-Maximierungskorrektur gemeinsam committet, gepusht, gebaut und nach `/Applications` installiert. Vorher `npm test` 350/350 grün, `scripts/qa-attachments.js` vollständig grün, `git diff --check` sauber. Reservierungen F06-CODEX-A und CLAUDE-PROFILE von Joshua als verwaist erklärt; unabhängige Claude-Profil-Prüfung bleibt unvollständig. Nächste Aktion: Joshua testet Rückmeldungen und Promptvorschau in der installierten App.
 - F06-CODEX-A-20261014-01: Datei-/Bildübergabe und gemeinsame Promptvorschau im Entwicklungsstand abgeschlossen und geprüft. F01-Sichtbarkeitskorrektur selbst gegengeprüft; eigener aktueller Gesamtlauf 350/350 und vollständiger Electron-Regressionstest einschließlich anderer maximierter Kachel grün, Screenshot visuell geprüft. Alle eigenen Bereiche freigegeben; Nutzerabnahme im nächsten gemeinsamen Build offen.
-- F11-CODEX-B-20261014-01: Devserver-/Portübersicht im Entwicklungsstand vollständig umgesetzt und isoliert an realen PTY-Testservern einschließlich F07-Arbeitskopie geprüft. Eigener aktueller Gesamtlauf 347/347 grün, Screenshot visuell geprüft, lesender Review freigegeben. Noch kein neuer Build/Installation/Commit/Push.
+- F11-BUILD-CODEX-B-20261014-02: gemeinsamer App-Build mit F11 fertig geprüft; eigener aktueller Gesamtlauf 350/350 und echter Electron-Test gegen gepackte Module grün, Screenshot geprüft. Parallele RELEASE-Sitzung hat inzwischen installiert/committet/gepusht; eigene Nachprüfung bestätigt alle 53 Produktdateien unter `/Applications` bytegleich und GitHub-HEAD `f6b0f81`. Rückfrage zum Schließen/Ersetzen hinfällig, keine doppelte Installation oder Beendigung durch CODEX-B. Eigene Reservierungen freigegeben.
 - FEATURE-PLAN-20261014-01: alle elf Recherchefeatures als Pakete F01–F11 in `ENTWICKLUNGSPLAN.md` verteilt; vier Rollen für Claude Opus 5.5 / Codex 6.1 und kopierbare Startprompts in `AGENTEN_AUFTRAEGE.md`. Abhängigkeiten und gemeinsame Integration festgelegt; noch keine Umsetzung gestartet.
 - RESEARCH-20261014-01: Nutzungsrecherche abgeschlossen; elf priorisierte Vorschläge mit offiziellen Quellen und Quellabgleich in `FEATURE_RECHERCHE.md`. Empfehlung: Aufmerksamkeit, eindeutige Wiederaufnahme und Suche zuerst. BridgeMind-Detailvergleich wegen HTTP 403 offen; keine Produktänderungen.
 - COMMIT-CHECK-20261014-01: gemeinsamer Quellstand und installiertes Bundle abgeglichen, 255/255 Tests grün. Vollständige Plan-Abnahme und Freigabe der aktiven Claude-Prüfung fehlen; kein Gesamt-Commit.
@@ -14,11 +14,51 @@
 
 ## Nächster Schritt
 
-- Abschlussbericht und Dateifreigabe von CLAUDE-PROFILE-20261013-02 einholen.
+- Joshua prüft Ports, Rückmeldungen und Promptvorschau im aktualisierten App-Stand.
 
 ## Erledigt
 
 Neue Ergebniseinträge oben ergänzen; bestehende Einträge erhalten. Ungeprüfte Umsetzung ausdrücklich als solche kennzeichnen.
+
+### 15.10.2026 – CODEXLABEL-CLAUDE-20261015-01: Codex-Nutzungsbeschriftung korrigiert (geprüft, Bedienabnahme offen)
+
+- Agent/Sitzung: Claude Code (Sonnet 5.5), Sitzung vom 15.10.2026.
+- Änderung: Für Codex zählt die Auswertung jeden Tool-Aufruf, dessen Argumente einen `…/SKILL.md`-Pfad enthalten (auch `ls`, `grep`, Edit). Die Anzeige „Datei gelesen N×“ war dafür zu stark. Jetzt: „In Tool-Aufrufen erwähnt N× … (kein Lese- oder Ausführungsbeleg)“; ohne Treffer „kein Hinweis in Tool-Aufrufen“. Zähllogik unverändert, nur die Aussage.
+- Dateien: `src/renderer/settings-panel.js` (zwei Texte), `src/main/skill-usage.js` (Kommentar, Erklärtext), `tests/skill-usage.test.js` (Erwartung).
+- Prüfung: eigener `npm test` 350/350 grün, `git diff --check` sauber. Keine GUI-Prüfung, kein Build, keine Installation.
+- Offen: Text erscheint erst nach dem nächsten App-Build; Joshuas Sichtprüfung im Settings-Panel. Kimi-Quelle, Plugin-Verwaltung und echte CLI-Nachweise bleiben offen.
+- Nächste Aktion: Aufnahme in den nächsten gemeinsamen Build.
+
+### 15.10.2026, 13:05 +02:00 – NEWPROJ-CLAUDE-20261015-01: „Neues Projekt planen“ (umgesetzt, Bedienabnahme offen)
+
+- Agent/Sitzung: Claude Code (Sonnet 5.5), Checkout `main`.
+- Änderung: Im „+ Projekt“-Menü neu „Neues Projekt planen…“ (Name + Agent). Legt unter dem bisherigen Projektordner einen Ordner mit `git init -b main`, `CLAUDE.md`/`AGENTS.md` (Planungsanweisung), `PLAN.md` und erstem Commit an, nimmt ihn als Projekt auf und startet darin den gewählten Agenten (eingebaute Agenten mit Eröffnungssatz). Neu im selben Menü: „Aktives Projekt auf GitHub anlegen…“ (`gh repo create --push`; Bestätigungsdialog im Hauptprozess mit Privat/Öffentlich/Abbrechen, Vorgabe privat).
+- Dateien: neu `src/main/project-seed.js`, `tests/project-seed.test.js`; geändert `src/main/git-service.js` (`createLocalProject`, `publishRepo`), `src/main/main.js` (IPC `projects:createDraft`, `projects:publish`), `src/main/preload.js`, `src/renderer/app.js` (`openPlanForm`, `publishActiveProject`, `openAddMenu`).
+- Entscheidungen: Planungsanweisung liegt in Dateien statt auf der Befehlszeile (kein Quoting-Risiko, funktioniert für Claude und Codex); Veröffentlichen nie automatisch; bestehende Ordner werden nie überschrieben.
+- Geprüft: `npm test` 355/355 grün (5 neue Tests); Syntaxprüfung `app.js`/`main.js`. **Nicht geprüft:** Bedienung in der laufenden App, echtes `gh repo create`; App nicht neu gebaut/installiert.
+- Offen: Joshua testet den Ablauf in einem neuen Build; Optik des Dialogs (Klasse `hint` ggf. ohne Stil).
+- Nächste Aktion: App bauen und installieren, dann Ablauf einmal durchspielen.
+
+### 15.10.2026, 12:46 +02:00 – STATUS-CHECK-20261015-01: Offene Arbeit abgeglichen
+
+- Agent/Sitzung: Codex `/root`, Joshuas aktuelle Statusrückfrage; Checkout `main`, HEAD `f6b0f81`.
+- Status: lesende Prüfung abgeschlossen; keine Produktänderung oder Übernahme fremder Aufgaben.
+- Änderung/Dateien: nur eigene Einträge in `WORK_IN_PROGRESS.md`, `PROGRESS.md`, `PROJECT_STATUS.md`; parallele Dokumentänderungen erhalten.
+- Verifiziert: aktuelle Übergaben/RELEASE-/F11-Abschlüsse gelesen; alle 53 Dateien aus `src` und `assets` selbst byteweise mit `/Applications/Multiterminal.app/Contents/Resources/app` verglichen, keine Abweichung. Settings-Oberfläche bestätigt weiterhin fehlende Kimi-Kontingentquelle und Plugin-Verwaltung nur über CLI. Keine neuen Tests oder GUI-Bedienung; 350/350 ist der dokumentierte vorherige Prüflauf.
+- Offen: Joshuas Bedienabnahme von Ports/Rückmeldungen/Promptvorschau/Arbeitskopien; unabhängige Claude-Profil-Prüfung einschließlich Start/Fortsetzen; dokumentierte Produktgrenzen Plugins, Kimi-Nutzungsquelle und Codex-Nutzungsbeschriftung. Alte Installations-/Commit-Wartemeldungen durch neueren Abschluss überholt; fremde historische Abschnitte erhalten.
+- Nächste Aktion: Joshua prüft Ports, Rückmeldungen und Promptvorschau im aktualisierten App-Stand.
+
+### 15.10.2026, 12:37 +02:00 – F11-BUILD-CODEX-B-20261014-02: Gemeinsamer App-Build geprüft
+
+- Agent/Sitzung: CODEX-B/Codex `/root`, dieses Gespräch. Joshua beauftragt mit „mach das was bei next steht“ den zuvor genannten nächsten F11-Schritt, Aufnahme in den gemeinsamen App-Build. Kein weiteres Featurepaket übernommen, keine Unteragenten für die abhängigen Build-/Prüfschritte gestartet.
+- Status: Buildauftrag erfüllt und geprüft. Nach der zunächst gestellten Rückfrage zur laufenden App meldete die parallele RELEASE-Sitzung bereits erfolgte Installation/Commit/Push auf Joshuas Anweisung. Daraufhin Zielzustand selbst geprüft: alle 53 Produktdateien unter `/Applications/Multiterminal.app` bytegleich mit dem unveränderten aktuellen Quellmanifest, aktuelle Runtime-Paketmetadaten korrekt, alle Featuremodule enthalten. Lokaler und direkt abgefragter GitHub-HEAD `f6b0f8197806c94e19eb0b4faa4713ef7c5ffab5`. Keine doppelte Installation/Beendigung durch CODEX-B; vorherige Freigabefrage ausdrücklich hinfällig. Manuelle Bedienabnahme bleibt offen.
+- Ausgang/Dateien: Checkout `main`, HEAD `774b6ff`, aktuelle lokale Fremdänderungen erhalten. `scripts/qa-ports.js` nur um optionalen Produkt-Mainpfad erweitert, damit derselbe echte Test gegen das gepackte Bundle läuft; Portdienst für Scan-Zähler ebenfalls aus diesem Bundle geladen. Neue Buildausgabe `dist/Multiterminal-darwin-arm64/Multiterminal.app`; eigene Ergebnis-/Koordinationsabschnitte. Keine Produktdatei oder fremde QA verändert.
+- Buildnachweis: `npm run build` außerhalb Sandbox Exit 0, Electron 44.7.0, darwin arm64, zwei ausführbare `spawn-helper` vorhanden. Erster eingeschränkter Versuch mit `fetch failed`; genehmigter nativer Wiederholungslauf erfolgreich. Bekannte Warnung zum optionalen `.icon`-Format, keine Buildblockade. Quellmanifest von 55 Dateien aus `src`, `assets`, `package.json` und Lockfile vor/nach Build unverändert: SHA-256 `9a0327f7e40b297fc18dd61f968a00d04cf5a3fbbbb0d5cba5aa5703f260ccd9`. Alle 53 Produktdateien bytegleich im Bundle; Paketmetadaten entfernen erwartungsgemäß `devDependencies`, `scripts`, `private` und das Entwicklungs-Lockfile. Alle erforderlichen Module für Ports, Arbeitskopien, Anhänge/Promptvorschau und Agentenstatus enthalten.
+- Tests: eigener aktueller `npm test` außerhalb Sandbox Exit 0, 350 bestanden, 0 fehlgeschlagen, 0 übersprungen. `node_modules/.bin/electron scripts/qa-ports.js <Bundle>/Contents/Resources/app/src/main/main.js` Exit 0, `passed`: echtes Fenster/Renderer/Preload/IPC/PTY aus gepackten Produktmodulen; zwei Projekte und tatsächliche F07-Arbeitskopie, korrekte Zielkachel/Browserseite, fremder Server unzugeordnet/unangetastet, veraltete ID abgewiesen, beendeter Server entfernt, Polling beim Schließen/Einstellungen gestoppt und Wiederöffnen geprüft. Temporäre Daten/Home/Repos, keine Provideraufrufe.
+- Sicht-/Runtime-Nachweis: `/var/folders/dz/mbg87p4x3pbf1v207rr8f1t80000gp/T/mt-ports-qa-DdSwGu/ports.png` visuell gelesen: Panel sichtbar, zugeordnete normale/Worktree-Server und deaktivierte fremde Prozesse, korrekte Browserseiten. Tatsächliche Bundle-Binärdatei mit `ELECTRON_RUN_AS_NODE=1` lädt natives node-pty, Exit 0; Node 24.21.0, Electron 44.7.0, arm64. Dabei eine macOS-`task_name_for_pid`-Diagnose, Laden/Exit erfolgreich. Voller Produkt-GUI-Test verwendet Entwicklungs-Electron mit gepackten Modulen; regulärer Dock-/Applications-Neustart ist noch keine eigene Prüfung.
+- Laufende App: eigene native Prozessabfrage fand Prozesse aus `/Applications/Multiterminal.app`, einschließlich Renderer mit echtem Benutzer-Datenordner. CODEX-B hat diese Instanz nicht beendet oder neu gestartet; gespeicherte Installation ist nun nachgewiesen aktuell. Welche bereits laufenden Renderer den neuen Stand geladen haben, ist damit noch nicht nachgewiesen; bei noch altem Fenster nach Ende aktiver Arbeit regulär neu starten.
+- Koordination/Grenzen: F01-/F06-Freigaben gelesen, späteren RELEASE-Eintrag und Joshuas dort dokumentierte Aufhebung verwaister Reservierungen quittiert. Fremde historische Einträge erhalten, keine fremde Arbeit übernommen. Alle eigenen Reservierungen vollständig aufgehoben. Commit/Push/Installation erfolgten in der RELEASE-Sitzung, CODEX-B hat GitHub und Installationsinhalt selbst lesend bestätigt. Nur nachfolgende Prüf-/Statusnotizen lokal geändert.
+- Nächste Aktion: Joshua prüft Ports, Rückmeldungen und Promptvorschau im aktualisierten App-Stand.
 
 ### 14.10.2026, 19:21 +02:00 – F06-CODEX-A-20261014-01: Abschluss nach Sichtbarkeitskorrektur
 
