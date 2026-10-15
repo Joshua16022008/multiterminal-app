@@ -20,6 +20,9 @@ contextBridge.exposeInMainWorld('deck', {
     onChange: callback => subscribe('agents:changed', callback),
     onJump: callback => subscribe('agents:jump', callback),
     markRead: id => ipcRenderer.invoke('agents:markRead', id),
+    // F02
+    onSession: callback => subscribe('agents:session', callback),
+    resumePlan: request => ipcRenderer.invoke('agents:resumePlan', request),
     markAllRead: () => ipcRenderer.invoke('agents:markAllRead'),
     getSettings: () => ipcRenderer.invoke('agents:getSettings'),
     setSettings: patch => ipcRenderer.invoke('agents:setSettings', patch),

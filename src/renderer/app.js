@@ -568,6 +568,7 @@
       workspaceId: typeof d.workspaceId === 'string' && d.workspaceId ? d.workspaceId : undefined,
       color: Number.isInteger(d.color) ? d.color : undefined,
       titleLocked: d.titleLocked === true ? true : undefined,
+      nativeSession: d.nativeSession && typeof d.nativeSession === 'object' ? d.nativeSession : undefined, // F02
     };
   }
 
@@ -708,6 +709,8 @@
       jumpToPane(byId(entry.terminalId));
     }
     api.agents.onChange(applyAgentList);
+    // F02: a reported conversation ID is stored with the tile (saved with the session)
+    api.agents.onSession((id, rec) => { const pane = byId(id); if (pane) pane.setNativeSession(rec); });
     api.agents.onJump((id) => { const pane = byId(id); if (pane) jumpToPane(pane); });
     setInterval(() => { if (!$('attention-panel').hidden) attPanel.update(attList, attSettings); }, 30000);
 

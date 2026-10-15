@@ -133,3 +133,16 @@ test('builtinLine is the only app path that decorates and ends the line itself',
   assert.equal(f.profile.builtinLine(''), null);
   assert.equal(f.profile.builtinLine(5), null);
 });
+
+// F02
+test('exact resume line with a conversation ID gets the profile flag, injected IDs stay untouched', t => {
+  const f = fixture(t); f.save('claude', 'Profil'); f.profile.setEnabled('claude', true);
+  const id = 'a1b2c3d4-0000-4000-8000-123456789abc';
+  assert.match(f.profile.builtinLine('claude --resume ' + id), /^claude --resume a1b2c3d4-.* --append-system-prompt .*\r$/);
+  assert.equal(f.profile.builtinLine('claude --resume ' + id + ';id'), 'claude --resume ' + id + ';id\r');
+  assert.equal(f.profile.builtinLine('claude --resume short'), 'claude --resume short\r');
+  f.save('codex', 'Profil'); f.profile.setEnabled('codex', true);
+  assert.match(f.profile.builtinLine('codex resume ' + id), /^codex resume a1b2.* -c developer_instructions=/);
+  f.save('kimi', 'Profil'); f.profile.setEnabled('kimi', true);
+  assert.equal(f.profile.builtinLine('kimi --session ' + id), 'kimi --session ' + id + '\r');
+});

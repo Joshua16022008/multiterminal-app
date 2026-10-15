@@ -7,12 +7,20 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { buildResume } = require('./agent-session-service'); // F02
 
 const PROVIDERS = ['claude', 'codex', 'kimi'];
 const MAX_COMMAND_LENGTH = 2000; // same limit as pty-manager.js
 
 const START = Object.freeze({ claude: 'claude', codex: 'codex', kimi: 'kimi' });
 const RESUME = Object.freeze({ claude: 'claude --continue', codex: 'codex resume --last', kimi: 'kimi --continue' });
+// F02: `claude --resume <id>` / `codex resume <id>` / `kimi --session <id>` as built by agent-session-service.
+function isExactIdResume(provider, line) {
+  const i = line.lastIndexOf(' ');
+  if (i < 0) return false;
+  const built = buildResume(provider, line.slice(i + 1));
+  return !!built && built.line === line;
+}
 // Kimi binds the agent at session creation and restores it on resume; no flag is allowed there.
 const RESUME_TAKES_FLAG = Object.freeze({ claude: true, codex: true, kimi: false });
 
@@ -116,10 +124,12 @@ function createAgentProfile({ dataDir, readProfile }) {
     const unchanged = reason => ({ command, applied: false, reason });
     if (typeof command !== 'string') return unchanged('kein Befehl');
     const trimmed = command.trim();
-    const known = provider || PROVIDERS.find(p => trimmed === START[p] || trimmed === RESUME[p]);
+    const known = provider || PROVIDERS.find(p => trimmed === START[p] || trimmed === RESUME[p] || isExactIdResume(p, trimmed));
     if (!PROVIDERS.includes(known)) return unchanged('kein eingebauter Start');
-    const isResume = trimmed === RESUME[known];
-    if (trimmed !== (resume || isResume ? RESUME[known] : START[known])) return unchanged('eigener Befehl');
+    // F02: the exact resume line with a validated conversation ID counts as the built-in resume.
+    const idResume = isExactIdResume(known, trimmed);
+    const isResume = trimmed === RESUME[known] || idResume;
+    if (!idResume && trimmed !== (resume || isResume ? RESUME[known] : START[known])) return unchanged('eigener Befehl');
     if (!isEnabled(known)) return unchanged('Schalter aus');
     if (isResume && !RESUME_TAKES_FLAG[known]) return unchanged('Fortsetzen ohne Flag');
     let profile;

@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
+const { sanitizeNativeSession } = require('./agent-session-service'); // F02
 
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const MAX_TERMINALS = 30;
@@ -56,6 +57,9 @@ function sanitizeTerminal(t) {
   if (validId(t.workspaceId)) out.workspaceId = t.workspaceId;
   // View mode of the mini browser; the default (both side by side) is not stored
   if (t.browserMode === 'terminal' || t.browserMode === 'browser') out.browserMode = t.browserMode;
+  // F02: belegte native Gesprächs-ID (nur aus Agentenereignissen); ungültige Werte werden verworfen
+  const ns = sanitizeNativeSession(t.nativeSession);
+  if (ns) out.nativeSession = ns;
   return out;
 }
 
