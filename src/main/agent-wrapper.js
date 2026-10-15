@@ -102,7 +102,34 @@ function eventWrapperScript({ execPath, scriptPath }) {
   return `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 ${shellQuote(execPath)} ${shellQuote(scriptPath)} "$@" >/dev/null 2>&1\nexit 0\n`;
 }
 
+// `.zshenv` of the ZDOTDIR shim (<dataDir>/zdotdir). The user's .zshrc often puts ~/.local/bin in
+// front of our bin folder, so the `claude` wrapper would be skipped. The shim gives ZDOTDIR back
+// (unset when it was not set before, so zsh then reads the normal files from $HOME), sources the
+// user's own .zshenv and puts binDir first in PATH once, at the first prompt (after all startup
+// files). Prints nothing and tolerates a missing add-zsh-hook.
+function zdotdirZshenv({ binDir }) {
+  if (typeof binDir !== 'string' || !binDir.startsWith('/')) throw new Error('binDir muss ein absoluter Pfad sein.');
+  return `# Multiterminal: ZDOTDIR shim, see agent-wrapper.js
+if [[ -n "\${MULTITERMINAL_ORIG_ZDOTDIR-}" ]]; then
+  ZDOTDIR="$MULTITERMINAL_ORIG_ZDOTDIR"
+else
+  unset ZDOTDIR
+fi
+unset MULTITERMINAL_ORIG_ZDOTDIR
+if [[ -r "\${ZDOTDIR:-$HOME}/.zshenv" ]]; then
+  source "\${ZDOTDIR:-$HOME}/.zshenv"
+fi
+_mt_path_first() {
+  local d=${shellQuote(binDir)}
+  path=("$d" \${path:#\${(b)d}})
+  precmd_functions=(\${precmd_functions:#_mt_path_first})
+  unfunction _mt_path_first 2>/dev/null
+}
+precmd_functions+=(_mt_path_first)
+`;
+}
+
 module.exports = {
-  eventWrapperScript, HOOK_EVENTS, NOTIFICATION_MATCHER, CLAUDE_SUBCOMMANDS, PASSTHROUGH_FLAGS,
+  zdotdirZshenv, eventWrapperScript, HOOK_EVENTS, NOTIFICATION_MATCHER, CLAUDE_SUBCOMMANDS, PASSTHROUGH_FLAGS,
   shellQuote, hookSettings, hookSettingsJson, isInteractiveInvocation, claudeWrapperScript,
 };

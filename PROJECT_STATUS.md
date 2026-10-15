@@ -2,7 +2,7 @@
 schemaVersion: 1
 projectId: multiterminal-app
 state: active
-updatedAt: 2026-10-14T10:13:04+02:00
+updatedAt: 2026-10-14T19:21:00+02:00
 updatedBy: codex
 ---
 
@@ -12,7 +12,7 @@ updatedBy: codex
 Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt bis zu 30 echte Terminals mit eigenem Mini-Browser für parallel laufende Terminal-Agenten bereitstellt.
 
 ## Aktueller Stand
-F06-CODEX-A-20261014-01: Datei-/Bildübergabe und gemeinsame Promptvorschau integriert; letzte Appabnahme blockiert. 22 eigene Modulprüfungen, erweiterter Electron-Test mit Bild-Paste und letzter eigener gemeinsamer Gesamtlauf 347/347 grün. Zusätzlicher Review-/App-Regressionstest reproduziert eine unsichtbare Zielkachel bei anderer Maximierung; Korrektur/Blockfreigabe in aktuell durch F01 reservierter `app.js` weiterhin unbestätigt. Eigene Dateien freigegeben, fremde Reservierung erhalten. Nächste Aktion dieses Pakets: nach F01-Korrektur oder bestätigter Übergabe denselben Regressionstest erneut ausführen und abschließend freigeben. Keine vollständige F06-/Nutzerabnahme und keine Installation.
+F06-CODEX-A-20261014-01: Datei-/Bildübergabe und gemeinsame Promptvorschau im Entwicklungsstand abgeschlossen und geprüft. F01-Sichtbarkeitskorrektur selbst gegengeprüft; eigener aktueller Gesamtlauf 350/350 und vollständiger Electron-Regressionstest einschließlich anderer maximierter Kachel grün, Screenshot visuell geprüft. Alle eigenen Bereiche freigegeben. Nächste Aktion dieses Pakets: Nutzerabnahme im nächsten gemeinsamen App-Build; laufender F11-Buildauftrag bleibt beim zuständigen Agenten. Keine Installation oder physische Nutzerabnahme durch diese Sitzung.
 
 F11-CODEX-B-20261014-01: Devserver-/Portübersicht im Entwicklungsstand umgesetzt und geprüft. Echter isolierter Electron-Lauf mit drei PTY-Testservern: zwei Projekte plus F07-Arbeitskopie, korrekte Zuordnung/Sprung/Browser, beendeter Server verschwindet, fremder Server unangetastet, Polling nach Schließen gestoppt. Letzter eigener Gesamtlauf 347/347 grün, Screenshot visuell geprüft, unabhängiger Review ohne wichtige Befunde. Eigene Dateireservierungen freigegeben; F06/F07/F01 und Claude-QA erhalten. Nächste Aktion dieses Pakets: F11 in den nächsten gemeinsamen App-Build für Joshuas Bedienabnahme aufnehmen. Noch kein neuer Build/Installation/Commit/Push; Details in `PROGRESS.md`.
 
@@ -30,7 +30,6 @@ Version 0.1.0: Terminal-Raster, Diktat, Kontenverwaltung, Verbrauchsanzeige, Ter
 Abschlussbericht und Dateifreigabe von CLAUDE-PROFILE-20261013-02 einholen.
 
 ## Aktive Aufgaben
-- F06-CODEX-A-20261014-01: vor letzter Appabnahme blockiert; eigener Code/Tests freigegeben, benötigte Sichtbarkeitskorrektur in `app.js` bei F01 angefragt. F03/F08 nicht übernommen.
 - CLAUDE-PROFILE-20261013-02: unabhängige Claude-Profil-Prüfung aktiv, QA-Dateien weiterhin reserviert. BRW und AGENTEN haben ihre Dateibereiche freigegeben; Joshuas Abnahme offen. Kein Ausbau für andere Nutzer. Flüsterflow ruht weiterhin.
 
 - F07-CLAUDE-B-20261014-01 abgeschlossen (14.10.2026): optionale Git-Arbeitskopie je Kachel, Dienst und Oberfläche integriert; Details und Prüfungen in `PROGRESS.md`. Kein Build/Commit; Joshuas Abnahme offen. F05 bleibt frei.
@@ -48,6 +47,8 @@ Abschlussbericht und Dateifreigabe von CLAUDE-PROFILE-20261013-02 einholen.
 - Umsetzung verteilt: Kern Opus, UI und Persistenz Sonnet, Kleinteile und Doku Haiku.
 
 ## Nachweise
+- F06-CODEX-A-20261014-01 (14.10.2026, 19:21 +02:00): eigener frischer `npm test`-Lauf 350/350 grün und `scripts/qa-attachments.js` in echtem Electron/IPC/PTY vollständig `passed`, einschließlich maximierter anderer Kachel; Screenshot selbst visuell geprüft. F01-Korrektur selbst im Code gelesen, keine fremden Ergebnisse als eigene übernommen. Synthetische Drop-/Paste-Ereignisse, lokale Bild-Fixture; physische Bedienung und Nutzerabnahme offen. Details und Nachweisdatei in `PROGRESS.md`; alle eigenen Bereiche freigegeben.
+- Agentenstatus und Aufmerksamkeit (F01-CLAUDE-A-20261014-01, 14.10.2026): Knopf „Rückmeldungen“ mit Zähler, Liste, Status-Punkt im Kachelkopf und ⌘J-Sprung, standardmäßig aus; Quelle sind Claude-Hooks nur per `--settings` aus der App (`mt-event` über den Bridge-Socket mit Token je Terminal, `claude`-Wrapper, ZDOTDIR-Shim nur bei Status an), keine Prompt-/Antwortinhalte, `~/.claude` unverändert. Live mit echtem `claude` (Haiku, ein Prompt) belegt: SessionStart, UserPromptSubmit, Stop mit Ungelesen, SessionEnd; Shim in echter zsh mit Joshuas Startdateien. Nur per Fixture: PermissionRequest/Notification, StopFailure, Sprung per Klick/⌘J, Eingabe-Reset, Duplikate/veraltet/fremdes Token. Fensterfokus gestubbt, Desktopmeldung nur als Aufruf protokolliert. 350/350 Tests grün. Offen: nur zsh, nur vertraute Ordner, Codex ohne Status, Alltagsabnahme durch Joshua. Großteil in Commit `774b6ff`, Shim und idle_prompt-Anpassung uncommittet. Details in `PROGRESS.md`.
 - F11-CODEX-B-20261014-01 (14.10.2026): eigener Gesamtlauf 347/347 grün, sieben Paneltests und 16 Backendtests enthalten, Syntax-/Diffprüfung sauber; isolierter echter Electron-/IPC-/PTY-Lauf mit normalen Projektordnern und F07-Arbeitskopie bestanden, Screenshot visuell geprüft. Lesender Sol-6.1-Abschlussreview freigegeben. Keine Installation oder Git-Mutation; vollständige Nachweise/Grenzen in `PROGRESS.md`.
 - FEATURE-PLAN-20261014-01 (14.10.2026, Codex): Rechercheabdeckung F01–F11 und Rollenzuordnung geprüft, vier Startprompts, aktueller Renderer-Namensraum im Code nachgelesen, Dokument-/Whitespace-Prüfung und gezielter `git diff --check` ohne Fehler. Details in `PROGRESS.md`; reine Dokumentänderungen, keine neuen Produktprüfungen.
 - RESEARCH-20261014-01 (14.10.2026, Codex): offizielle Produkt-/Dokuseiten über gstack `/browse`, aktueller Quellabgleich durch lesenden Sol-6.1-Unteragenten, entscheidende Stellen durch Hauptagenten nachgelesen. Belege, Quellenlücke und Priorisierung in `FEATURE_RECHERCHE.md`; keine neue Produktprüfung, Installation oder Produktänderung. Ergebnisprotokoll in `PROGRESS.md`.

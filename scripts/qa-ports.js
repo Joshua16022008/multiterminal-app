@@ -7,6 +7,7 @@ const http = require('node:http');
 const { execFileSync } = require('node:child_process');
 const assert = require('node:assert/strict');
 const { app } = require('electron');
+const mainFile = path.resolve(process.argv[2] || path.join(__dirname, '../src/main/main.js'));
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mt-ports-qa-'));
 const data = path.join(root, 'data'), home = path.join(root, 'home');
 const first = path.join(root, 'first'), second = path.join(root, 'second');
@@ -29,7 +30,7 @@ fs.writeFileSync(shellFile, '#!/bin/sh\nexec /bin/bash --noprofile --norc -i\n',
 process.env.SHELL = shellFile;
 os.homedir = () => home;
 app.setName('Ports QA ' + process.pid); app.setPath('userData', data);
-const serviceModule = require('../src/main/port-service');
+const serviceModule = require(path.join(path.dirname(mainFile), 'port-service'));
 const originalCreate = serviceModule.createPortService;
 let listCalls = 0;
 serviceModule.createPortService = options => {
@@ -141,7 +142,7 @@ app.on('browser-window-created', (_event, win) => {
       await run('Promise.race([new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))),new Promise(resolve=>setTimeout(resolve,1500))])');
       const screenshot = path.join(root, 'ports.png');
       fs.writeFileSync(screenshot, (await win.webContents.capturePage()).toPNG());
-      console.log(JSON.stringify({ result: 'passed', checks: ['real UI/IPC/PTY listener ownership', 'two projects', 'foreign listener unassigned and untouched', 'correct terminal focus', 'HTTP in correct mini-browser', 'real worktree tile retains cwd/workspaceId and opens correct browser', 'stale port rejected', 'server end removed by polling', 'settings closes panel and stops polling', 'panel reopens'], screenshot, data }));
+      console.log(JSON.stringify({ result: 'passed', productMain: mainFile, checks: ['real UI/IPC/PTY listener ownership', 'two projects', 'foreign listener unassigned and untouched', 'correct terminal focus', 'HTTP in correct mini-browser', 'real worktree tile retains cwd/workspaceId and opens correct browser', 'stale port rejected', 'server end removed by polling', 'settings closes panel and stops polling', 'panel reopens'], screenshot, data }));
     } catch (e) { failed = true; console.error(e.stack); }
     cleanup(); clearTimeout(timeout); finished = true;
     try { await run("Promise.all([...window.DeckApp.state.panes.values()].flat().map(p=>window.deck.terminals.kill(p.id)))"); } catch {}
@@ -149,4 +150,4 @@ app.on('browser-window-created', (_event, win) => {
   });
 });
 app.on('window-all-closed', () => { if (!finished) { cleanup(); clearTimeout(timeout); app.exit(1); } });
-require('../src/main/main');
+require(mainFile);

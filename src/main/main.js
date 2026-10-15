@@ -23,7 +23,7 @@ const { createBrowserBridge, MAX_SOCKET_PATH_BYTES } = require('./browser-bridge
 const { createBrowserControl, createConsoleStore, createRendererLink } = require('./browser-control');
 const mtBrowserCli = require('./mt-browser-cli');
 const { createAgentStatusStore, createAgentSettings } = require('./agent-events');
-const { claudeWrapperScript, eventWrapperScript } = require('./agent-wrapper');
+const { claudeWrapperScript, eventWrapperScript, zdotdirZshenv } = require('./agent-wrapper');
 const attentionLabels = require('../renderer/attention-panel');
 
 const BROWSER_PARTITION = 'persist:minibrowser';
@@ -57,6 +57,7 @@ let agentStore;
 let agentSettings;
 const terminalMeta = new Map(); // terminalId -> { projectId, accountId }
 let visibleTerminal = null;
+let zdotdirPath = null; // ZDOTDIR shim (zsh): brings our bin folder back in front of PATH after the user's startup files
 const browserConsole = createConsoleStore();
 const rendererLink = createRendererLink({ send: (request) => sendToWindow('browser:request', request) });
 
@@ -243,6 +244,10 @@ function registerIpc() {
         MULTITERMINAL_BROWSER_CLI: path.join(browserBinDir, 'mt-browser'),
         PATH: browserBinDir + path.delimiter + (process.env.PATH || '/usr/bin:/bin:/usr/sbin:/sbin'),
       };
+      // Only with the agent status switched on, and only for zsh (the shell pty-manager starts).
+      if (zdotdirPath && agentSettings.get().statusEnabled && path.basename(process.env.SHELL || '/bin/zsh') === 'zsh') {
+        extraEnv = { ...extraEnv, ZDOTDIR: zdotdirPath, MULTITERMINAL_ORIG_ZDOTDIR: process.env.ZDOTDIR || '' };
+      }
     }
     const result = ptys.create({ id, projectId: project.id, cwd, cols, rows, command: agentProfile.decorateCommand({ command }), extraEnv, workspaceId: workspaceId ? String(workspaceId) : undefined });
     if (!result.ok && browserBridge) browserBridge.unregister(String(id));
@@ -475,6 +480,11 @@ async function startBrowserBridge(dataDir) {
   fs.chmodSync(path.join(binDir, 'mt-event'), 0o755);
   fs.writeFileSync(path.join(binDir, 'claude'), claudeWrapperScript({ hooksFile: agentSettings.hooksFile }), { mode: 0o755 });
   fs.chmodSync(path.join(binDir, 'claude'), 0o755);
+
+  const zdir = path.join(dataDir, 'zdotdir');
+  fs.mkdirSync(zdir, { recursive: true });
+  fs.writeFileSync(path.join(zdir, '.zshenv'), zdotdirZshenv({ binDir }));
+  zdotdirPath = zdir;
 
   const control = createBrowserControl({
     callRenderer: (terminalId, op, arg) => rendererLink.call(terminalId, op, arg),

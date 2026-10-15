@@ -649,6 +649,8 @@
       document, getPane: byId, host: api.attachments, notify,
       activatePane: pane => {
         if (S.activeId !== pane.project.id) selectProject(pane.project.id);
+        for (const p of panesOf(pane.project.id)) if (p.maxed && p !== pane) p.setMax(false);
+        syncGrid(pane.project.id);
         setActive(pane, false);
         pane.el.scrollIntoView({ block: 'nearest' });
       },

@@ -114,3 +114,61 @@ test('event wrapper is silent, keeps stdin and always exits 0', () => {
   assert.match(s, /ELECTRON_RUN_AS_NODE=1 '\/a b\/Electron' '\/c d\/mt-event-cli\.js' "\$@" >\/dev\/null 2>&1/);
   assert.match(s, /exit 0\n$/);
 });
+
+// ZDOTDIR shim in a real zsh (login + interactive like the app) with a throw-away HOME.
+const hasZsh = fs.existsSync('/bin/zsh');
+function zshProbe({ shim, origZdotdir }) {
+  return new Promise((resolve) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mt zd-'));
+    const home = path.join(root, 'home'), bin = path.join(root, 'bin dir'), zd = path.join(root, 'zdotdir');
+    fs.mkdirSync(home); fs.mkdirSync(bin); fs.mkdirSync(zd);
+    const rc = 'export PATH="$HOME/early:$PATH"\nalias mtqa=true\nexport MTQA_VAR=1\n';
+    const target = origZdotdir ? path.join(root, 'orig') : home;
+    if (origZdotdir) fs.mkdirSync(target);
+    fs.writeFileSync(path.join(target, '.zshrc'), rc);
+    fs.writeFileSync(path.join(target, '.zshenv'), 'export MTQA_ENV=1\n');
+    fs.writeFileSync(path.join(zd, '.zshenv'), w.zdotdirZshenv({ binDir: bin }));
+    const env = { HOME: home, PATH: `${bin}:/usr/bin:/bin`, TERM: 'xterm' };
+    if (origZdotdir) env.ZDOTDIR = target;
+    if (shim) { env.MULTITERMINAL_ORIG_ZDOTDIR = origZdotdir ? target : ''; env.ZDOTDIR = zd; }
+    const out = path.join(root, 'out.txt');
+    const p = pty.spawn('/bin/zsh', ['-l', '-i'], { env, cols: 200, rows: 20, cwd: root });
+    p.write(`print -r -- "$path[1]|\${ZDOTDIR-unset}|\${HISTFILE-nohist}|$MTQA_ENV|$MTQA_VAR|$+aliases[mtqa]|\${MULTITERMINAL_ORIG_ZDOTDIR-gone}|$#precmd_functions" > '${out}'; exit\r`);
+    p.onExit(() => {
+      const text = fs.existsSync(out) ? fs.readFileSync(out, 'utf8').trim() : '';
+      fs.rmSync(root, { recursive: true, force: true });
+      resolve({ text, root, home, bin, zd, target });
+    });
+  });
+}
+
+test('zsh shim: our bin folder first, ZDOTDIR given back, startup files and history untouched', { skip: !pty || !hasZsh }, async () => {
+  const plain = await zshProbe({ shim: false });
+  const shim = await zshProbe({ shim: true });
+  const [p0, z0, h0, e0, v0, a0, o0, n0] = plain.text.split('|');
+  const [p1, z1, h1, e1, v1, a1, o1, n1] = shim.text.split('|');
+  assert.match(p0, /\/early$/);                      // without the shim the user's rc wins
+  assert.ok(p1.endsWith('bin dir'), p1);             // with it our folder is first
+  assert.equal(z1, 'unset'); assert.equal(z0, 'unset');
+  assert.equal(h1.replace(shim.home, 'H'), h0.replace(plain.home, 'H')); // same history file name under HOME
+  assert.deepEqual([e1, v1, a1], ['1', '1', '1']);   // .zshenv, .zshrc variable and alias still loaded
+  assert.deepEqual([e0, v0, a0], ['1', '1', '1']);
+  assert.equal(o1, 'gone');
+  assert.equal(n1, n0);                              // the one-shot hook has removed itself
+});
+
+test('zsh shim keeps a user ZDOTDIR and reads its files', { skip: !pty || !hasZsh }, async () => {
+  const shim = await zshProbe({ shim: true, origZdotdir: true });
+  const [p, z, h, e, v, a] = shim.text.split('|');
+  assert.ok(p.endsWith('bin dir'), p);
+  assert.equal(z, shim.target);
+  assert.ok(h.startsWith(shim.target), h);
+  assert.deepEqual([e, v, a], ['1', '1', '1']);
+});
+
+test('zsh shim content is pure text that quotes the bin folder and prints nothing', () => {
+  const s = w.zdotdirZshenv({ binDir: "/a b/it's/bin" });
+  assert.match(s, /local d='\/a b\/it'\\''s\/bin'/);
+  assert.doesNotMatch(s, /\becho\b|\bprint\b/);
+  assert.throws(() => w.zdotdirZshenv({ binDir: 'rel' }));
+});

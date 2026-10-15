@@ -2,6 +2,7 @@
 // F01: real renderer, preload, main, PTYs and bridge with an isolated data folder and temporary projects.
 //   QA_MODE=main node_modules/.bin/electron scripts/qa-attention.js   (fake `claude`, events from inside the tiles)
 //   QA_MODE=live QA_TRUSTED_DIR=<dir> ...  (ONE real prompt to `claude --model haiku`; only with explicit permission)
+//   QA_MODE=zsh node_modules/.bin/electron scripts/qa-attention.js   (the app's real `zsh -l -i` with the user's startup files: ZDOTDIR shim)
 //   QA_MODE=real node_modules/.bin/electron scripts/qa-attention.js   (real `claude` without a prompt, project = QA_TRUSTED_DIR)
 // QA_SHOTS=<dir> writes screenshots there. The window focus is stubbed (QA cannot take the real focus).
 const fs = require('node:fs');
@@ -12,7 +13,7 @@ const crypto = require('node:crypto');
 const assert = require('node:assert/strict');
 const { app, Menu, BrowserWindow } = require('electron');
 
-const mode = ['real', 'live'].includes(process.env.QA_MODE) ? process.env.QA_MODE : 'main';
+const mode = ['real', 'live', 'zsh'].includes(process.env.QA_MODE) ? process.env.QA_MODE : 'main';
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mt-att-qa-'));
 const realHome = os.homedir();
 const home = path.join(root, 'home'), data = path.join(root, 'data'), fake = path.join(root, 'fake');
@@ -24,9 +25,10 @@ const before = { claude: sha(claudeSettings), codex: fs.existsSync(path.join(rea
 
 const term = (id, title) => ({ id, title, presetId: null, command: null, resumeCommand: null, browserUrl: null, browserOpen: false });
 let projects, session;
-if (mode === 'main') {
+if (mode === 'main' || mode === 'zsh') {
   projects = [{ id: 'pa', name: 'Projekt A', path: dirs.pa }, { id: 'pb', name: 'Projekt B', path: dirs.pb }];
   session = { version: 1, activeProjectId: 'pa', projects: { pa: { terminals: [term('a1', 'A1'), term('a2', 'A2')] }, pb: { terminals: [term('b1', 'B1'), term('b2', 'B2')] } } };
+  if (mode === 'zsh') fs.writeFileSync(path.join(data, 'agent-events.json'), JSON.stringify({ statusEnabled: true }));
   fs.writeFileSync(path.join(fake, 'claude'), '#!/bin/sh\nprintf "FAKE:"; for a in "$@"; do printf " [%s]" "$a"; done; echo\n', { mode: 0o755 });
   process.env.PATH = fake + path.delimiter + process.env.PATH;
 } else {
@@ -39,7 +41,7 @@ fs.writeFileSync(path.join(data, 'projects.json'), JSON.stringify(projects));
 fs.writeFileSync(path.join(data, 'session/session.json'), JSON.stringify(session));
 const sh = path.join(root, 'qa-shell');
 fs.writeFileSync(sh, '#!/bin/sh\nexec /bin/bash --noprofile --norc -i\n', { mode: 0o755 });
-process.env.SHELL = sh;
+process.env.SHELL = mode === 'zsh' ? '/bin/zsh' : sh;
 process.env.MULTITERMINAL_ATTENTION_LOG = '1';
 os.homedir = () => home; // the app's own paths; the child processes keep the real HOME
 app.setName('Multiterminal Attention QA ' + process.pid);
@@ -94,7 +96,64 @@ app.on('browser-window-created', (_e, win) => {
     const reportFocus = (v) => { focused = v; };
     try {
       await until(() => run('!!(window.DeckApp.state.activeId && window.DeckApp.attention)'), 'app ready');
-      if (mode === 'main') {
+      if (mode === 'zsh') {
+        const { execFileSync } = require('node:child_process');
+        const bin = path.join(data, 'bin');
+        const rcNames = (fs.existsSync(path.join(realHome, '.zshrc')) ? fs.readFileSync(path.join(realHome, '.zshrc'), 'utf8') : '').split('\n')
+          .map((l) => /^(?:alias|export)\s+([A-Za-z_][A-Za-z0-9_]*)=/.exec(l)).filter((m) => m && m[1] !== 'PATH').map((m) => m[1]);
+        const rcName = rcNames[0];
+        assert.ok(rcName, 'no alias/variable name found in ~/.zshrc');
+        // control: a normal terminal zsh as the app starts it, without the shim
+        const ctl = execFileSync('/bin/zsh', ['-l', '-i', '-c', 'print -r -- "$PATH"; print -r -- "${ZDOTDIR-unset}"; print -r -- "$HISTFILE"'], { env: { ...process.env, PATH: bin + path.delimiter + process.env.PATH }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim().split('\n').slice(-3);
+        const w = (n) => path.join(root, n);
+        const probe = (id, tag) => {
+          const body = [`print -r -- "$PATH" > ${w(tag + '_path')}`, `print -r -- "[\${ZDOTDIR-unset}]" > ${w(tag + '_zdotdir')}`, `print -r -- "$HISTFILE" > ${w(tag + '_hist')}`,
+            `(( $+aliases[${rcName}] || $+parameters[${rcName}] || $+functions[${rcName}] )) && print yes > ${w(tag + '_rc')} || print no > ${w(tag + '_rc')}`,
+            `whence -p claude > ${w(tag + '_claude')}`, `whence -p mt-browser mt-event > ${w(tag + '_tools')}`, ...(tag === 'on' ? [`[[ "$(whence -p claude)" == ${bin}/claude ]] && path=(${bin} ${fake} $path)`, `claude --version > ${w(tag + '_ver')}`, 'claude --model hand'] : []), `touch ${w(tag + '_done')}`].join('\n') + '\n';
+          fs.writeFileSync(w(tag + '.zsh'), body);
+          return type(id, `source ${w(tag + '.zsh')}\r`);
+        };
+        const rd = (n) => fs.readFileSync(w(n), 'utf8').trim();
+        await until(async () => (await run("window.DeckApp.state.panes.get('pa').every(p => p.status === 'running')")), 'A running');
+        await probe('a1', 'on'); await until(() => fs.existsSync(w('on_done')), 'probe on', 30000).catch(async (e) => { origLog('SCREEN>>>', (await screen('a1')).replace(/\s+/g, ' ').slice(-900)); throw e; });
+        const onPath = rd('on_path').split(':');
+        assert.equal(onPath[0], bin); assert.equal(rd('on_claude'), path.join(bin, 'claude'));
+        assert.deepEqual(onPath, [bin, ...ctl[0].split(':').filter((x) => x !== bin)]);
+        assert.equal(rd('on_zdotdir'), '[unset]'); assert.equal(ctl[1], 'unset');
+        assert.equal(rd('on_hist'), ctl[2]); assert.equal(rd('on_rc'), 'yes');
+        assert.match(rd('on_ver'), /^FAKE: \[--version\]$/); // wrapper -> fake claude (fake put ahead of ~/.local/bin for this probe only)
+        assert.match(await screen('a1'), new RegExp('FAKE: \\[--settings\\] \\[' + path.join(data, 'claude-hooks.json').replace(/[/.]/g, '\\$&') + '\\] \\[--model\\] \\[hand\\]')); // tty: --settings added
+        assert.deepEqual(rd('on_tools').split('\n').sort(), [path.join(bin, 'mt-browser'), path.join(bin, 'mt-event')].sort());
+        ok(`status on, real zsh: first PATH entry and claude = <data>/bin; ZDOTDIR unset after start; HISTFILE same as control; PATH equal to control except our entry first; .zshrc item "${rcName}" present`);
+        // quick start (preset typed by the app) goes through the wrapper too
+        await run(`window.deck.presets.add({ label: 'FakeStart', command: ${JSON.stringify('whence -p claude > ' + w('quick_claude'))} }).then(p => { window.DeckApp.state.presets.push(p); return 0; })`);
+        await run("document.getElementById('btn-menu').click()");
+        await run("[...document.querySelectorAll('#menu .menu-item')].find(e => e.textContent.startsWith('FakeStart')).click()");
+        await until(async () => { const L = await run("window.DeckApp.state.panes.get('pa').length"); return L === 3; }, 'quick start tile');
+        await until(() => fs.existsSync(w('quick_claude')) && rd('quick_claude') !== '', 'quick start output', 30000);
+        assert.equal(rd('quick_claude'), path.join(bin, 'claude'));
+        ok('quick start command typed by the app resolves `claude` to the wrapper');
+        // the event tools still work from this zsh
+        await type('a1', `echo '{"hook_event_name":"SessionStart","session_id":"zsh-a1"}' | mt-event SessionStart\r`);
+        await until(async () => !!(await entry('a1')), 'mt-event from zsh');
+        const srv = http.createServer((q, r) => r.end('<h1>qa</h1>')).listen(0, '127.0.0.1');
+        await new Promise((r) => srv.on('listening', r));
+        await type('a1', `mt-browser open http://127.0.0.1:${srv.address().port}\r`);
+        await until(() => run("[...window.DeckApp.state.panes.get('pa')].find(p => p.id === 'a1').desc.browserOpen === true"), 'mt-browser open');
+        ok('mt-event and mt-browser work from the shimmed zsh');
+        // status off: new terminal gets no shim
+        await run("window.deck.agents.setSettings({ statusEnabled: false })");
+        assert.equal(fs.existsSync(path.join(data, 'claude-hooks.json')), false);
+        await clickProject('Projekt B'); await until(async () => (await run("window.DeckApp.state.panes.get('pb').every(p => p.status === 'running')")), 'B running');
+        await probe('b1', 'off'); await until(() => fs.existsSync(w('off_done')), 'probe off', 30000);
+        assert.equal(rd('off_zdotdir'), '[unset]');
+        assert.notEqual(rd('off_claude'), path.join(bin, 'claude'));
+        assert.equal(rd('off_path').split(':')[0] === bin, false);
+        assert.equal(rd('off_path'), ctl[0]);
+
+        srv.close();
+        ok('status off: no ZDOTDIR shim, PATH as in a normal terminal zsh, claude not wrapped');
+      } else if (mode === 'main') {
         // ---- start: switch is off, nothing is written
         const hooksFile = path.join(data, 'claude-hooks.json');
         assert.equal(fs.existsSync(hooksFile), false);
