@@ -2,7 +2,7 @@
 schemaVersion: 1
 projectId: multiterminal-app
 state: active
-updatedAt: 2026-10-16T13:42:00+02:00
+updatedAt: 2026-10-16T18:00:00+02:00
 updatedBy: codex
 ---
 
@@ -14,7 +14,7 @@ Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt
 ## Aktueller Stand
 CODEX-FULLACCESS-20261016-01: eingebaute Codex-Starts, Kontextstart und Fortsetzen erhalten automatisch Full Access, unabhängig vom persönlichen Profil. Quellstand mit 566/566 Tests geprüft; Startargumente durch lokale Attrappen bestätigt. Sichtbare Permissions-Anzeige offen: Electron-QA vor Bootstrap mit SIGABRT abgebrochen. Noch nicht im vorhandenen Update-Paket oder installiert; Ergänzung in `UPDATE_VERSION.md` vorgemerkt.
 
-RELEASE-COMMIT-CODEX-20261016-06: Quell-Commit für Version **0.2.0** einschließlich inzwischen freigegebener Full-Access-Ergänzung vorbereitet. Eigener abschließender Gesamtlauf 566/566 bestanden. Bestehendes Update-Paket erneut auf Prüfsummen geprüft; es enthält Full Access noch nicht und braucht dafür später einen Neubuild mit GUI-Prüfung. Kein Push, keine Installation oder Beendigung der Nutzer-App; Reservierung bis Commitabschluss aktiv.
+RELEASE-COMMIT-CODEX-20261016-06: Quellstand für Version **0.2.0** einschließlich freigegebener Full-Access-Ergänzung lokal in `7f944ad` gesichert (23 Dateien). Eigener abschließender Gesamtlauf 566/566 bestanden. Bestehendes Update-Paket erneut auf Prüfsummen geprüft; es enthält Full Access noch nicht und braucht dafür später einen Neubuild mit GUI-Prüfung. Kein Push, keine Installation oder Beendigung der Nutzer-App; eigene Reservierung frei. Abschlussdokumentation separat gesichert.
 
 UPDATE-CODEX-20261016-05: Sammelupdate **0.2.0 fertig gebaut und geprüft**, einschließlich bisher separatem Kontextstart. Eigene 565/565 Tests, Quell-QA und Paket-QA (Settings/Menüs/Kontext/Ports) grün; 91 Quelldateien bytegleich, 878 Paketprüfsummen geprüft. Separates Paket `dist/updates/Multiterminal-0.2.0/Multiterminal.app`. Nutzer-App unverändert; jetzt ausdrücklich nicht installieren/beenden/neustarten. Joshua installiert später manuell mit dem Befehl aus `UPDATE_VERSION.md`; weitere fertige Features bis dahin dort derselben Version zuordnen und Paket neu prüfen. Keine technischen Blocker, alle eigenen Bereiche frei. Ältere Build-/Integrationsoffenstände der enthaltenen Einzelaufgaben sind durch diesen Sammelabschluss überholt; Nutzerabnahme bleibt offen.
 

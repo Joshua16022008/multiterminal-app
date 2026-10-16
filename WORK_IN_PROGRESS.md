@@ -19,15 +19,16 @@ Vor Arbeitsbeginn zusammen mit `AGENTS.md`, `PROJECT_STATUS.md` und `PROGRESS.md
 ### RELEASE-COMMIT-CODEX-20261016-06 – Version 0.2.0 lokal committen
 
 - Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Auftrag, alle Commits für die nächste Version durchzuführen (16.10.2026).
-- Status: Gesamtstand einschließlich Full Access geprüft und commitbereit; Freigabe aller Full-Access-Bereiche im Ledger bestätigt und hier quittiert. Eigene Reservierung bis Commitabschluss aktiv.
+- Status: abgeschlossen und geprüft; gemeinsamer Quellstand einschließlich Full Access lokal in `7f944ad` gesichert. Alle eigenen Reservierungen freigegeben.
 - Arbeitskopie: gemeinsamer Checkout `main`, Ausgangs-HEAD `6d543d0`.
 - Bereiche: vorhandene offene 0.2.0-Änderungen aus UPDATE-CODEX-20261016-05, Menü-/Settings-Korrekturen und Einstellungsnotiz; nach Freigabe zusätzlich `src/main/agent-profile.js`, `tests/agent-profile.test.js`, `scripts/qa-agent-launch.js` für gemeinsame Sicherung. Git-Index/Commit sowie eigene gezielte Einträge in `WORK_IN_PROGRESS.md`, `PROGRESS.md`, `PROJECT_STATUS.md`, `UPDATE_VERSION.md`. Keine Produktumsetzung, Installation oder Veröffentlichung.
-- Zeitstempel: 16.10.2026, 13:38–13:42 +02:00.
+- Zeitstempel: 16.10.2026, 13:38–18:00 +02:00 (einschließlich Wartezeit auf Sandbox-Freigaben).
 - Ziel: aktuellen freigegebenen Versionsstand erneut prüfen und gemeinsam lokal committen; bestehende Änderungen vollständig erhalten.
 - Blocker: keine für Quell-Commit; Full Access noch nicht im vorhandenen Update-Paket. Git-Index nach Sandbox-Freigabe zugänglich.
 - Nachweise: eigener abschließender Gesamtlauf mit `TMPDIR=/private/tmp` Exit 0, 566/566 bestanden; Paketprüfung `bash scripts/install-update.sh --check` Exit 0; 91 Quelldateien bytegleich zum Update-Paket vor den nachfolgenden Full-Access-Änderungen; Shellsyntax und `git diff --check` sauber. Vorherige Umgebungsfehler dokumentiert in `PROGRESS.md`. Keine neue GUI-/Provider-Abnahme.
 - Übergabeanfrage an CODEX-FULLACCESS-20261016-01, 16.10.2026, 13:41 +02:00: Bitte nach eigener Prüfung alle drei Dateien ausdrücklich freigeben und hier quittieren; Commit-/Update-Runde wartet auf eure Übergabe. UPDATE_VERSION und Paket bleiben bei RELEASE-COMMIT. Full-Access-Dateien bisher nicht gestaged/committet.
-- Nächste Aktion: geprüften gemeinsamen Quellstand lokal committen.
+- Abschluss: `git commit` Exit 0, 23 Dateien; unmittelbar danach Arbeitskopie sauber und `main` vier Commits vor lokalem `origin/main`. Kein Push, Build oder Installation. Abschließende Dokumentation wird separat gesichert.
+- Nächste Aktion: Full-Access-Ergänzung beim nächsten Update-Build aufnehmen und mit Electron/Codex prüfen.
 
 ### UPDATE-CODEX-20261016-05 – Gemeinsame Update-Version, Installation später durch Joshua
 

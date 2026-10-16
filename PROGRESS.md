@@ -30,7 +30,7 @@
 
 ## Nächster Schritt
 
-- Joshua installiert das geprüfte Sammelupdate 0.2.0 nach Abschluss seiner laufenden Arbeit mit dem Terminal-Befehl aus `UPDATE_VERSION.md`.
+- Full-Access-Ergänzung in das Sammelupdate 0.2.0 aufnehmen, neu bauen und vor Joshuas späterer manueller Installation prüfen.
 
 ## Erledigt
 
@@ -48,13 +48,14 @@
 ### 16.10.2026, 13:42 +02:00 – RELEASE-COMMIT-CODEX-20261016-06: Version 0.2.0 lokal sichern
 
 - Agent/Sitzung: Codex `/root`, ausdrücklicher Auftrag von Joshua, alle Commits für die nächste Version auszuführen; gemeinsamer Checkout `main`, Ausgangs-HEAD `6d543d0`.
-- Status: Gesamtstand geprüft und commitbereit; Full-Access-Abschluss und Dateifreigabe gelesen und quittiert; eigene Reservierung bis Commitabschluss aktiv.
+- Status: abgeschlossen und geprüft; Gesamtstand einschließlich freigegebener Full-Access-Ergänzung lokal in `7f944ad` gesichert, 23 Dateien. Eigene Reservierung freigegeben. Commit nach Sandbox-Freigabe erfolgreich; Abschlusskontrolle am 16.10.2026 um 18:00 +02:00 zeigte saubere Arbeitskopie und vier Commits vor lokalem `origin/main`.
 - Änderung und Dateien: vorhandene Kontextstart-Integration, Menü-/Settings-Korrekturen samt QA, Versionsmetadaten 0.2.0, Installationsskript, `UPDATE_VERSION.md`, Einstellungsnotiz in `ENTWICKLUNGSPLAN.md` und vorhandene Koordinationsänderungen geprüft. Keine neue Produktfunktion; keine bestehenden Änderungen verworfen oder überschrieben. Git-Add wurde in Sandbox ohne Indexänderung verweigert.
 - Entscheidung: alle Vorgängeraufgaben freigegeben, gemeinsamer Versions-Commit durch aktuellen Nutzerauftrag autorisiert. Kein Push, Tag, Build, Installation oder Neustart; bestehendes Update-Paket bleibt erhalten.
 - Verifiziert: eigener abschließender vollständiger `env TMPDIR=/private/tmp npm test` außerhalb der Sandbox Exit 0, 566 Tests einschließlich Full Access bestanden, 0 Fehler/übersprungen. `bash scripts/install-update.sh --check` Exit 0; alle 91 Dateien unter `src/` vor Full Access bytegleich zum separaten Update-Paket. `bash -n scripts/install-update.sh` und `git diff --check` ohne Fehler. Testlog `/tmp/multiterminal-release-0.2.0-commit-tests.log`.
 - Umgebungsbefunde: Sandbox blockierte lokale Sockets (EPERM); Tempordner innerhalb des Checkouts ließen Nicht-Git-Tests das übergeordnete Repository erkennen. Git-Suchgrenze allein genügte beim Kontextstart nicht, weil dieser Git-Umgebungsvariablen bewusst entfernt. Mit Tempordner außerhalb des Checkouts vollständiger Erfolg; keine Produkt-/Teständerung nötig. Anfangs fehlerhaften lokalen Vergleichsbefehl korrigiert und erfolgreich erneut ausgeführt.
 - Offen/Blocker: zwischenzeitliche Full-Access-Reservierung nach ausdrücklicher Dateifreigabe aufgelöst; drei Dateien in gemeinsame Quellsicherung aufgenommen. Git-Index nach Sandbox-Freigabe zugänglich. Vorhandenes Paket enthält die neue Full-Access-Änderung noch nicht; Neubuild/GUI-Prüfung bleibt Folgearbeit gemäß Ergänzungsnotiz. Bestehende physische Nutzer-/Provider-Abnahme bleibt offen, frühere GUI-/Build-Nachweise nicht als eigene neue Prüfung ausgegeben.
-- Nächste Aktion: geprüften gemeinsamen Quellstand lokal committen.
+- Abschlussdokumentation: eigener Stand in den vier Koordinations-/Update-Dokumenten nach erfolgreichem Quell-Commit aktualisiert und separat gesichert; keine weiteren Produktänderungen oder wiederholte Tests ohne Anlass.
+- Nächste Aktion: Full-Access-Ergänzung beim nächsten Update-Build aufnehmen und mit Electron/Codex prüfen.
 
 ### 16.10.2026, 12:04 +02:00 – UPDATE-CODEX-20261016-05: Sammelupdate 0.2.0 zur späteren Installation bereit
 

@@ -4,7 +4,7 @@ Auftrag: Alle bereits bearbeiteten Features zu einer gemeinsamen macOS-arm64-Ver
 
 ## Stand
 
-RELEASE-COMMIT-CODEX-20261016-06 (16.10.2026): Quell-Commit einschließlich freigegebener Full-Access-Ergänzung vorbereitet; eigener abschließender Gesamtlauf 566/566 bestanden. Paketprüfung erfolgreich, 91 Quelldateien vor Full Access bytegleich. Full Access ist noch nicht im Update-Paket; dafür sind Neubuild und GUI-Prüfung erforderlich. Kein Push und keine Installation. Die folgenden Build-/GUI-Nachweise stammen weiterhin aus der vorherigen Vorbereitungsrunde.
+RELEASE-COMMIT-CODEX-20261016-06 (16.10.2026): Quellstand einschließlich freigegebener Full-Access-Ergänzung lokal in **`7f944ad`** gesichert; eigener abschließender Gesamtlauf **566/566 bestanden**. Paketprüfung erfolgreich, 91 Quelldateien vor Full Access bytegleich. Full Access ist noch nicht im Update-Paket; dafür sind Neubuild und GUI-Prüfung erforderlich. Kein Push und keine Installation. Die folgenden Build-/GUI-Nachweise stammen weiterhin aus der vorherigen Vorbereitungsrunde.
 
 **Fertig gebaut und geprüft, noch nicht installiert** (UPDATE-CODEX-20261016-05; 16.10.2026, 12:04 +02:00). Alle oben beauftragten Features einschließlich Kontextstart liegen gemeinsam im separaten Update-Paket 0.2.0. Nutzer-App weiterhin unverändert. Nächste Aktion: Joshua installiert das geprüfte Paket mit dem unten stehenden Befehl, sobald er seine laufende Arbeit beendet hat.
 
