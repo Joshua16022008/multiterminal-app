@@ -134,3 +134,19 @@ test('new feature actions have conflict-free defaults on every platform', () => 
     assert.strictEqual(new Set(all).size, all.length, platform + ': every combination used once');
   }
 });
+
+test('printing keys need Cmd or Ctrl; function keys also work with Shift or Alt', () => {
+  const ev = (o) => ({ key: o.key, code: '', metaKey: !!o.meta, ctrlKey: !!o.ctrl, altKey: !!o.alt, shiftKey: !!o.shift, getModifierState: () => false });
+  assert.strictEqual(hk.eventAccelerator(ev({ key: 'F5', shift: true })), 'Shift+F5');
+  assert.strictEqual(hk.eventAccelerator(ev({ key: 'F6', alt: true })), 'Alt+F6');
+  assert.strictEqual(hk.eventAccelerator(ev({ key: 'D', ctrl: true, shift: true })), 'Ctrl+Shift+D', 'Ctrl+Shift already worked');
+  assert.strictEqual(hk.eventAccelerator(ev({ key: 'F5' })), null, 'a bare function key stays free for terminal programs');
+  assert.strictEqual(hk.eventAccelerator(ev({ key: 'X', shift: true })), null, 'Shift+letter would swallow capital letters');
+  assert.strictEqual(hk.eventAccelerator(ev({ key: 'x', alt: true })), null, 'Alt+letter would swallow special characters');
+  const base = hk.defaults();
+  assert.deepStrictEqual(hk.validate({ ...base, settings: ['shift+f5'] }).settings, ['Shift+F5']);
+  assert.deepStrictEqual(hk.validate({ ...base, settings: ['Alt+Shift+F12'] }).settings, ['Alt+Shift+F12']);
+  assert.throws(() => hk.validate({ ...base, settings: ['Shift+X'] }), /F1–F24/);
+  assert.throws(() => hk.validate({ ...base, settings: ['F5'] }), /Ungültiges Tastenkürzel/);
+  assert.throws(() => hk.validate({ ...base, settings: ['Alt+F4'] }), /reserviert/, 'Alt+F4 stays reserved');
+});

@@ -79,12 +79,18 @@ app.on('browser-window-created', (_event, win) => {
       await capture('focus-terminal:3', 'B', ['control', 'shift']);
       await click('#settings-panel button[aria-label="Terminal 3: Kürzel 2 entfernen"]');
       await capture('settings', 'N', ['meta', 'shift']);
+      // Funktionstasten gehen auch mit Shift allein; Shift+Buchstabe bleibt gesperrt (würde Großbuchstaben verschlucken).
+      await capture('command-palette', 'F5', ['shift']);
+      await capture('terminal-search', 'D', ['shift']);
+      await wait("document.querySelector('.settings-error')?.textContent.includes('Funktionstasten')");
       // Drafts never affect active menus until explicitly saved.
       assert.equal(item('Neues Terminal').accelerator, 'Cmd+T');
       await save();
       assert.equal(item('Neues Terminal').accelerator, 'Cmd+Shift+T');
       assert.equal(item('Terminal 3').accelerator, 'Ctrl+Shift+B');
       assert.equal(item('Einstellungen…').accelerator, 'Cmd+Shift+N');
+      assert.equal(item('Befehlspalette…').accelerator, 'Shift+F5', 'Shift+function key accepted and active in the menu');
+      assert.equal(item('Im Terminalverlauf suchen…').accelerator, 'Cmd+F', 'Shift+letter was refused, old binding kept');
       assert.equal(menuItems().some(i => i.accelerator === 'Ctrl+3'), false);
       assert.equal(await run("window.DeckHotkeys.isHotkeyEvent({ctrlKey:true,shiftKey:true,key:'B'})"), true);
       assert.equal(await run("window.DeckHotkeys.isHotkeyEvent({ctrlKey:true,key:'3'})"), false);

@@ -34,6 +34,14 @@
 
 ## Erledigt
 
+### 17.10.2026 – HOTKEY-MODS-SONNET-20261017-01: Hotkeys auch mit Shift/Alt bindbar (geprüft, Bedienabnahme offen)
+
+- Agent/Sitzung: Claude Code (Sonnet 5.5), Wunsch von Joshua.
+- Befund: Ctrl-Kombinationen waren schon möglich; abgelehnt wurde alles ohne ⌘/Strg (Shift oder Alt allein, bloße F-Tasten).
+- Änderung: `src/renderer/hotkeys.js` (`modifiersSuffice`): Funktionstasten F1–F24 gehen jetzt auch mit Shift oder Alt (ohne Modifikator weiter nicht, damit Terminalprogramme ihre F-Tasten behalten; Alt+F4 bleibt reserviert). Zeichentasten brauchen weiter ⌘ oder Strg, weil Shift+Buchstabe Großbuchstaben und Alt+Buchstabe Sonderzeichen im Terminal verschlucken würde. Hinweistexte in `settings-panel.js` angepasst.
+- Prüfung: `npm test` 610/610 (neuer Test in `tests/hotkeys.test.js`); `qa-hotkeys` mit echter Aufnahme bestanden (Shift+F5 wird übernommen und im Menü aktiv, Shift+Buchstabe mit Hinweis abgelehnt, alte Belegung bleibt).
+- Nächste Aktion: Joshua entscheidet über Build/Update.
+
 ### 17.10.2026 – UPDATE-REBUILD-OPUS-20261017-01: Update-Paket 0.2.0 neu erstellt (geprüft, Installation durch Joshua)
 
 - Agent/Sitzung: Claude Code (Opus 5.5), Joshuas Auftrag, das vorbereitete Update fertigzustellen.

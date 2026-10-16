@@ -122,7 +122,7 @@
     busy = false; if (open) render();
   }
   function hotkeysView(body) {
-    body.append(h('h2', { text: 'Hotkeys' }), note('Gilt für die gesamte App und alle Agenten. Klicke auf ein Kürzel und drücke die neue Kombination mit ⌘ oder Strg. Esc bricht die Aufnahme ab. Bis zu zwei Kürzel pro Aktion.'), note('Änderungen werden erst mit „Hotkeys speichern“ aktiv. Bearbeitungs- und Systemkürzel bleiben reserviert.'));
+    body.append(h('h2', { text: 'Hotkeys' }), note('Gilt für die gesamte App und alle Agenten. Klicke auf ein Kürzel und drücke die neue Kombination mit ⌘ oder Strg (Funktionstasten F1–F24 gehen auch mit Shift oder Alt). Esc bricht die Aufnahme ab. Bis zu zwei Kürzel pro Aktion.'), note('Änderungen werden erst mit „Hotkeys speichern“ aktiv. Bearbeitungs- und Systemkürzel bleiben reserviert.'));
     if (!hotkeyDraft) { body.append(note(error ? 'Hotkeys konnten nicht geladen werden.' : 'Hotkeys werden geladen …')); return; }
     const list = h('div', { class: 'hotkey-list' });
     for (const { id, label } of HK.actions) {
@@ -380,7 +380,7 @@
         const accelerator = HK.eventAccelerator(e);
         const { action, index } = recording;
         stopRecording();
-        if (!accelerator) { error = 'Bitte eine Kombination mit ⌘ oder Strg verwenden.'; render(); return; }
+        if (!accelerator) { error = 'Bitte eine Kombination mit ⌘ oder Strg verwenden. Shift oder Alt allein gehen nur mit Funktionstasten (F1–F24), sonst würden Großbuchstaben und Sonderzeichen im Terminal verschluckt.'; render(); return; }
         const bindings = [...hotkeyDraft[action]]; bindings[index] = accelerator;
         changeHotkey(action, bindings); return;
       }

@@ -84,6 +84,14 @@
     if (/^f([1-9]|1[0-9]|2[0-4])$/i.test(key)) return key.toUpperCase();
     return keyAliases[key.toLowerCase()] || null;
   }
+  // Zeichen-Tasten brauchen Cmd oder Ctrl: Shift+D oder Alt+D würden sonst Großbuchstaben bzw. Sonderzeichen im Terminal verschlucken.
+  // Funktionstasten tippen nichts, deshalb reicht dort jeder Modifikator (Shift, Alt, Ctrl oder Cmd).
+  const isFunctionKey = (key) => /^F([1-9]|1[0-9]|2[0-4])$/.test(key);
+  function modifiersSuffice(mods, key) {
+    const has = (m) => (mods instanceof Set ? mods.has(m) : Boolean(mods[m]));
+    if (has('Cmd') || has('Ctrl')) return true;
+    return isFunctionKey(key) && (has('Alt') || has('Shift'));
+  }
   function canonical(accelerator) {
     if (typeof accelerator !== 'string' || !accelerator.trim()) throw new Error('Bitte ein gültiges Tastenkürzel eingeben.');
     const parts = accelerator.trim().split('+').map(part => part.trim());
@@ -94,7 +102,7 @@
       if (!modifier || seen.has(modifier)) throw new Error(`Ungültiges Tastenkürzel „${accelerator}“. Modifikatoren nur einmal verwenden.`);
       seen.add(modifier);
     }
-    if (!key || (!seen.has('Cmd') && !seen.has('Ctrl'))) throw new Error(`Ungültiges Tastenkürzel „${accelerator}“: Cmd oder Ctrl und eine unterstützte Taste verwenden.`);
+    if (!key || !modifiersSuffice(seen, key)) throw new Error(`Ungültiges Tastenkürzel „${accelerator}“: Cmd oder Ctrl und eine unterstützte Taste verwenden; F1–F24 gehen auch mit Shift oder Alt.`);
     return [...modifiers.filter(modifier => seen.has(modifier)), key].join('+');
   }
   function reserved(accelerator, platform) {
@@ -137,7 +145,7 @@
       if (codeKeys[code]) key = codeKeys[code];
       else if (/^Digit[0-9]$/.test(code)) key = code.slice(-1);
     }
-    if (!key || (!event.metaKey && !event.ctrlKey)) return null;
+    if (!key || !modifiersSuffice({ Cmd: event.metaKey, Ctrl: event.ctrlKey, Alt: event.altKey, Shift: event.shiftKey }, key)) return null;
     return [event.metaKey && 'Cmd', event.ctrlKey && 'Ctrl', event.altKey && 'Alt', event.shiftKey && 'Shift', key].filter(Boolean).join('+');
   }
   function format(accelerator) {
