@@ -321,16 +321,28 @@
     root.hidden = !open; if (!open) return;
     const focused = root.contains(document.activeElement) ? document.activeElement : null;
     const focusKey = focused ? { tag: focused.tagName, label: focused.getAttribute('aria-label'), text: focused.textContent, start: focused.selectionStart, end: focused.selectionEnd } : null;
-    const nav = h('nav', { class: 'settings-nav', 'aria-label': 'Anbieter' }, h('div', { class: 'settings-nav-title', text: 'Einstellungen' }));
-    for (const [id, name] of Object.entries(labels)) nav.append(button(name, () => select(id, tab), { class: 'settings-provider' + (scope === id ? ' active' : ''), 'aria-current': scope === id ? 'page' : null }));
+    // Links die Bereiche (Profil … Hotkeys), oben der Anbieter (Claude Code, Codex, Kimi). Hotkeys gelten app-weit: dort kein Anbieterwechsel.
+    const sectionIds = Object.keys(tabs);
+    const nav = h('nav', { class: 'settings-nav', 'aria-label': 'Bereiche' }, h('div', { class: 'settings-nav-title', text: 'Einstellungen' }));
+    for (const [id, name] of Object.entries(tabs)) nav.append(button(name, () => select(scope, id), {
+      class: 'settings-tab' + (tab === id ? ' active' : ''), 'aria-current': tab === id ? 'page' : null, 'aria-controls': 'settings-content',
+      onkeydown: e => {
+        if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return;
+        e.preventDefault();
+        const index = sectionIds.indexOf(id), next = e.key === 'Home' ? 0 : e.key === 'End' ? sectionIds.length - 1 : (index + (e.key === 'ArrowDown' ? 1 : -1) + sectionIds.length) % sectionIds.length;
+        select(scope, sectionIds[next]); root.querySelector('.settings-nav .settings-tab.active').focus();
+      },
+    }));
     const main = h('section', { class: 'settings-main' });
-    main.append(h('div', { class: 'settings-top' }, h('strong', { class: 'settings-top-title', text: tab === 'hotkeys' ? 'App-Einstellungen' : labels[scope] }), tab === 'hotkeys' ? null : button('Übersicht aktualisieren', reloadOverview), button('Schließen', () => toggle(false), { 'aria-label': 'Einstellungen schließen' })));
-    {
-      const tablist = h('div', { class: 'settings-tabs', role: 'tablist', 'aria-label': 'Bereiche' });
-      for (const [id, name] of Object.entries(tabs)) tablist.append(button(name, () => select(scope, id), { class: 'settings-tab' + (tab === id ? ' active' : ''), role: 'tab', 'aria-selected': String(tab === id), 'aria-controls': 'settings-content', tabindex: tab === id ? 0 : -1, onkeydown: e => { if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return; e.preventDefault(); const ids = Object.keys(tabs), index = ids.indexOf(id), next = e.key === 'Home' ? 0 : e.key === 'End' ? ids.length - 1 : (index + (e.key === 'ArrowRight' ? 1 : -1) + ids.length) % ids.length; select(scope, ids[next]); root.querySelector('[role=tab][aria-selected=true]').focus(); } }));
+    const appWide = tab === 'hotkeys';
+    main.append(h('div', { class: 'settings-top' }, h('strong', { class: 'settings-top-title', text: tabs[tab] + (appWide ? ' · gesamte App' : '') }), appWide ? null : button('Übersicht aktualisieren', reloadOverview), button('Schließen', () => toggle(false), { 'aria-label': 'Einstellungen schließen' })));
+    if (!appWide) {
+      const providerIds = Object.keys(labels);
+      const tablist = h('div', { class: 'settings-tabs', role: 'tablist', 'aria-label': 'Anbieter' });
+      for (const [id, name] of Object.entries(labels)) tablist.append(button(name, () => select(id, tab), { class: 'settings-provider' + (scope === id ? ' active' : ''), role: 'tab', 'aria-selected': String(scope === id), 'aria-controls': 'settings-content', tabindex: scope === id ? 0 : -1, onkeydown: e => { if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return; e.preventDefault(); const index = providerIds.indexOf(id), next = e.key === 'Home' ? 0 : e.key === 'End' ? providerIds.length - 1 : (index + (e.key === 'ArrowRight' ? 1 : -1) + providerIds.length) % providerIds.length; select(providerIds[next], tab); root.querySelector('[role=tab][aria-selected=true]').focus(); } }));
       main.append(tablist);
     }
-    const body = h('div', { id: 'settings-content', class: 'settings-content', role: 'tabpanel', 'aria-label': tabs[tab] });
+    const body = h('div', { id: 'settings-content', class: 'settings-content', role: 'tabpanel', 'aria-label': appWide ? tabs[tab] : tabs[tab] + ' · ' + labels[scope] });
     if (error) body.append(h('div', { class: 'settings-error', role: 'alert', text: error }));
     if (message) body.append(h('div', { class: 'settings-message', role: 'status', text: message }));
     if (tab === 'profile') profileView(body); else if (tab === 'quota') quotaView(body); else if (tab === 'hotkeys') hotkeysView(body); else inventoryView(body);
