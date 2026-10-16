@@ -44,6 +44,8 @@ async function main() {
       /^\/node_modules\/node-pty\/prebuilds\/win32-/,
       // Local test fixtures/caches can contain dangling account-setting symlinks.
       /^\/node_modules\/\.cache($|\/)/,
+      // Lokale Werkzeug- und Arbeitsdaten (Agent-Sitzungen, Browser-Protokolle, Terminal-Mitschnitte, QA-Reste) gehören nicht ins Paket.
+      /^\/\.(claude|claude-flow|gstack|multiterminal|qa-[^/]*)($|\/)/,
     ],
     quiet: false,
   });

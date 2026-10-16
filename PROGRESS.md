@@ -34,6 +34,14 @@
 
 ## Erledigt
 
+### 17.10.2026 – UPDATE-REBUILD-OPUS-20261017-01: Update-Paket 0.2.0 neu erstellt (geprüft, Installation durch Joshua)
+
+- Agent/Sitzung: Claude Code (Opus 5.5), Joshuas Auftrag, das vorbereitete Update fertigzustellen.
+- Befund: Das Paket unter `dist/updates/Multiterminal-0.2.0/` stammte von vor CODEX-FULLACCESS; `src/main/agent-profile.js` wich ab. Außerdem packte der Build lokale Arbeitsdaten mit ein (`.claude-flow`-Sitzungen, `.gstack`-Protokolle, `.multiterminal`-Terminalmitschnitt).
+- Änderung: `scripts/build.js` schließt `.claude`, `.claude-flow`, `.gstack`, `.multiterminal`, `.qa-*` aus. Neu gebaut, Update-Paket ersetzt, `CHECKSUMS.sha256` neu (855 Dateien), `UPDATE_VERSION.md` ergänzt.
+- Prüfung: `npm test` 566/566; `src/` bytegleich im Paket; Version 0.2.0; `bash scripts/install-update.sh --check` bestanden; Electron-QA `qa-ports`, `qa-settings`, `qa-agent-launch` gegen die Paket-Module bestanden.
+- Nächste Aktion: Joshua schließt Multiterminal (⌘Q) und führt `install-update.sh` im macOS-Terminal aus.
+
 ### 16.10.2026 – CODEX-FULLACCESS-20261016-01: Codex-Start automatisch mit Full Access
 
 - Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Full-Access-Auftrag; gemeinsamer Checkout `main`, Ausgangs-HEAD `6d543d0`.

@@ -4,6 +4,8 @@ Auftrag: Alle bereits bearbeiteten Features zu einer gemeinsamen macOS-arm64-Ver
 
 ## Stand
 
+UPDATE-REBUILD-OPUS-20261017-01 (17.10.2026): **Update-Paket aus `7f944ad`/`33a7718` neu erstellt, jetzt einschließlich Full Access.** Zuvor fehlte genau `src/main/agent-profile.js`. Build schließt lokale Arbeitsdaten (`.claude`, `.claude-flow`, `.gstack`, `.multiterminal`, `.qa-*`) nicht mehr ein; dadurch 855 statt 881 Paketdateien, Prüfsummen neu. `npm test` 566/566, alle `src/`-Dateien bytegleich im Paket, `install-update.sh --check` bestanden, `qa-ports`, `qa-settings`, `qa-agent-launch` direkt gegen das Paket bestanden. Installationsbefehl unten unverändert.
+
 RELEASE-COMMIT-CODEX-20261016-06 (16.10.2026): Quellstand einschließlich freigegebener Full-Access-Ergänzung lokal in **`7f944ad`** gesichert; eigener abschließender Gesamtlauf **566/566 bestanden**. Paketprüfung erfolgreich, 91 Quelldateien vor Full Access bytegleich. Full Access ist noch nicht im Update-Paket; dafür sind Neubuild und GUI-Prüfung erforderlich. Kein Push und keine Installation. Die folgenden Build-/GUI-Nachweise stammen weiterhin aus der vorherigen Vorbereitungsrunde.
 
 **Fertig gebaut und geprüft, noch nicht installiert** (UPDATE-CODEX-20261016-05; 16.10.2026, 12:04 +02:00). Alle oben beauftragten Features einschließlich Kontextstart liegen gemeinsam im separaten Update-Paket 0.2.0. Nutzer-App weiterhin unverändert. Nächste Aktion: Joshua installiert das geprüfte Paket mit dem unten stehenden Befehl, sobald er seine laufende Arbeit beendet hat.
