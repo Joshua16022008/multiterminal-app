@@ -121,7 +121,7 @@ function createPmMain(ctx) {
       PATH: binDir + path.delimiter + (process.env.PATH || '/usr/bin:/bin:/usr/sbin:/sbin'),
     };
     const zdotdir = ctx.getZdotdir();
-    if (zdotdir && ctx.statusEnabled() && path.basename(process.env.SHELL || '/bin/zsh') === 'zsh') {
+    if (zdotdir && path.basename(process.env.SHELL || '/bin/zsh') === 'zsh') { // wie main.js: Wrapper entscheidet beim Start
       extraEnv = { ...extraEnv, ZDOTDIR: zdotdir, MULTITERMINAL_ORIG_ZDOTDIR: process.env.ZDOTDIR || '' };
     }
     ctx.getTerminalMeta().set(terminalId, { projectId, accountId: claude ? claude.id : null, manager: true });

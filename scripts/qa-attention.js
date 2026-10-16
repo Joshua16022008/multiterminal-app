@@ -109,7 +109,7 @@ app.on('browser-window-created', (_e, win) => {
         const probe = (id, tag) => {
           const body = [`print -r -- "$PATH" > ${w(tag + '_path')}`, `print -r -- "[\${ZDOTDIR-unset}]" > ${w(tag + '_zdotdir')}`, `print -r -- "$HISTFILE" > ${w(tag + '_hist')}`,
             `(( $+aliases[${rcName}] || $+parameters[${rcName}] || $+functions[${rcName}] )) && print yes > ${w(tag + '_rc')} || print no > ${w(tag + '_rc')}`,
-            `whence -p claude > ${w(tag + '_claude')}`, `whence -p mt-browser mt-event > ${w(tag + '_tools')}`, ...(tag === 'on' ? [`[[ "$(whence -p claude)" == ${bin}/claude ]] && path=(${bin} ${fake} $path)`, `claude --version > ${w(tag + '_ver')}`, 'claude --model hand'] : []), `touch ${w(tag + '_done')}`].join('\n') + '\n';
+            `whence -p claude > ${w(tag + '_claude')}`, `whence -p mt-browser mt-event > ${w(tag + '_tools')}`, ...(tag === 'on' ? [`[[ "$(whence -p claude)" == ${bin}/claude ]] && path=(${bin} ${fake} $path)`, `claude --version > ${w(tag + '_ver')}`, 'claude --model hand'] : [`[[ "$(whence -p claude)" == ${bin}/claude ]] && path=(${bin} ${fake} $path)`, 'claude --model offmode']), `touch ${w(tag + '_done')}`].join('\n') + '\n';
           fs.writeFileSync(w(tag + '.zsh'), body);
           return type(id, `source ${w(tag + '.zsh')}\r`);
         };
@@ -141,18 +141,25 @@ app.on('browser-window-created', (_e, win) => {
         await type('a1', `mt-browser open http://127.0.0.1:${srv.address().port}\r`);
         await until(() => run("[...window.DeckApp.state.panes.get('pa')].find(p => p.id === 'a1').desc.browserOpen === true"), 'mt-browser open');
         ok('mt-event and mt-browser work from the shimmed zsh');
-        // status off: new terminal gets no shim
+        // status off: the shim is still there (wrapper first), but the wrapper adds no hooks
         await run("window.deck.agents.setSettings({ statusEnabled: false })");
         assert.equal(fs.existsSync(path.join(data, 'claude-hooks.json')), false);
         await clickProject('Projekt B'); await until(async () => (await run("window.DeckApp.state.panes.get('pb').every(p => p.status === 'running')")), 'B running');
         await probe('b1', 'off'); await until(() => fs.existsSync(w('off_done')), 'probe off', 30000);
         assert.equal(rd('off_zdotdir'), '[unset]');
-        assert.notEqual(rd('off_claude'), path.join(bin, 'claude'));
-        assert.equal(rd('off_path').split(':')[0] === bin, false);
-        assert.equal(rd('off_path'), ctl[0]);
+        assert.equal(rd('off_claude'), path.join(bin, 'claude'));
+        assert.deepEqual(rd('off_path').split(':'), [bin, ...ctl[0].split(':').filter((x) => x !== bin)]);
+        await until(async () => /FAKE: \[--model\] \[offmode\]/.test(await screen('b1')), 'wrapper passes through when off');
+        assert.doesNotMatch(await screen('b1'), /FAKE: \[--settings\][^\n]*\[offmode\]/);
+        ok('status off: shim keeps the wrapper first, but claude starts without hooks');
+        // switching the status on later works in the SAME tile for the next claude start
+        await run("window.deck.agents.setSettings({ statusEnabled: true })");
+        assert.equal(fs.existsSync(path.join(data, 'claude-hooks.json')), true);
+        await type('b1', 'claude --model late\r');
+        await until(async () => new RegExp('FAKE: \\[--settings\\] \\[' + path.join(data, 'claude-hooks.json').replace(/[/.]/g, '\\$&') + '\\] \\[--model\\] \\[late\\]').test(await screen('b1')), 'hooks after switching on, no new tile');
+        ok('status switched on later: next claude start in an existing tile gets the hooks');
 
         srv.close();
-        ok('status off: no ZDOTDIR shim, PATH as in a normal terminal zsh, claude not wrapped');
       } else if (mode === 'main') {
         // ---- start: switch is off, nothing is written
         const hooksFile = path.join(data, 'claude-hooks.json');
@@ -292,6 +299,7 @@ app.on('browser-window-created', (_e, win) => {
         await until(() => run("[...window.DeckApp.state.panes.get('pa')].find(p => p.id === 'a1').desc.browserOpen === true"), 'mt-browser open');
         srv.close();
         // Nummern folgen der angezeigten Reihenfolge (automatische Sortierung nach Aktivität).
+        await sleep(1000); // verzögerte Sortierung (0,7 s) abwarten, sonst wechselt die zweite Kachel noch
         const second = await run("[...window.DeckApp.state.panes.get('pa')].find(p => p.el.style.order === '1').id");
         fireMenu('Terminal 2');
         await until(async () => (await active()).pane === second, 'hotkey Terminal 2');

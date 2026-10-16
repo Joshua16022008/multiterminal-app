@@ -307,8 +307,9 @@ function registerIpc() {
         MULTITERMINAL_BROWSER_CLI: path.join(browserBinDir, 'mt-browser'),
         PATH: browserBinDir + path.delimiter + (process.env.PATH || '/usr/bin:/bin:/usr/sbin:/sbin'),
       };
-      // Only with the agent status switched on, and only for zsh (the shell pty-manager starts).
-      if (zdotdirPath && agentSettings.get().statusEnabled && path.basename(process.env.SHELL || '/bin/zsh') === 'zsh') {
+      // Always for zsh (the shell pty-manager starts): the claude wrapper decides at each start whether the
+      // status hooks apply (hooks file present = status on), so switching the status on later needs no new tile.
+      if (zdotdirPath && path.basename(process.env.SHELL || '/bin/zsh') === 'zsh') {
         extraEnv = { ...extraEnv, ZDOTDIR: zdotdirPath, MULTITERMINAL_ORIG_ZDOTDIR: process.env.ZDOTDIR || '' };
       }
     }
