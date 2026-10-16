@@ -31,3 +31,15 @@ test('without any agent status the manual order stays exactly as it is', () => {
   const tiles = ['a', 'b', 'c'].map((id) => ({ id }));
   assert.deepEqual(sortByActivity(tiles, () => null).map((t) => t.id), ['a', 'b', 'c']);
 });
+
+test('project row: strongest state wins, counts are spoken in German', () => {
+  const { projectActivity } = require('../src/renderer/activity');
+  assert.equal(projectActivity([]).state, null);
+  assert.equal(projectActivity([null, undefined]).state, null, 'plain shells carry no mark');
+  assert.equal(projectActivity(['idle', 'working']).state, 'working');
+  const p = projectActivity(['working', 'waiting', 'waiting', 'idle', null, 'working']);
+  assert.equal(p.state, 'waiting');
+  assert.deepEqual([p.waiting, p.working, p.idle], [2, 2, 1]);
+  assert.equal(p.text, '2 warten auf dich · 2 arbeiten · 1 inaktiv');
+  assert.equal(projectActivity(['waiting']).text, '1 wartet auf dich');
+});

@@ -2,7 +2,7 @@
 schemaVersion: 1
 projectId: multiterminal-app
 state: active
-updatedAt: 2026-10-16T00:43:00+02:00
+updatedAt: 2026-10-16T11:23:00+02:00
 updatedBy: codex
 ---
 
@@ -12,6 +12,16 @@ updatedBy: codex
 Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt bis zu 30 echte Terminals mit eigenem Mini-Browser für parallel laufende Terminal-Agenten bereitstellt.
 
 ## Aktueller Stand
+PROJ-ACTIVITY-OPUS-20261016-01: Projektliste links zeigt je Projekt, wo gearbeitet wird oder auf Rückfrage gewartet wird (gleiche Markierung wie in den Kachelköpfen, wirkt auch im Hintergrund). Geprüft, noch nicht gebaut.
+
+MENU-AGENT-CODEX-20261016-03: Senkrechtes Hauptmenü und Agentenpfeil neben Plus im neuen Build geprüft. Eigene Electron-QA gegen Quelle UND Paket bestanden (Claude/Codex/Kimi-Auswahl über lokale Terminal-Fixture, Schließen, schmale Ansicht); Screenshots geprüft, alle 88 Quelldateien bytegleich im Paket. Build unter `dist/Multiterminal-darwin-arm64/Multiterminal.app`, noch nicht installiert. Keine technischen Blocker, eigene Reservierungen frei. Nächste Aktion des Auftrags: geprüften Build bei der nächsten App-Aktualisierung installieren; bestehender nächster Projektschritt bleibt erhalten.
+
+HOTKEYS-PM-OPUS-20261016-01: Lagebild im Projektmanager per Knopf/⌘\ ein- und ausblendbar; Hotkeys für alle neuen Funktionen (Menü „Funktionen“, umbindbar). Geprüft, noch nicht gebaut.
+
+SETTINGS-NOTE-CODEX-20261016-01 (16.10.2026): Rückfragepflicht in `ENTWICKLUNGSPLAN.md` dokumentiert und textlich geprüft. Einstellungen-Überarbeitung offen; Joshuas konkrete Anweisungen fehlen. Vor deren Bearbeitung zuerst Joshua fragen und seine Antwort abwarten. Bestehender nächster Projektschritt bleibt erhalten.
+
+TOPMENU-DOWN-CODEX-20261016-02: Menü auf Joshuas Wunsch als senkrechte Optionsliste direkt unter dem Menüknopf umgesetzt. Eigene Electron-Menüprüfung Exit 0/passed, schmale Ansicht visuell geprüft; Syntax/Diff sauber. Keine technischen Blocker, eigene Reservierungen frei. Änderung nur im Quellstand; neuer Build und Installation offen. Bestehender nächster Projektschritt bleibt erhalten.
+
 PM-OPUS-20261016-01 (16.10.2026): Projektmanager-Agent – je Projekt ein Claude-Manager in eigenem Fenster mit Lagebild und Werkzeug `mt-pm`; Aufträge an Kacheln nur als Promptvorschau mit Bestätigung. Öffnen über ◆ in der Seitenleiste, Knopf „◆ Projektmanager“ oder ⌘⇧O. In `main` integriert (`8b31410`), 541/541 Tests und alle Electron-QA grün; gepusht (`90d6f92`) und gebaut, Bundle bytegleich zu `src/`, `qa-project-manager` und `qa-ports` gegen gepackte Module bestanden. Installation durch Joshua offen; kein Test mit echtem claude.
 
 WORKTREE-START-CODEX-20261016-01: optionaler Menüpunkt „Agent mit Kontext starten…“ im eigenen Worktree `/Users/joshua/.codex/worktrees/1580/multiterminal-app`, Branch `codex/worktree-context-start`, umgesetzt und geprüft; Hauptcheckout/PM-/Aktivitätsarbeit erhalten. Claude/Codex mit Projektordner/neuer/vorhandener Arbeitskopie, Auftrag und bearbeitbarer Vorschau; bisherige Plus-/Claude-/Codex-/Kimi-Direktstarts unverändert. Eigener Abschluss: 485/485 Tests, Kontextstart-/Menü-Electron-QA grün, Review ohne blockierenden Befund. Übergabepatch `WORKTREE_START.patch` lesend gegen aktuellen gemeinsamen Checkout geprüft. PM-Freigabe zur Integration noch unbestätigt; kein eigener Build/Installation/Commit/Push. Details in `PROGRESS.md`, eigene Bereiche frei.

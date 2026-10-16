@@ -4,6 +4,65 @@ Vor Arbeitsbeginn zusammen mit `AGENTS.md`, `PROJECT_STATUS.md` und `PROGRESS.md
 
 ## Aktive Reservierungen
 
+### PROJ-ACTIVITY-OPUS-20261016-01 – Aktivität je Projekt in der Seitenleiste
+
+- Agent/Sitzung: Claude Code (Sonnet 5.5), Wunsch von Joshua am 16.10.2026.
+- Status: abgeschlossen und geprüft (16.10.2026): 543/543 Tests, `qa-project-activity` und Regression grün. Reservierungen freigegeben.
+- Dateien: `activity.js`, `app.js` (nur eigene Hunks `renderSidebar`/Agentenliste/`onExit`), `attention.css`, `qol.css`, Tests/QA. Uncommittete Menü-Hunks von MENU-AGENT-CODEX in `app.js` nicht angefasst und nicht committet.
+- Nächste Aktion: Push/Build nach Joshuas Entscheidung.
+
+### SETTINGS-BUTTON-CODEX-20261016-04 – Einstellungen über Plusprojektbutton
+
+- Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Änderungsauftrag, 16.10.2026, 11:30 +02:00.
+- Status: in Arbeit; vorhandene Änderungen bleiben erhalten, keine überlappende aktive Reservierung festgestellt.
+- Arbeitskopie: gemeinsamer Checkout, Branch `main`, Ausgangs-HEAD `a5be7b4`.
+- Reservierte Bereiche: `src/renderer/index.html` nur Position von `#btn-settings`, `styles.css` nur Seitenleisten-Zeile und Fokus/Aktivzustand, `scripts/qa-topbar.js` nur betroffene Erwartungen und Positions-/Klickprüfung; eigene Einträge in den drei Koordinationsdateien.
+- Ziel: Einstellungen aus dem Dropdown direkt über „+ Projekt“ in die Seitenleiste verschieben.
+- Entscheidung: kleine zusammenhängende Änderung durch Hauptagenten; bestehende Einstellungen-Inhalte bleiben im bisherigen Auftrag anderer Sitzungen.
+- Blocker: keine; kein Build/Installation/Commit/Push in diesem Auftrag.
+- Nächste Aktion: Button umsetzen und mit isolierter Electron-QA prüfen.
+
+### MENU-AGENT-CODEX-20261016-03 – Dropdown und Agentenpfeil korrigieren
+
+- Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Auftrag vom 16.10.2026.
+- Status: abgeschlossen und geprüft, 16.10.2026, 11:23 +02:00; eigene Reservierungen freigegeben, Fremdänderungen erhalten.
+- Arbeitskopie: gemeinsamer Checkout, Branch `main`, Ausgangs-HEAD `3db8626`.
+- Bearbeitete Bereiche (frei): `src/renderer/index.html` (Plus/Agentenauswahl), `styles.css` (obere Knöpfe), `app.js` (Schnellstart-Verankerung und Schließen), `scripts/qa-topbar.js`, neuer Build unter `dist/`; eigene Einträge in den drei Koordinationsdateien.
+- Ziel: senkrechtes Menü im neuen Paket prüfen und Agenten-Auswahlpfeil neben Plus wiederherstellen.
+- Entscheidung: kleine, eng abhängige Korrektur durch Hauptagenten; keine Delegation.
+- Blocker: keine; Installation der laufenden Nutzer-App ist nicht Teil dieses Schritts.
+- Nachweise: fehlender Pfeil zuerst reproduziert; `qa-topbar` gegen Quelle UND Paket Exit 0/passed, Syntax/Diff sauber; Screenshots selbst geprüft. Build Exit 0; alle 88 `src/`-Dateien im Paket bytegleich. Lokale Terminal-Fixtures, keine Provider gestartet.
+- Nächste Aktion: geprüften Build bei der nächsten App-Aktualisierung installieren.
+
+### HOTKEYS-PM-OPUS-20261016-01 – Lagebild im Manager ein-/ausblendbar, Hotkeys für alle neuen Funktionen
+
+- Agent/Sitzung: Claude Code (Opus 5.5), Wunsch von Joshua am 16.10.2026.
+- Status: abgeschlossen und geprüft (16.10.2026): 542/542 Tests, qa-feature-hotkeys, qa-project-manager und Regression grün. Reservierungen freigegeben.
+- Dateien: `hotkeys.js`, `main.js` (Menü „Funktionen“), `pm-main.js`, `pm-preload.js`, `pm.html`, `pm.js`, `app.js` (`runFeatureAction`, Palette), Tests/QA. `index.html`/`styles.css` nicht berührt (TOPMENU-DOWN).
+- Nächste Aktion: Push/Build nach Joshuas Entscheidung.
+
+### SETTINGS-NOTE-CODEX-20261016-01 – Rückfrage vor Einstellungen-Überarbeitung festhalten
+
+- Agent/Sitzung: Codex `/root`, Joshuas Dokumentationsauftrag, 16.10.2026, 01:25 +02:00.
+- Status: abgeschlossen und geprüft (16.10.2026, 01:25 +02:00); ausschließlich Dokumentation, eigene Bereiche freigegeben.
+- Arbeitskopie: gemeinsamer Checkout, Branch `main`; fremde Änderungen bleiben erhalten.
+- Bereiche: `ENTWICKLUNGSPLAN.md` nur neuer Hinweis zur Einstellungen-Überarbeitung; eigene gezielte Einträge in `WORK_IN_PROGRESS.md`, `PROGRESS.md` und `PROJECT_STATUS.md`. Keine Produktdateien reserviert; fremde Dokumenteinträge bleiben erhalten.
+- Ziel: festhalten, dass Joshuas Anweisungen noch fehlen und vor der Überarbeitung erfragt werden müssen.
+- Blocker: keine für den Vermerk; die spätere Überarbeitung wartet auf Joshuas Anweisungen.
+- Nachweis: Hinweis in `ENTWICKLUNGSPLAN.md` und eigene Statuseinträge textlich geprüft; gezielter `git diff --check` ohne Fehler.
+- Nächste Aktion: bei Aufnahme der Einstellungen-Überarbeitung Joshua nach seinen gewünschten Änderungen fragen.
+
+### TOPMENU-DOWN-CODEX-20261016-02 – Menü senkrecht nach unten öffnen
+
+- Agent/Sitzung: Codex `/root`, Joshuas Änderungsauftrag, 16.10.2026, 01:23 +02:00.
+- Status: abgeschlossen und geprüft, 16.10.2026, 01:24 +02:00; eigene Reservierungen freigegeben.
+- Arbeitskopie: gemeinsamer Checkout, Branch `main`; vorhandene Fremdänderungen bleiben erhalten.
+- Bearbeitete Bereiche (frei): `src/renderer/styles.css` ausschließlich `#toolbar-options`, `src/renderer/index.html` ausschließlich Ausrichtungsattribut des Optionsmenüs, `scripts/qa-topbar.js` ausschließlich Menülayout-Prüfung; eigene gezielte Einträge in den drei Koordinationsdateien.
+- Ziel: senkrechte Optionsliste direkt unter dem Menüknopf statt waagerechter Leiste.
+- Blocker: keine. Kleine abhängige Änderung durch Hauptagenten; keine Delegation nötig.
+- Nachweise: `qa-topbar` Exit 0/passed; senkrechte Anordnung und Verankerung unter Menüknopf, Aktionen, Escape/Fokus, Außenklick, Schnellstart, Plus, schmale Ansicht und globale Optionen ohne Projekt bestanden. Screenshot selbst visuell geprüft; Syntax und gezielter Diff-Check sauber. Kein Build/Installation/Commit/Push.
+- Nächste Aktion: Menüänderung bei nächster freigegebener App-Aktualisierung mit paketieren.
+
 ### ACTIVITY-OPUS-20261016-01 – Aktivitätsanimation, automatische Sortierung und Komfort-Menü
 
 - Agent/Sitzung: Claude Code (Opus 5.5), Wunsch von Joshua am 16.10.2026.

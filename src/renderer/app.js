@@ -497,9 +497,10 @@
     $('side-empty').hidden = S.projects.length > 0;
     for (const p of S.projects) {
       const running = panesOf(p.id).filter((x) => x.status === 'running').length;
+      const act = window.DeckActivity ? window.DeckActivity.projectActivity(panesOf(p.id).map((x) => x.activity && x.activity())) : { state: null, text: '' };
       const nameEl = h('span', { class: 'proj-name', text: p.name, title: p.path + '\nDoppelklick zum Umbenennen' });
       nameEl.addEventListener('dblclick', (e) => { e.stopPropagation(); startRename(p, nameEl); });
-      const li = h('li', { class: 'proj' + (p.id === S.activeId ? ' active' : ''), onclick: () => p.id !== S.activeId && selectProject(p.id) },
+      const li = h('li', { class: 'proj' + (p.id === S.activeId ? ' active' : ''), 'data-activity': act.state, title: act.text || null, onclick: () => p.id !== S.activeId && selectProject(p.id) },
         nameEl,
         h('span', { class: 'proj-count' + (running ? ' live' : ''), text: String(running), title: `${running} laufende Terminals` }),
         h('button', { class: 'proj-pm', text: '◆', title: 'Projektmanager öffnen', 'aria-label': 'Projektmanager öffnen', onclick: (e) => { e.stopPropagation(); openProjectManager(p.id); } }), // PM
@@ -811,6 +812,7 @@
       attPanel.update(attList, attSettings);
     }
     function showAttention(force) {
+      renderSidebar(); // Aktivität je Projekt
       const panel = $('attention-panel');
       const open = force === undefined ? panel.hidden : Boolean(force);
       panel.hidden = !open;
@@ -912,7 +914,7 @@
       D.browserFeedback = window.DeckBrowserFeedback.createBrowserFeedback({ document, api: api.browser, getPromptDraft: () => D.promptDraft, notify });
     }
     api.terminals.onData((id, data) => { const p = byId(id); if (p) p.write(data); });
-    api.terminals.onExit((id, code) => { const p = byId(id); if (p) p.handleExit(code); scheduleResort(); });
+    api.terminals.onExit((id, code) => { const p = byId(id); if (p) p.handleExit(code); renderSidebar(); scheduleResort(); });
     // Requests of mt-browser from the main process: find the tile by terminal id (any project) and ask its browser API.
     const BROWSER_OPS = new Set(['open', 'show', 'hide', 'isOpen', 'webContentsId', 'mode', 'visible']);
     api.browser.onRequest(async ({ reqId, terminalId, op, arg }) => {

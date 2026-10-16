@@ -4,6 +4,8 @@
 
 ## Aktueller Stand
 
+- TOPMENU-DOWN-CODEX-20261016-02: Menü als senkrechte Optionsliste unter dem Menüknopf umgesetzt und mit Electron geprüft; ersetzt die bisherige horizontale Darstellung im Quellstand. Build/Installation offen.
+
 - WORKTREE-START-CODEX-20261016-01: optionaler Agentenstart mit Arbeitskopie und Kontextvorschau im eigenen Branch `codex/worktree-context-start` umgesetzt/geprüft; Plus und alle drei Direktstarts erhalten. 485/485 Tests, zwei Electron-QA und Review grün. Übergabepatch im Worktree bereit; gemeinsame PM-Integration, Build/Installation offen.
 
 - WORKTREE-EXPLAIN-CODEX-20261016-01: lesender Abgleich abgeschlossen; Arbeitskopien-Auswahl/Dienst installiert vorhanden, Worktree-Aufgabenpaket im Startpfad fehlt. Empfehlung: gemeinsame Startauswahl mit Agent, Arbeitsordner, Branch/Basis und sichtbarem Projekt-/Aufgabenkontext. Keine Produktumsetzung, kein neuer App-/Testlauf.
@@ -30,7 +32,65 @@
 
 ## Erledigt
 
+### 16.10.2026 – PROJ-ACTIVITY-OPUS-20261016-01: Aktivität je Projekt in der Seitenleiste (geprüft, Bedienabnahme offen)
+
+- Agent/Sitzung: Claude Code (Sonnet 5.5), Wunsch von Joshua.
+- Änderung: Jede Projektzeile links zeigt den stärksten Zustand ihrer Kacheln wie in den Kachelköpfen: wartet auf dich (gelbe Plakette, dicke pulsierende Linie), arbeitet (blaue Plakette, laufender Lichtstreifen), inaktiv (dezente atmende Linie); ohne Agent unmarkiert. Der Hinweistext nennt die Zahlen („1 wartet auf dich · 2 arbeiten“). Wirkt auch bei Projekten im Hintergrund. Die Komfort-Schalter (Markierungen, Animationen) gelten mit. Neu `DeckActivity.projectActivity`; Aktualisierung bei Agentenstatus und Prozessende.
+- Dateien: `src/renderer/activity.js`, `app.js` (nur `renderSidebar`, Agentenliste, `onExit`), `attention.css`, `qol.css`, `tests/activity.test.js`, neu `scripts/qa-project-activity.js`. Die uncommitteten Menü-Hunks der Sitzung MENU-AGENT-CODEX in `app.js` bewusst nicht mitcommittet (nur eigene Hunks gestaged).
+- Prüfung: `npm test` 543/543; neu `qa-project-activity` (drei Projekte, Hintergrundprojekt, warten schlägt arbeiten, Antwort gesehen = inaktiv, Prozessende entfernt Markierung, Komfort-Schalter) bestanden, Screenshots selbst angesehen; qa-activity, qa-topbar, qa-feature-hotkeys, qa-project-manager, qa-attention, qa-hotkeys, qa-search, qa-templates, qa-task-link, qa-diff, qa-handoff, qa-resume, qa-ports, qa-project-planning bestanden.
+- Grenzen: nur Claude liefert Status; Codex/Kimi-Kacheln zählen nicht. Voraussetzung ist der Agentenstatus („Rückmeldungen“/Komfort). Das Hover-Tooltip zeigt die Zahlen erst nach dem Zeitpunkt der Status-Aktualisierung.
+- Nächste Aktion: Push/Build nach Joshuas Entscheidung.
+
+### 16.10.2026 – SETTINGS-LAYOUT-OPUS-20261016-01: Einstellungen umgebaut – Bereiche links, Anbieter oben (geprüft, Bedienabnahme offen)
+
+- Agent/Sitzung: Claude Code (Opus 5.5); Joshuas Vorgabe: links Profil, Kontingente, Skills, Plugins, Mods, Bibliotheken, Hotkeys; oben Wechsel zwischen Claude, Codex und Kimi. Damit ist die offene Rückfrage aus SETTINGS-NOTE-CODEX-20261016-01 beantwortet.
+- Änderung: `src/renderer/settings-panel.js` (`render`: Seitenleiste = Bereiche mit Pfeil hoch/runter, obere Leiste = Anbieter mit Pfeil links/rechts; Hotkeys app-weit ohne Anbieterleiste, Titel „Hotkeys · gesamte App“), `src/renderer/settings.css` (Stile getauscht). Klassen behalten ihre Bedeutung (`.settings-tab` = Bereich, `.settings-provider` = Anbieter); Daten, Speichern und Entwürfe unverändert.
+- Prüfung: `npm test` 542/542; `qa-settings` und `qa-hotkeys` ohne Anpassung bestanden; Screenshots Profil und Hotkeys selbst angesehen.
+- Nächste Aktion: Joshuas Sichtprüfung nach dem nächsten Build.
+
+### 16.10.2026, 11:23 +02:00 – MENU-AGENT-CODEX-20261016-03: Dropdown und Agentenpfeil im neuen Build geprüft
+
+- Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Korrekturauftrag; gemeinsamer Checkout `main`, Ausgangs-HEAD `3db8626`. Fremdänderungen erhalten.
+- Status: umgesetzt und geprüft in Quelle und App-Paket; Installation und physische Nutzerabnahme offen. Eigene Reservierungen frei.
+- Ursache: senkrechtes Hauptmenü bereits lokal umgesetzt, jedoch im bisherigen Paket noch nicht enthalten. Der Menüumbau hatte den Agentenpfeil durch „Schnellstart“ innerhalb des Optionsmenüs ersetzt.
+- Änderung/Dateien: `src/renderer/index.html` setzt `btn-menu` als Pfeil wieder neben Plus; `styles.css` stellt den geteilten Knopf dar und erhält das senkrechte Dropdown. `app.js` verankert die Agentenauswahl unter dem Pfeil, pflegt den aufgeklappten Zustand und gibt nach Escape den Fokus zurück. `scripts/qa-topbar.js` erweitert die vorhandene Electron-Prüfung; keine zusätzliche Testdatei.
+- Verifiziert: neuer Sichtbarkeitscheck vor Produktänderung mit erwarteter Assertion fehlgeschlagen. Danach `qa-topbar` gegen Quelle UND `dist/Multiterminal-darwin-arm64/Multiterminal.app/Contents/Resources/app/src/main/main.js` jeweils Exit 0/`passed`: Dropdown senkrecht unter Menüknopf, Pfeil neben Plus, Verankerung, Claude/Codex/Kimi-Auswahl und neue Terminalkacheln, Plus, eigenes Befehlsformular, Escape/Fokus, Außenklick, gegenseitiges Schließen, vorhandene Panels, schmale Ansicht und globale Optionen ohne Projekt. Agentenstarts ausschließlich mit lokalem Fixture-Shellprozess, keine echten Anbieteraufrufe. Screenshots `agent-menu.png` und `menu-narrow.png` selbst visuell geprüft.
+- Build: `npm run build` Exit 0, spawn-helper ausführbar; 88 `src/`-Dateien im Paket bytegleich. Bekannte Packager-Warnung zum optionalen `.icon`-Format. Syntaxprüfungen von `app.js`/QA und `git diff --check` sauber. Keine Gesamtsuite für diese begrenzte Oberflächenkorrektur erneut ausgeführt.
+- Belege: Quelle `/var/folders/dz/mbg87p4x3pbf1v207rr8f1t80000gp/T/mt-topbar-qa-HXlAkc/`, Paket `/var/folders/dz/mbg87p4x3pbf1v207rr8f1t80000gp/T/mt-topbar-qa-C8FlD0/`.
+- Offen/Blocker: kein technischer Blocker; installierte/laufende Nutzer-App unverändert, kein Commit/Push.
+- Nächste Aktion: geprüften Build bei der nächsten App-Aktualisierung installieren.
+
 Neue Ergebniseinträge oben ergänzen; bestehende Einträge erhalten. Ungeprüfte Umsetzung ausdrücklich als solche kennzeichnen.
+
+### 16.10.2026 – HOTKEYS-PM-OPUS-20261016-01: Lagebild im Manager ein-/ausblendbar, Hotkeys für alle neuen Funktionen (geprüft, Bedienabnahme offen)
+
+- Agent/Sitzung: Claude Code (Opus 5.5), Wunsch von Joshua.
+- Manager-Fenster: Knopf „Lagebild ⟩/⟨ Lagebild“ und Hotkey ⌘\ (sonst Strg+Alt+\) blenden die rechte Lagebild-Leiste aus; das Manager-Terminal nutzt dann die volle Breite. Zustand pro Gerät gemerkt (`mt.pm.situation`); ausgeblendet kein Hintergrund-Neuladen. Menüweg: `pm-main.handleMenuAction` → `pm:menu` → `pm.js`.
+- Hotkeys (umbindbar, neues Menü „Funktionen“, auch in der Befehlspalette): Änderungen ⌘⇧D, Ports ⌘⇧P, Rückmeldungen ⌘⇧J, Fortschritt ⌘⇧G, Übergabe ⌘⇧U, Element im Browser ⌘⇧E, Second-Brain-Aufgabe ⌘⇧L, Aufbau starten ⌘⇧B, Aufbau speichern ⌥⌘B, Komfort ⌘⇧K, Sortierung an/aus ⌘⇧S, Lagebild ⌘\. Andere Systeme: Strg+Alt+Buchstabe (Strg+Umschalt bleibt der Shell, Strg+\ bleibt SIGQUIT). Kachelfunktionen wirken auf die aktive Kachel und melden klar, wenn Browser zu oder Aufgaben-Chip aus ist.
+- Dateien: `src/renderer/hotkeys.js`, `src/main/main.js`, `src/main/pm-main.js`, `src/main/pm-preload.js`, `src/renderer/pm.html`, `pm.js`, `app.js`, `tests/hotkeys.test.js`, neu `scripts/qa-feature-hotkeys.js`; `qa-project-manager.js` (Abschnitt Lagebild), `qa-hotkeys.js` (Anzahl aus dem Modell, Testkombination ⌘⇧N statt nun belegtem ⌘⇧P).
+- Prüfung: `npm test` 542/542; qa-feature-hotkeys (alle Menüeinträge/Standards, Panels, Dialoge, Sortierschalter, Kachelaktionen, Palette, Belegungen; Second Brain auf geschlossenem Port), qa-project-manager (inkl. Lagebild-Umschalten, Terminal wird breiter, gemerkt), qa-hotkeys, qa-topbar, qa-search, qa-activity, qa-attention, qa-templates, qa-task-link, qa-diff, qa-handoff, qa-resume, qa-attachments, qa-ports, qa-browser-feedback, qa-project-planning bestanden. Geprüft im gemeinsamen Arbeitsstand zusammen mit den uncommitteten TOPMENU-DOWN-Änderungen.
+- Grenzen: Hotkeys über das Menü ausgelöst, physische Tastendrücke nicht simuliert. Bei fokussiertem Manager-Fenster wirken nur Lagebild und Fenster schließen.
+- Nächste Aktion: Joshua entscheidet über Push/Build gemeinsam mit TOPMENU-DOWN.
+
+### 16.10.2026, 01:25 +02:00 – SETTINGS-NOTE-CODEX-20261016-01: Rückfrage vor Einstellungen-Überarbeitung vermerkt
+
+- Agent/Sitzung: Codex `/root`, Joshuas Dokumentationsauftrag; gemeinsamer Checkout, Branch `main`.
+- Status: Dokumentationsänderung geprüft; spätere Einstellungen-Überarbeitung offen.
+- Änderung und Dateien: offener Punkt in `ENTWICKLUNGSPLAN.md`; eigene Einträge in `WORK_IN_PROGRESS.md`, `PROJECT_STATUS.md` und `PROGRESS.md`.
+- Entscheidung: Joshuas konkrete Anweisungen fehlen. Sobald die Einstellungen-Überarbeitung bearbeitet wird, zuerst Joshua fragen und seine Antwort vor der Umsetzung abwarten.
+- Verifiziert: Wortlaut und gezielter Markdown-Diff geprüft; keine Produkttests erforderlich, da ausschließlich Dokumentation geändert wird.
+- Offen/Blocker: für die spätere Überarbeitung fehlen Joshuas Anweisungen; für den Vermerk kein Blocker. Fremde Änderungen erhalten, eigene Dokumentbereiche freigegeben.
+- Nächste Aktion: bei Aufnahme der Einstellungen-Überarbeitung Joshua nach seinen gewünschten Änderungen fragen.
+
+### 16.10.2026, 01:24 +02:00 – TOPMENU-DOWN-CODEX-20261016-02: Menü öffnet senkrecht nach unten
+
+- Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Änderungsauftrag; gemeinsamer Checkout `main`, Ausgangs-HEAD `f77f01e`. Vorhandene und währenddessen eintreffende Fremdänderungen erhalten.
+- Status: im Quellstand umgesetzt und geprüft; Build/Installation und physische Bedienabnahme offen.
+- Änderung und Dateien: `src/renderer/styles.css` richtet `#toolbar-options` als 220 px breite Spalte rechts unter dem Menüknopf aus, mit begrenzter Höhe und vertikalem Scrollen; Schaltflächen linksbündig. `src/renderer/index.html` kennzeichnet die senkrechte Ausrichtung. Bestehende `scripts/qa-topbar.js` prüft Anordnung untereinander und Verankerung unter dem Knopf statt waagerechter Leiste.
+- Entscheidung: kleine, eng zusammenhängende Layoutänderung durch Hauptagenten; keine Delegation oder neue Testdatei nötig. Vorhandenes Menüverhalten bleibt Grundlage der Prüfung.
+- Verifiziert: `node --check scripts/qa-topbar.js` und gezielter `git diff --check` Exit 0. Eigener `node_modules/.bin/electron scripts/qa-topbar.js` Exit 0/`passed`, keine Rendererfehler: Ausrichtung, alle bisherigen Optionen, Escape/Fokus, Außenklick, Umschalten, Panelaktionen, Schnellstart/Custom-Formular, Plus, schmale Ansicht und globale Optionen ohne Projekt. Screenshot `menu-narrow.png` selbst visuell geprüft; Belege `/var/folders/dz/mbg87p4x3pbf1v207rr8f1t80000gp/T/mt-topbar-qa-6SExLj/`.
+- Offen/Blocker: kein technischer Blocker; keine Gesamtsuite für reine Layoutänderung, kein neuer Build, keine Installation und kein Commit/Push. Nutzer-App und Provider nicht gestartet/verändert; isolierte lokale QA mit Terminal-Fixture. Eigene Reservierungen freigegeben.
+- Nächste Aktion: Menüänderung bei nächster freigegebener App-Aktualisierung mit paketieren.
 
 ### 16.10.2026 – PM-OPUS-20261016-01: Projektmanager-Agent (geprüft, Bedienabnahme offen)
 
