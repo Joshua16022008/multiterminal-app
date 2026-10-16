@@ -523,7 +523,7 @@
     $('btn-plus').disabled = full;
     $('btn-menu').disabled = full;
     $('btn-plus').title = full ? tip : 'Neues Terminal' + (hotkeyLabel('new-terminal') ? ' (' + hotkeyLabel('new-terminal') + ')' : '');
-    $('btn-menu').title = full ? tip : 'Schnellstart-Menü';
+    $('btn-menu').title = full ? tip : 'Agent auswählen';
   }
 
   /* F08: Kacheln aus einem gespeicherten Aufbau – gleiche Erzeugung wie newTerminal, aber mit gewähltem Startbefehl. */
@@ -563,7 +563,10 @@
     $('toolbar-options').querySelector('button:not(:disabled)').focus();
   }
 
-  function closeMenu() { $('menu').hidden = true; }
+  function closeMenu() {
+    $('menu').hidden = true;
+    $('btn-menu').setAttribute('aria-expanded', 'false');
+  }
   function openMenu() {
     const m = $('menu');
     if (!m.hidden && m.dataset.owner === 'btn-menu') { closeMenu(); return; }
@@ -589,6 +592,17 @@
     }
     if (S.presets.length) m.append(h('hr'));
     m.append(h('div', { class: 'menu-item', text: 'Eigenen Befehl hinzufügen…', onclick: () => { closeMenu(); openCustomForm(); } }));
+    if (D.agentLaunch) {
+      m.append(h('div', {
+        class: 'menu-item', text: 'Agent mit Kontext starten…',
+        onclick: () => {
+          closeMenu();
+          const project = activeProject();
+          if (!project) { notify('Zuerst ein Projekt auswählen.'); return; }
+          D.agentLaunch.open({ project });
+        },
+      }));
+    }
     if (D.worktreePicker && api.worktrees) {
       m.append(h('div', {
         class: 'menu-item', text: 'Terminal in Arbeitskopie…', title: 'Eigener Git-Worktree mit eigenem Branch',
@@ -600,8 +614,9 @@
         },
       }));
     }
-    const r = $('btn-toolbar').getBoundingClientRect();
+    const r = $('btn-menu').getBoundingClientRect();
     m.hidden = false;
+    $('btn-menu').setAttribute('aria-expanded', 'true');
     m.style.top = r.bottom + 4 + 'px';
     m.style.left = Math.max(8, r.right - m.offsetWidth) + 'px';
   }
@@ -687,8 +702,8 @@
       if (open) { showPorts(false); showAttention(false); if (D.diffPanel.isOpen()) showDiff(false); } // F04: diff
       $('btn-settings').classList.toggle('on', open);
       $('btn-settings').setAttribute('aria-expanded', String(open));
-      $('sidebar').inert = open;
-      for (const id of ['grids', 'empty-main', 'progress-panel', 'accounts-panel', 'ws-actions']) $(id).inert = open;
+      document.querySelector('.side-head').inert = open;
+      for (const id of ['project-list', 'side-empty', 'grids', 'empty-main', 'progress-panel', 'accounts-panel', 'ws-actions']) $(id).inert = open;
       if (!open) requestAnimationFrame(() => panesOf(S.activeId).forEach((p) => p.refit()));
       reportVisible();
       return open;
@@ -718,7 +733,11 @@
       if (!e.target.closest('#toolbar-options, #btn-toolbar')) closeToolbar();
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { closeMenu(); closeToolbar(true); }
+      if (e.key === 'Escape') {
+        const agentMenuOpen = !$('menu').hidden && $('menu').dataset.owner === 'btn-menu';
+        closeMenu(); closeToolbar(true);
+        if (agentMenuOpen) $('btn-menu').focus();
+      }
     });
 
     /* Globale Terminal-Ereignisse, Zuordnung per id */
@@ -804,6 +823,7 @@
       attList = Array.isArray(list) ? list : [];
       A.entries = new Map(attList.map((e) => [e.terminalId, e]));
       for (const l of S.panes.values()) for (const p of l) p.setAgentEntry(A.entries.get(p.id) || null);
+      renderSidebar(); // Aktivität je Projekt
       scheduleResort();
       const unread = attList.filter((e) => e.unread).length;
       const badge = $('attention-count');
@@ -812,7 +832,6 @@
       attPanel.update(attList, attSettings);
     }
     function showAttention(force) {
-      renderSidebar(); // Aktivität je Projekt
       const panel = $('attention-panel');
       const open = force === undefined ? panel.hidden : Boolean(force);
       panel.hidden = !open;
@@ -861,6 +880,23 @@
         pane.el.scrollIntoView({ block: 'nearest' });
       },
     });
+    if (window.DeckAgentLaunch && api.launch) {
+      D.agentLaunch = window.DeckAgentLaunch.create({
+        document, api, notify,
+        launch: ({ project, provider, prepared }) => {
+          // Keep a captured project/working copy: changing the sidebar cannot redirect this task.
+          const current = S.projects.find(p => p.id === project.id && p.path === project.path);
+          if (!current) throw new Error('Das Projekt wurde entfernt oder verschoben. Bitte erneut auswählen.');
+          const original = S.presets.find(p => p.id === provider && p.builtin);
+          if (!original) throw new Error('Dieser Agent ist nicht mehr verfügbar.');
+          const pane = newTerminal(current.id, { ...original, command: prepared.command }, undefined,
+            prepared.workspaceId ? { workspaceId: prepared.workspaceId } : undefined);
+          if (!pane) throw new Error('Das Terminal konnte nicht angelegt werden.');
+          if (S.activeId !== current.id) selectProject(current.id);
+          return pane;
+        },
+      });
+    }
     // F09: Übergabe nutzt die Promptvorschau (F06) und zeigt Quelle sowie Ziel der aktiven Projektkacheln.
     D.handoff = window.DeckHandoff.createHandoffDialog({
       document, h: D.h, promptDraft: D.promptDraft, notify,

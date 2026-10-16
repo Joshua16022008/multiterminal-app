@@ -4,6 +4,8 @@
 
 ## Aktueller Stand
 
+- UPDATE-CODEX-20261016-05: Sammelupdate **0.2.0 fertig gebaut und geprüft**, einschließlich Kontextstart und aller aktuellen Settings-/Menü-/Aktivitäts-/Manager-Features. 565/565 eigene Tests und Quell-/Paket-QA grün; separates geprüftes Update-Paket unter `dist/updates/Multiterminal-0.2.0/`. Laufende Nutzer-App unverändert. `UPDATE_VERSION.md` enthält Umfang, verbindliche Ergänzungsliste und Joshuas späteren Installationsbefehl. Ältere Einzelstände zu offener Integration/Paketierung sind damit überholt.
+
 - TOPMENU-DOWN-CODEX-20261016-02: Menü als senkrechte Optionsliste unter dem Menüknopf umgesetzt und mit Electron geprüft; ersetzt die bisherige horizontale Darstellung im Quellstand. Build/Installation offen.
 
 - WORKTREE-START-CODEX-20261016-01: optionaler Agentenstart mit Arbeitskopie und Kontextvorschau im eigenen Branch `codex/worktree-context-start` umgesetzt/geprüft; Plus und alle drei Direktstarts erhalten. 485/485 Tests, zwei Electron-QA und Review grün. Übergabepatch im Worktree bereit; gemeinsame PM-Integration, Build/Installation offen.
@@ -28,9 +30,55 @@
 
 ## Nächster Schritt
 
-- Kontextstart nach bestätigter PM-Freigabe in den gemeinsamen `main` integrieren.
+- Joshua installiert das geprüfte Sammelupdate 0.2.0 nach Abschluss seiner laufenden Arbeit mit dem Terminal-Befehl aus `UPDATE_VERSION.md`.
 
 ## Erledigt
+
+### 16.10.2026 – CODEX-FULLACCESS-20261016-01: Codex-Start automatisch mit Full Access
+
+- Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Full-Access-Auftrag; gemeinsamer Checkout `main`, Ausgangs-HEAD `6d543d0`.
+- Status: Quellstand geprüft; tatsächliche Permissions-Anzeige in Codex und Aufnahme ins Update-Paket offen.
+- Änderung: `src/main/agent-profile.js` ergänzt `--dangerously-bypass-approvals-and-sandbox` für exakt eingebaute Codex-Starts und beide Fortsetzen-Varianten, unabhängig vom Profil-Schalter und leeren/unlesbaren Profilen. Gemeinsamer Dekorator deckt normalen Start, Kontextstart und Fortsetzen ab. Eigene Befehle und rohe Terminaleingaben behalten ihre Optionen. Globale Codex-Konfiguration unverändert.
+- Tests: `tests/agent-profile.test.js` prüft tatsächliche Shell-Argumente mit lokalen Attrappen, Profil an/aus, leer, Fortsetzen zuletzt/per ID, Kombination mit Entwicklerprofil und eigene Berechtigungsoptionen. `scripts/qa-agent-launch.js` erwartet Full Access bei Direkt- und Kontextstart.
+- Verifiziert: lokale `codex --help` bestätigt Flag; vollständiger eigener Lauf `TMPDIR=/tmp npm test` außerhalb der Sandbox Exit 0, 566/566 bestanden, 0 Fehler/Skips (`/tmp/multiterminal-codex-fullaccess-tests.log`). Syntax und gezielter Diff ohne Fehler. Vorläufe unter Projekt-TMPDIR scheiterten am bestehenden Non-Git-Test (übergeordnetes Repository erkannt); Sandboxlauf zusätzlich an gesperrten Socket-Tests. Keine fachlichen Änderungen zur Umgehung dieser Umgebungsfehler.
+- GUI-Grenze: isolierte Electron-QA zweimal mit SIGABRT vor Bootstrap abgebrochen, auch außerhalb der Sandbox; keine erfolgreiche GUI-/Provider-Abnahme behauptet (`/tmp/multiterminal-codex-fullaccess-qa.log`). Kein echter Modellaufruf, Build, Installation, Neustart oder Commit durch diese Sitzung.
+- Koordination: RELEASE-COMMIT-Freigabe im Ledger gelesen; anschließend Ergänzung für dieselbe Update-Version ausschließlich in `UPDATE_VERSION.md` vorgemerkt. Fremde Änderungen erhalten; eigene Bereiche frei.
+- Nächste Aktion: Full-Access-Ergänzung beim nächsten Update-Build aufnehmen und mit Electron/Codex prüfen.
+
+### 16.10.2026, 13:42 +02:00 – RELEASE-COMMIT-CODEX-20261016-06: Version 0.2.0 lokal sichern
+
+- Agent/Sitzung: Codex `/root`, ausdrücklicher Auftrag von Joshua, alle Commits für die nächste Version auszuführen; gemeinsamer Checkout `main`, Ausgangs-HEAD `6d543d0`.
+- Status: Gesamtstand geprüft und commitbereit; Full-Access-Abschluss und Dateifreigabe gelesen und quittiert; eigene Reservierung bis Commitabschluss aktiv.
+- Änderung und Dateien: vorhandene Kontextstart-Integration, Menü-/Settings-Korrekturen samt QA, Versionsmetadaten 0.2.0, Installationsskript, `UPDATE_VERSION.md`, Einstellungsnotiz in `ENTWICKLUNGSPLAN.md` und vorhandene Koordinationsänderungen geprüft. Keine neue Produktfunktion; keine bestehenden Änderungen verworfen oder überschrieben. Git-Add wurde in Sandbox ohne Indexänderung verweigert.
+- Entscheidung: alle Vorgängeraufgaben freigegeben, gemeinsamer Versions-Commit durch aktuellen Nutzerauftrag autorisiert. Kein Push, Tag, Build, Installation oder Neustart; bestehendes Update-Paket bleibt erhalten.
+- Verifiziert: eigener abschließender vollständiger `env TMPDIR=/private/tmp npm test` außerhalb der Sandbox Exit 0, 566 Tests einschließlich Full Access bestanden, 0 Fehler/übersprungen. `bash scripts/install-update.sh --check` Exit 0; alle 91 Dateien unter `src/` vor Full Access bytegleich zum separaten Update-Paket. `bash -n scripts/install-update.sh` und `git diff --check` ohne Fehler. Testlog `/tmp/multiterminal-release-0.2.0-commit-tests.log`.
+- Umgebungsbefunde: Sandbox blockierte lokale Sockets (EPERM); Tempordner innerhalb des Checkouts ließen Nicht-Git-Tests das übergeordnete Repository erkennen. Git-Suchgrenze allein genügte beim Kontextstart nicht, weil dieser Git-Umgebungsvariablen bewusst entfernt. Mit Tempordner außerhalb des Checkouts vollständiger Erfolg; keine Produkt-/Teständerung nötig. Anfangs fehlerhaften lokalen Vergleichsbefehl korrigiert und erfolgreich erneut ausgeführt.
+- Offen/Blocker: zwischenzeitliche Full-Access-Reservierung nach ausdrücklicher Dateifreigabe aufgelöst; drei Dateien in gemeinsame Quellsicherung aufgenommen. Git-Index nach Sandbox-Freigabe zugänglich. Vorhandenes Paket enthält die neue Full-Access-Änderung noch nicht; Neubuild/GUI-Prüfung bleibt Folgearbeit gemäß Ergänzungsnotiz. Bestehende physische Nutzer-/Provider-Abnahme bleibt offen, frühere GUI-/Build-Nachweise nicht als eigene neue Prüfung ausgegeben.
+- Nächste Aktion: geprüften gemeinsamen Quellstand lokal committen.
+
+### 16.10.2026, 12:04 +02:00 – UPDATE-CODEX-20261016-05: Sammelupdate 0.2.0 zur späteren Installation bereit
+
+- Agent/Sitzung: Codex `/root`, ein nativer Sol-6.1-Unteragent für getrennte Kontextintegration; Joshuas ausdrücklicher Sammelauftrag. Gemeinsamer Checkout `main`, Ausgangs-/Abschluss-HEAD `6d543d0`; vorhandene Fremdänderungen erhalten, keine Commits/Pushes.
+- Status: alle Vorbereitungen umgesetzt und geprüft; Installation, Neustart und Nutzerabnahme ausdrücklich später durch Joshua. Sämtliche eigenen/delegierten Reservierungen freigegeben.
+- Umfang: Menü senkrecht und Agentenpfeil neben Plus; neue Einstellungen mit direktem Knopf links; Aktivität/Sortierung inklusive Projektliste; Projektmanager mit Lagebild/Hotkeys; alle schon integrierten F01–F11-Module sowie der zuvor separate optionale Kontextstart. PM-Reservierung war ausdrücklich freigegeben; zehn Dateien des fertigen Kontextstart-Patches vom Sol-6.1-Agenten konfliktfrei übernommen. Hauptagent hat Integration fachlich gelesen und Gesamtstand selbst geprüft.
+- Dateien: `package.json`/`package-lock.json` auf 0.2.0; zehn Kontextstart-Dateien (Main-/Preload-/App-/Index-Integration, `launch-context.js`, `agent-launch.js`/`.css`, zwei Tests, `qa-agent-launch.js`); neu `scripts/install-update.sh` und `UPDATE_VERSION.md`. Bestehende `qa-settings.js` an bewusst auf Projektaktionen begrenzte Hintergrundsperre angepasst und für Paketpfad geöffnet; Produktverhalten nicht zur alten Testannahme zurückgebaut. Eigene gezielte Koordinationseinträge.
+- Verifiziert: eigene `npm test` 565/565, keine Fehler/Skips. Eigene Quell-Electron-QA `qa-settings`, `qa-feature-hotkeys`, `qa-project-manager`, `qa-project-activity`, `qa-activity`, `qa-topbar` jeweils Exit 0/passed. Delegierter gezielter Kontextlauf 22/22 plus `qa-agent-launch` grün. Sämtliche Modellstarts mit lokalen Attrappen/isolierten Testdaten, keine echten Anbieteraufrufe.
+- Paket: `npm run build` Exit 0, Versionsmetadaten 0.2.0, ausführbarer spawn-helper; bekannte optionale `.icon`-Warnung. Eigenständige Kopie unter `dist/updates/Multiterminal-0.2.0/Multiterminal.app`; alle 91 Dateien aus `src/` dort bytegleich. Eigene Electron-QA direkt gegen dieses Paket: Settings, Topbar, Kontextstart, Ports jeweils Exit 0/passed. Paket-Menü/schmale Ansicht und Kontextvorschau sowie Quell-Settings-Screenshot selbst visuell geprüft.
+- Manueller Installationsweg: Installer prüft 878 SHA-256-Dateien, verweigert laufende App, kopiert und prüft zuerst in einem Zwischenordner, sichert die alte App, installiert und öffnet danach. `bash scripts/install-update.sh --check` Exit 0; separate Schutzfunktion mit laufender App geprüft. Syntax/Diff sauber. Tatsächlicher Installationspfad absichtlich nicht ausgeführt. Abschlusskontrolle: Nutzer-App weiterhin PID 626 seit 11:17:22, keine Installation/Beendigung/Neustarts.
+- Nachweise: `/tmp/multiterminal-update-0.2.0-tests.log`, `...-build.log`, `...-settings.log`, `...-qa-{feature-hotkeys,project-manager,project-activity,activity,topbar}.log`, `...-package-qa-{settings,topbar,agent-launch,ports}.log`; Paket-Screenshots unter `.../T/mt-topbar-qa-J6lZLD/`, `.../T/mt-agent-launch-qa-pKHCo0/`, `.../T/multiterminal-settings-qa-PMNfhV/`, `.../T/mt-ports-qa-Eow8ak/`.
+- Ergänzungsregel: vor Joshuas Installation weitere fertige Features in `UPDATE_VERSION.md` dieser Version zuordnen, integrieren und denselben Update-Paketpfad nach erneuter Prüfung aktualisieren. Keine automatische Installation/Neustarts. Befehl bleibt im Dokument kopierbar; später aus dem macOS-Terminal nach regulärem ⌘Q ausführen.
+- Offen/Blocker: keine technischen Blocker; echte Provider- und physische Bedienabnahme sowie vorhandene Produktgrenzen bleiben offen. Keine Registrierung/Automation angelegt.
+- Nächste Aktion: Joshua installiert das geprüfte Sammelupdate 0.2.0 nach Abschluss seiner laufenden Arbeit mit dem Terminal-Befehl aus `UPDATE_VERSION.md`.
+
+### 16.10.2026, 11:32 +02:00 – SETTINGS-BUTTON-CODEX-20261016-04: Einstellungen über „+ Projekt“
+
+- Agent/Sitzung: Codex `/root`, ausdrücklicher Änderungsauftrag von Joshua; gemeinsamer Checkout, Branch `main`, Ausgangs-HEAD `a5be7b4`.
+- Status: Quellstand umgesetzt und geprüft; Build/Installation und Bedienabnahme in der installierten App offen. Eigene Reservierungen frei.
+- Änderung und Dateien: `src/renderer/index.html` verschiebt den vorhandenen Einstellungsbutton aus dem Dropdown in eine eigene Zeile über „+ Projekt“; `styles.css` ergänzt Ausrichtung, Fokus und Aktivzustand. `app.js` sperrt bei offenen Einstellungen nur Projektaktionen statt der gesamten Seitenleiste, damit der Button auch schließen kann. `scripts/qa-topbar.js` an neue Position und ersten Menüfokus angepasst, direkte Klickprüfung ergänzt. Fremde Hunks erhalten.
+- Verifiziert: eigene isolierte Electron-QA `env TMPDIR="$PWD/node_modules/.cache/qa-settings-button-20261016" node_modules/.bin/electron scripts/qa-topbar.js` außerhalb Sandbox Exit 0/passed. Position über „+ Projekt“, Öffnen/Schließen ohne Menü, Aktivzustand, Dropdownaktionen, Agentenauswahl mit lokalen Terminal-Fixtures, Escape/Fokus, schmale Ansicht und Optionen ohne Projekt bestanden. Screenshot `node_modules/.cache/qa-settings-button-20261016/mt-topbar-qa-QE4s24/sidebar-settings.png` selbst geprüft. `node --check` für App und QA sowie `git diff --check` erfolgreich.
+- Befund/Korrektur: erste Sandbox-GUI mit SIGABRT beendet; genehmigte GUI-Prüfung zeigte zunächst durch `sidebar.inert` blockierten Schließklick. Sperre gezielt angepasst, vollständige Menü-QA danach erfolgreich.
+- Offen/Blocker: keine technischen Blocker; kein eigener Build/Installation/Commit/Push, laufende Nutzer-App unverändert. HEAD/Änderungen wurden währenddessen durch andere Sitzung fortgeschrieben; keine Git-Mutation durch diese Aufgabe.
+- Nächste Aktion: Änderung bei nächster App-Aktualisierung paketieren und installieren.
 
 ### 16.10.2026 – PROJ-ACTIVITY-OPUS-20261016-01: Aktivität je Projekt in der Seitenleiste (geprüft, Bedienabnahme offen)
 

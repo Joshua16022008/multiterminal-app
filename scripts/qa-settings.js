@@ -49,7 +49,10 @@ app.on('browser-window-created', (_event, win) => {
       await run("document.getElementById('btn-settings').click()");
       await wait("!!document.querySelector('.settings-editor')");
       assert.equal(await run("document.getElementById('settings-panel').hidden"), false);
-      assert.equal(await run("document.getElementById('sidebar').inert"), true);
+      assert.equal(await run("document.getElementById('sidebar').inert"), false);
+      assert.equal(await run("document.getElementById('project-list').inert"), true);
+      assert.equal(await run("document.querySelector('.side-head').inert"), true);
+      assert.equal(await run("document.getElementById('btn-settings').closest('[inert]') === null"), true);
       assert.deepEqual(await run("[...document.querySelectorAll('.settings-provider')].map(e=>e.textContent)"), ['Claude Code', 'Codex', 'Kimi']);
       await edit('# Claude Ziele\nNur Claude');
       await clickText('#settings-panel button', 'Profil speichern');
@@ -108,6 +111,8 @@ app.on('browser-window-created', (_event, win) => {
       await clickText('#settings-panel button', 'Schließen');
       assert.equal(await run("document.getElementById('settings-panel').hidden"), true);
       assert.equal(await run("document.getElementById('sidebar').inert"), false);
+      assert.equal(await run("document.getElementById('project-list').inert"), false);
+      assert.equal(await run("document.querySelector('.side-head').inert"), false);
       const item = Menu.getApplicationMenu().items[0].submenu.items.find(i => i.label === 'Einstellungen…');
       assert.ok(item); item.click();
       await wait("!document.getElementById('settings-panel').hidden");
@@ -118,4 +123,4 @@ app.on('browser-window-created', (_event, win) => {
     app.exit(failed ? 1 : 0);
   });
 });
-require('../src/main/main');
+require(process.argv[2] ? path.resolve(process.argv[2]) : '../src/main/main');

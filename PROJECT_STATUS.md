@@ -2,7 +2,7 @@
 schemaVersion: 1
 projectId: multiterminal-app
 state: active
-updatedAt: 2026-10-16T11:23:00+02:00
+updatedAt: 2026-10-16T13:42:00+02:00
 updatedBy: codex
 ---
 
@@ -12,6 +12,14 @@ updatedBy: codex
 Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt bis zu 30 echte Terminals mit eigenem Mini-Browser für parallel laufende Terminal-Agenten bereitstellt.
 
 ## Aktueller Stand
+CODEX-FULLACCESS-20261016-01: eingebaute Codex-Starts, Kontextstart und Fortsetzen erhalten automatisch Full Access, unabhängig vom persönlichen Profil. Quellstand mit 566/566 Tests geprüft; Startargumente durch lokale Attrappen bestätigt. Sichtbare Permissions-Anzeige offen: Electron-QA vor Bootstrap mit SIGABRT abgebrochen. Noch nicht im vorhandenen Update-Paket oder installiert; Ergänzung in `UPDATE_VERSION.md` vorgemerkt.
+
+RELEASE-COMMIT-CODEX-20261016-06: Quell-Commit für Version **0.2.0** einschließlich inzwischen freigegebener Full-Access-Ergänzung vorbereitet. Eigener abschließender Gesamtlauf 566/566 bestanden. Bestehendes Update-Paket erneut auf Prüfsummen geprüft; es enthält Full Access noch nicht und braucht dafür später einen Neubuild mit GUI-Prüfung. Kein Push, keine Installation oder Beendigung der Nutzer-App; Reservierung bis Commitabschluss aktiv.
+
+UPDATE-CODEX-20261016-05: Sammelupdate **0.2.0 fertig gebaut und geprüft**, einschließlich bisher separatem Kontextstart. Eigene 565/565 Tests, Quell-QA und Paket-QA (Settings/Menüs/Kontext/Ports) grün; 91 Quelldateien bytegleich, 878 Paketprüfsummen geprüft. Separates Paket `dist/updates/Multiterminal-0.2.0/Multiterminal.app`. Nutzer-App unverändert; jetzt ausdrücklich nicht installieren/beenden/neustarten. Joshua installiert später manuell mit dem Befehl aus `UPDATE_VERSION.md`; weitere fertige Features bis dahin dort derselben Version zuordnen und Paket neu prüfen. Keine technischen Blocker, alle eigenen Bereiche frei. Ältere Build-/Integrationsoffenstände der enthaltenen Einzelaufgaben sind durch diesen Sammelabschluss überholt; Nutzerabnahme bleibt offen.
+
+SETTINGS-BUTTON-CODEX-20261016-04: Einstellungen aus dem Dropdown direkt über „+ Projekt“ in die Seitenleiste verschoben. Eigene isolierte Electron-QA Exit 0/passed: Position, direktes Öffnen/Schließen, Aktivzustand sowie Menü-/Agentenauswahl und schmale Ansicht bestanden, Screenshot geprüft. Hintergrundsperre gezielt auf Projektaktionen begrenzt. Keine technischen Blocker, eigene Reservierungen frei; Build/Installation dieser Änderung offen. Nächste Auftragsaktion: bei nächster App-Aktualisierung paketieren/installieren; bestehender nächster Projektschritt bleibt erhalten.
+
 PROJ-ACTIVITY-OPUS-20261016-01: Projektliste links zeigt je Projekt, wo gearbeitet wird oder auf Rückfrage gewartet wird (gleiche Markierung wie in den Kachelköpfen, wirkt auch im Hintergrund). Geprüft, noch nicht gebaut.
 
 MENU-AGENT-CODEX-20261016-03: Senkrechtes Hauptmenü und Agentenpfeil neben Plus im neuen Build geprüft. Eigene Electron-QA gegen Quelle UND Paket bestanden (Claude/Codex/Kimi-Auswahl über lokale Terminal-Fixture, Schließen, schmale Ansicht); Screenshots geprüft, alle 88 Quelldateien bytegleich im Paket. Build unter `dist/Multiterminal-darwin-arm64/Multiterminal.app`, noch nicht installiert. Keine technischen Blocker, eigene Reservierungen frei. Nächste Aktion des Auftrags: geprüften Build bei der nächsten App-Aktualisierung installieren; bestehender nächster Projektschritt bleibt erhalten.
@@ -65,7 +73,7 @@ Agentenkommunikation als Projektdokumentation eingerichtet: `WORK_IN_PROGRESS.md
 Version 0.1.0: Terminal-Raster, Diktat, Kontenverwaltung, Verbrauchsanzeige, Terminal-Namen und Farben sind im Quellstand vorhanden. Tastenkürzel, Drag-and-drop, Mini-Browser-Steuerung und Settings liegen als lokale Änderungen vor. Bisherige Prüfungen stehen unter Nachweise; Alltagstests und Joshuas Abnahme bleiben offen. Der installierte Build wurde in COMMIT-CHECK-20261014-01 lesend mit den aktuellen Produktdateien abgeglichen; keine neue App-Bedienung in dieser Prüfrunde. Entwicklungsentwurf: `ENTWICKLUNGSPLAN.md`.
 
 ## Nächster Schritt
-Kontextstart nach bestätigter PM-Freigabe in den gemeinsamen `main` integrieren.
+Full-Access-Ergänzung in das Sammelupdate 0.2.0 aufnehmen, neu bauen und vor Joshuas späterer manueller Installation prüfen.
 
 ## Aktive Aufgaben
 - F11-Build/Installation abgeschlossen; Joshuas manuelle Abnahme offen. RELEASE-20261015-01 meldet Joshuas Aufhebung der verwaisten F06-/CLAUDE-PROFILE-Reservierungen; deren historische Einträge erhalten. Unabhängige Claude-Profil-Abnahme bleibt fachlich unvollständig. Kein Ausbau für andere Nutzer. Flüsterflow ruht weiterhin.

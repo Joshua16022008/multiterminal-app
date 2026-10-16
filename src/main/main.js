@@ -19,6 +19,7 @@ const { createAgentProfile } = require('./agent-profile');
 const progressFiles = require('./progress-files');
 const { createGitService } = require('./git-service');
 const { createWorktreeService } = require('./worktree-service');
+const { createLaunchContextService } = require('./launch-context');
 const { createAttachmentStore, MAX_IMAGE_BYTES } = require('./attachment-store');
 const { createDictation } = require('./dictation');
 const { createPortService } = require('./port-service');
@@ -56,6 +57,7 @@ let sessions;
 let ptys;
 let git;
 let worktrees;
+let launchContext;
 let attachments;
 let dictation;
 let ports;
@@ -444,6 +446,23 @@ function registerIpc() {
   handle('git:sync', (projectId) => git.sync(requireProject(projectId).path));
 
   handle('worktrees:list', (projectId) => worktrees.list(requireProject(projectId).id));
+  // Optional context start; the existing terminal and quick-start paths stay direct.
+  handle('launch:preview', (input) => launchContext.preview({
+    project: requireProject(input && input.projectId),
+    workspaceId: input && input.workspaceId,
+    task: input && input.task,
+    scope: input && input.scope,
+    acceptance: input && input.acceptance,
+  }));
+  handle('launch:prepare', (input) => launchContext.prepare({
+    project: requireProject(input && input.projectId),
+    workspaceId: input && input.workspaceId,
+    provider: input && input.provider,
+    text: input && input.text,
+    expectedHead: input && input.expectedHead,
+    expectedCwd: input && input.expectedCwd,
+    expectedBranch: input && input.expectedBranch,
+  }));
   handle('worktrees:create', (projectId, options) => worktrees.create({
     project: requireProject(projectId),
     branch: options && options.branch,
@@ -755,6 +774,7 @@ if (!app.requestSingleInstanceLock()) {
       },
     });
     agentProfile = createAgentProfile({ dataDir, readProfile: (scope) => settings.readProfile(scope) });
+    launchContext = createLaunchContextService({ dataDir, worktrees, decorateCommand: options => agentProfile.decorateCommand(options) });
     settings = createSettingsService({ dataDir, loadsAtStart: (scope) => agentProfile.isEnabled(scope) });
     hotkeys = createHotkeyStore({ filePath: path.join(dataDir, 'hotkeys.json') });
     workspaceTemplates = createWorkspaceTemplateStore({ filePath: path.join(dataDir, 'workspace-templates.json') }); // F08

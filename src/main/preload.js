@@ -124,6 +124,10 @@ contextBridge.exposeInMainWorld('deck', {
     inspect: (workspaceId) => ipcRenderer.invoke('worktrees:inspect', workspaceId),
     remove: (workspaceId) => ipcRenderer.invoke('worktrees:remove', workspaceId),
   },
+  launch: {
+    preview: input => ipcRenderer.invoke('launch:preview', input),
+    prepare: input => ipcRenderer.invoke('launch:prepare', input),
+  },
   git: {
     status: (projectId) => ipcRenderer.invoke('git:status', projectId),
     pull: (projectId) => ipcRenderer.invoke('git:pull', projectId),
