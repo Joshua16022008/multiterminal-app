@@ -2,13 +2,15 @@
 #settings-panel[hidden] { display: none; }
 .settings-nav { flex: 0 0 170px; padding: 22px 12px; border-right: 1px solid var(--border); background: var(--bg-side); }
 .settings-nav-title { font-size: 15px; font-weight: 650; padding: 0 10px 18px; }
-#settings-panel .settings-provider { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 9px 10px; border-radius: 5px; margin-bottom: 4px; color: var(--dim); }
-#settings-panel .settings-provider.active { background: var(--bg-2); color: var(--text); box-shadow: inset 3px 0 var(--accent); }
+/* Links: Bereiche */
+#settings-panel .settings-nav .settings-tab { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 9px 10px; border-radius: 5px; margin-bottom: 4px; color: var(--dim); }
+#settings-panel .settings-nav .settings-tab.active { background: var(--bg-2); color: var(--text); box-shadow: inset 3px 0 var(--accent); }
 .settings-main { display: flex; flex: 1; flex-direction: column; min-width: 0; }
 .settings-top { display: flex; align-items: center; justify-content: space-between; padding: 18px 28px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .settings-tabs { display: flex; flex-wrap: wrap; gap: 18px; padding: 0 28px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-#settings-panel .settings-tab { background: transparent; border: 0; border-radius: 0; padding: 12px 0 10px; color: var(--dim); border-bottom: 2px solid transparent; }
-#settings-panel .settings-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+/* Oben: Anbieter */
+#settings-panel .settings-tabs .settings-provider { background: transparent; border: 0; border-radius: 0; padding: 12px 0 10px; color: var(--dim); border-bottom: 2px solid transparent; }
+#settings-panel .settings-tabs .settings-provider.active { color: var(--text); border-bottom-color: var(--accent); }
 .settings-content { padding: 24px 28px 40px; overflow: auto; flex: 1; min-height: 0; }
 .settings-content h2 { margin: 0 0 8px; font-size: 22px; line-height: 1.25; font-weight: 600; }
 .settings-content h3 { margin: 24px 0 10px; font-size: 14px; font-weight: 600; }
@@ -35,7 +37,7 @@
 .settings-error { border-left-color: var(--err); }
 #settings-panel button:focus-visible, #settings-panel input:focus-visible, #settings-panel textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (max-width: 900px) { #settings-panel { left: 0; } .settings-nav { flex-basis: 140px; } .settings-content, .settings-top { padding-left: 18px; padding-right: 18px; } .settings-tabs { padding: 0 18px; gap: 12px; } }
-@media (max-width: 560px) { #settings-panel { flex-direction: column; } .settings-nav { flex: none; display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; border-right: 0; border-bottom: 1px solid var(--border); } .settings-nav-title { display: none; } #settings-panel .settings-provider { width: auto; margin: 0; } .settings-resource { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 560px) { #settings-panel { flex-direction: column; } .settings-nav { flex: none; display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; border-right: 0; border-bottom: 1px solid var(--border); } .settings-nav-title { display: none; } #settings-panel .settings-nav .settings-tab { width: auto; margin: 0; } .settings-resource { align-items: flex-start; flex-direction: column; } }
 .settings-top { gap: 10px; }
 .settings-top-title { flex: 1; }
 .settings-folder-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
@@ -56,3 +58,12 @@
 #settings-panel .hotkey-recording { border-color: var(--accent); color: var(--accent); }
 .hotkey-save { flex-wrap: wrap; position: sticky; bottom: -40px; padding: 16px 0; background: var(--bg); }
 .settings-sort { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 8px; color: var(--dim); cursor: pointer; }
+
+/* Shared Memory is app-wide; notes and checkpoints remain selectable text. */
+.memory-editor { min-height: 150px; height: 23vh; margin-top: 10px; }
+.memory-actions { flex-wrap: wrap; gap: 8px; }
+.memory-checkpoint { border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin: 10px 0; }
+.memory-checkpoint summary { cursor: pointer; overflow-wrap: anywhere; font-size: 12px; }
+.memory-checkpoint h4 { margin: 14px 0 4px; font-size: 12px; }
+.memory-context { padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-side); }
+.memory-checkpoint summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }

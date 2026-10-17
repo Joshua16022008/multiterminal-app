@@ -147,7 +147,14 @@ function createAgentProfile({ dataDir, readProfile }) {
   }
 
   function decorateCommand(options) {
-    return decorate(options).command;
+    const decorated = options?.skipProfile ? options.command : decorate(options).command;
+    const command = options?.command;
+    if (typeof command !== 'string' || (options.provider && options.provider !== 'codex')) return decorated;
+    const trimmed = command.trim();
+    // Full Access is independent of the optional personal profile. Restrict it to
+    // the app's exact built-in commands so custom permission choices survive.
+    if (trimmed !== START.codex && trimmed !== RESUME.codex && !isExactIdResume('codex', trimmed)) return decorated;
+    return `${decorated} --dangerously-bypass-approvals-and-sandbox`;
   }
 
   // The line the app types for its own command (decorated, ending in Enter); null for anything unusable.

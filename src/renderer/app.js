@@ -497,12 +497,13 @@
     $('side-empty').hidden = S.projects.length > 0;
     for (const p of S.projects) {
       const running = panesOf(p.id).filter((x) => x.status === 'running').length;
+      const act = window.DeckActivity ? window.DeckActivity.projectActivity(panesOf(p.id).map((x) => x.activity && x.activity())) : { state: null, text: '' };
       const nameEl = h('span', { class: 'proj-name', text: p.name, title: p.path + '\nDoppelklick zum Umbenennen' });
       nameEl.addEventListener('dblclick', (e) => { e.stopPropagation(); startRename(p, nameEl); });
-      const li = h('li', { class: 'proj' + (p.id === S.activeId ? ' active' : ''), onclick: () => p.id !== S.activeId && selectProject(p.id) },
+      const li = h('li', { class: 'proj' + (p.id === S.activeId ? ' active' : ''), 'data-activity': act.state, title: act.text || null, onclick: () => p.id !== S.activeId && selectProject(p.id) },
         nameEl,
-        h('span', { class: 'proj-count' + (running ? ' live' : ''), text: String(running), title: `${running} laufende Terminals` }),
-        h('button', { class: 'proj-pm', text: '◆', title: 'Projektmanager öffnen', 'aria-label': 'Projektmanager öffnen', onclick: (e) => { e.stopPropagation(); openProjectManager(p.id); } }), // PM
+        h('span', { class: 'proj-count' + (running ? ' live' : ''), text: String(running), 'data-tooltip': `${running} ${running === 1 ? 'laufendes Terminal' : 'laufende Terminals'}`, tabindex: '0', title: '', 'aria-label': `${running} ${running === 1 ? 'laufendes Terminal' : 'laufende Terminals'}` }),
+        h('button', { class: 'proj-pm', text: '◆', title: '', 'data-tooltip': 'Projektmanager öffnen – Überblick, Planung und Aufgabenverteilung für dieses Projekt', 'aria-label': 'Projektmanager öffnen', onclick: (e) => { e.stopPropagation(); openProjectManager(p.id); } }), // PM
         h('button', { class: 'proj-x', text: '✕', title: 'Projekt entfernen', onclick: (e) => { e.stopPropagation(); removeProject(p); } }));
       const gitLine = D.git.line(p);
       if (gitLine) li.append(gitLine);
@@ -522,7 +523,7 @@
     $('btn-plus').disabled = full;
     $('btn-menu').disabled = full;
     $('btn-plus').title = full ? tip : 'Neues Terminal' + (hotkeyLabel('new-terminal') ? ' (' + hotkeyLabel('new-terminal') + ')' : '');
-    $('btn-menu').title = full ? tip : 'Schnellstart-Menü';
+    $('btn-menu').title = full ? tip : 'Agent auswählen';
   }
 
   /* F08: Kacheln aus einem gespeicherten Aufbau – gleiche Erzeugung wie newTerminal, aber mit gewähltem Startbefehl. */
@@ -562,7 +563,10 @@
     $('toolbar-options').querySelector('button:not(:disabled)').focus();
   }
 
-  function closeMenu() { $('menu').hidden = true; }
+  function closeMenu() {
+    $('menu').hidden = true;
+    $('btn-menu').setAttribute('aria-expanded', 'false');
+  }
   function openMenu() {
     const m = $('menu');
     if (!m.hidden && m.dataset.owner === 'btn-menu') { closeMenu(); return; }
@@ -588,6 +592,17 @@
     }
     if (S.presets.length) m.append(h('hr'));
     m.append(h('div', { class: 'menu-item', text: 'Eigenen Befehl hinzufügen…', onclick: () => { closeMenu(); openCustomForm(); } }));
+    if (D.agentLaunch) {
+      m.append(h('div', {
+        class: 'menu-item', text: 'Agent mit Kontext starten…',
+        onclick: () => {
+          closeMenu();
+          const project = activeProject();
+          if (!project) { notify('Zuerst ein Projekt auswählen.'); return; }
+          D.agentLaunch.open({ project });
+        },
+      }));
+    }
     if (D.worktreePicker && api.worktrees) {
       m.append(h('div', {
         class: 'menu-item', text: 'Terminal in Arbeitskopie…', title: 'Eigener Git-Worktree mit eigenem Branch',
@@ -599,8 +614,9 @@
         },
       }));
     }
-    const r = $('btn-toolbar').getBoundingClientRect();
+    const r = $('btn-menu').getBoundingClientRect();
     m.hidden = false;
+    $('btn-menu').setAttribute('aria-expanded', 'true');
     m.style.top = r.bottom + 4 + 'px';
     m.style.left = Math.max(8, r.right - m.offsetWidth) + 'px';
   }
@@ -686,8 +702,8 @@
       if (open) { showPorts(false); showAttention(false); if (D.diffPanel.isOpen()) showDiff(false); } // F04: diff
       $('btn-settings').classList.toggle('on', open);
       $('btn-settings').setAttribute('aria-expanded', String(open));
-      $('sidebar').inert = open;
-      for (const id of ['grids', 'empty-main', 'progress-panel', 'accounts-panel', 'ws-actions']) $(id).inert = open;
+      document.querySelector('.side-head').inert = open;
+      for (const id of ['project-list', 'side-empty', 'grids', 'empty-main', 'progress-panel', 'accounts-panel', 'ws-actions']) $(id).inert = open;
       if (!open) requestAnimationFrame(() => panesOf(S.activeId).forEach((p) => p.refit()));
       reportVisible();
       return open;
@@ -717,7 +733,11 @@
       if (!e.target.closest('#toolbar-options, #btn-toolbar')) closeToolbar();
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { closeMenu(); closeToolbar(true); }
+      if (e.key === 'Escape') {
+        const agentMenuOpen = !$('menu').hidden && $('menu').dataset.owner === 'btn-menu';
+        closeMenu(); closeToolbar(true);
+        if (agentMenuOpen) $('btn-menu').focus();
+      }
     });
 
     /* Globale Terminal-Ereignisse, Zuordnung per id */
@@ -803,6 +823,7 @@
       attList = Array.isArray(list) ? list : [];
       A.entries = new Map(attList.map((e) => [e.terminalId, e]));
       for (const l of S.panes.values()) for (const p of l) p.setAgentEntry(A.entries.get(p.id) || null);
+      renderSidebar(); // Aktivität je Projekt
       scheduleResort();
       const unread = attList.filter((e) => e.unread).length;
       const badge = $('attention-count');
@@ -859,6 +880,23 @@
         pane.el.scrollIntoView({ block: 'nearest' });
       },
     });
+    if (window.DeckAgentLaunch && api.launch) {
+      D.agentLaunch = window.DeckAgentLaunch.create({
+        document, api, notify,
+        launch: ({ project, provider, prepared }) => {
+          // Keep a captured project/working copy: changing the sidebar cannot redirect this task.
+          const current = S.projects.find(p => p.id === project.id && p.path === project.path);
+          if (!current) throw new Error('Das Projekt wurde entfernt oder verschoben. Bitte erneut auswählen.');
+          const original = S.presets.find(p => p.id === provider && p.builtin);
+          if (!original) throw new Error('Dieser Agent ist nicht mehr verfügbar.');
+          const pane = newTerminal(current.id, { ...original, command: prepared.command }, undefined,
+            prepared.workspaceId ? { workspaceId: prepared.workspaceId } : undefined);
+          if (!pane) throw new Error('Das Terminal konnte nicht angelegt werden.');
+          if (S.activeId !== current.id) selectProject(current.id);
+          return pane;
+        },
+      });
+    }
     // F09: Übergabe nutzt die Promptvorschau (F06) und zeigt Quelle sowie Ziel der aktiven Projektkacheln.
     D.handoff = window.DeckHandoff.createHandoffDialog({
       document, h: D.h, promptDraft: D.promptDraft, notify,
@@ -875,6 +913,9 @@
       { id: 'next-attention', label: 'Nächste Rückmeldung', run: () => jumpToNextAttention() },
       { id: 'attention-panel', label: 'Rückmeldungen anzeigen', run: () => { showSettings(false); showAttention(true); } },
       { id: 'settings', label: 'Einstellungen öffnen', run: () => showSettings(true) },
+      ...window.DeckHotkeys.actions
+        .filter((a) => ['diff-panel', 'ports-panel', 'progress-panel', 'handoff', 'browser-pick', 'task-link', 'layout-start', 'layout-save', 'qol-panel', 'auto-sort', 'project-manager'].includes(a.id))
+        .map((a) => ({ id: a.id, label: a.label, run: () => (a.id === 'project-manager' ? openProjectManager(S.activeId) : runFeatureAction(a.id)) })),
     ].map((a) => ({ ...a, hotkey: hotkeyLabel(a.id) }));
     let paletteReturn = null;
     D.commandPalette = window.DeckCommandPalette.create({
@@ -909,7 +950,7 @@
       D.browserFeedback = window.DeckBrowserFeedback.createBrowserFeedback({ document, api: api.browser, getPromptDraft: () => D.promptDraft, notify });
     }
     api.terminals.onData((id, data) => { const p = byId(id); if (p) p.write(data); });
-    api.terminals.onExit((id, code) => { const p = byId(id); if (p) p.handleExit(code); scheduleResort(); });
+    api.terminals.onExit((id, code) => { const p = byId(id); if (p) p.handleExit(code); renderSidebar(); scheduleResort(); });
     // Requests of mt-browser from the main process: find the tile by terminal id (any project) and ask its browser API.
     const BROWSER_OPS = new Set(['open', 'show', 'hide', 'isOpen', 'webContentsId', 'mode', 'visible']);
     api.browser.onRequest(async ({ reqId, terminalId, op, arg }) => {
@@ -931,8 +972,46 @@
       else if (action === 'command-palette') D.commandPalette.toggle(); // F03
       else if (action === 'terminal-search') openTerminalSearch(); // F03
       else if (action === 'project-manager') openProjectManager(S.activeId); // PM
+      else if (runFeatureAction(action)) return; // Hotkeys der neuen Funktionen
       else focusTerminalAt(action);
     });
+    // Hotkeys der neuen Funktionen: dieselben Wege wie die Knöpfe; Kachelfunktionen wirken auf die aktive Kachel.
+    function runFeatureAction(action) {
+      const pane = activePane();
+      const needPane = () => { if (!pane) notify('Keine Kachel aktiv.'); return pane; };
+      switch (action) {
+        case 'diff-panel': closeMenu(); showSettings(false); showDiff(); return true;
+        case 'ports-panel': closeMenu(); showSettings(false); showPorts(); return true;
+        case 'attention-panel': closeMenu(); showSettings(false); showAttention(); return true;
+        case 'progress-panel': $('btn-progress').classList.toggle('on', D.progressPanel.toggle()); return true;
+        case 'handoff': closeMenu(); D.handoff.open(); return true;
+        case 'qol-panel': D.qol.toggle(); return true;
+        case 'auto-sort': {
+          const on = !D.qol.get().autoSort;
+          D.qol.set('autoSort', on);
+          notify('Automatische Sortierung ' + (on ? 'an' : 'aus') + '.');
+          return true;
+        }
+        case 'layout-start': if (!activeProject()) notify('Zuerst ein Projekt auswählen.'); else D.workspaceTemplates.openList(); return true;
+        case 'layout-save': if (!activeProject()) notify('Zuerst ein Projekt auswählen.'); else D.workspaceTemplates.openSave(); return true;
+        case 'browser-pick': {
+          if (!needPane()) return true;
+          const b = pane.el.querySelector('.bf-btn');
+          if (!b || b.offsetParent === null) notify('Der Mini-Browser dieser Kachel ist nicht offen.');
+          else b.click();
+          return true;
+        }
+        case 'task-link': {
+          if (!needPane()) return true;
+          const chip = pane.el.querySelector('.task-chip');
+          if (!chip || !D.qol.get().taskChip) notify('Der Aufgaben-Chip ist ausgeschaltet (Komfort).');
+          else chip.click();
+          return true;
+        }
+        case 'pm-situation': openProjectManager(S.activeId); return true; // im Hauptfenster: Manager öffnen
+        default: return false;
+      }
+    }
     // PM: Auftrag des Projektmanagers -> nur Promptvorschau, Einfügen erst nach Klick.
     $('btn-pm').onclick = () => { closeMenu(); openProjectManager(S.activeId); };
     const pmSend = window.DeckPmSend.createSendHandler({

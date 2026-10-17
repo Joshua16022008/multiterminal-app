@@ -4,6 +4,10 @@ Stand der Auftragsverteilung: 14.10.2026. Joshua nutzt die App zunächst allein 
 
 Die bestehenden Settings-/Profilpakete wurden inzwischen weiterentwickelt. Ihr tatsächlicher aktueller Abschluss und die weiterhin aktive unabhängige Claude-Prüfung stehen in `PROJECT_STATUS.md`, `WORK_IN_PROGRESS.md` und `PROGRESS.md`. Die nachfolgenden Abschnitte zum ersten Settings-Stand beschreiben den historischen Stand vom 13.10.2026, 23:24 +02:00; sie sind kein Auftrag, bereits vorhandene Funktionen erneut zu bauen.
 
+## Einstellungen überarbeiten – Anweisungen von Joshua fehlen noch
+
+- [ ] Die Überarbeitung der Einstellungen ist noch offen. Joshuas konkrete Anweisungen fehlen noch. Sobald dieser Punkt bearbeitet wird, zuerst Joshua nach seinen gewünschten Änderungen fragen und seine Antwort abwarten, bevor die Überarbeitung beginnt.
+
 ## Persönliche Settings – historischer erster Stand
 
 - Einstellungen sind unabhängig vom gewählten Projekt über den Knopf oben und `⌘,` erreichbar.

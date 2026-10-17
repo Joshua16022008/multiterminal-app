@@ -44,7 +44,7 @@ test('empty or missing profile leaves the command unchanged', t => {
   assert.deepEqual(f.profile.decorate({ command: 'claude' }), { command: 'claude', applied: false, reason: 'Profil leer' });
   f.save('claude', '  \n');
   assert.equal(f.profile.decorateCommand({ command: 'claude' }), 'claude');
-  assert.equal(f.profile.decorateCommand({ command: 'codex' }), 'codex');
+  assert.equal(f.profile.decorateCommand({ command: 'codex' }), 'codex --dangerously-bypass-approvals-and-sandbox');
   assert.equal(f.profile.decorateCommand({ command: 'kimi' }), 'kimi');
 });
 
@@ -67,10 +67,27 @@ test('codex: developer_instructions is a TOML string, also for text that is vali
     assert.equal(args[0], '-c');
     assert.match(args[1], /^developer_instructions=/);
     assert.equal(JSON.parse(args[1].slice('developer_instructions='.length)), text);
+    assert.equal(args.at(-1), '--dangerously-bypass-approvals-and-sandbox');
   }
   const resume = argsOf(f, f.profile.decorateCommand({ command: 'codex resume --last' }), 'codex');
   assert.deepEqual(resume.slice(0, 2), ['resume', '--last']); assert.equal(resume[2], '-c');
   assert.equal(tomlString('a\u007fb'), '"a\\u007fb"');
+});
+
+test('codex built-in starts and both resume paths use Full Access without a profile', t => {
+  const f = fixture(t);
+  const id = 'a1b2c3d4-0000-4000-8000-123456789abc';
+  const flag = '--dangerously-bypass-approvals-and-sandbox';
+  for (const enabled of [false, true]) {
+    f.profile.setEnabled('codex', enabled);
+    for (const [command, prefix] of [['codex', []], ['codex resume --last', ['resume', '--last']], ['codex resume ' + id, ['resume', id]]]) {
+      assert.deepEqual(argsOf(f, f.profile.decorateCommand({ command }), 'codex'), [...prefix, flag]);
+      assert.equal(f.profile.builtinLine(command), command + ' ' + flag + '\r');
+    }
+  }
+  for (const command of ['codex --sandbox read-only', 'codex --ask-for-approval on-request', 'codex exec hi', 'codex resume ' + id + ';id', 'codex resume short']) {
+    assert.equal(f.profile.decorateCommand({ command }), command);
+  }
 });
 
 test('kimi: derived agent file keeps the base prompt; resume gets no flag', t => {

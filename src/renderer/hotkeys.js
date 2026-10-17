@@ -13,6 +13,19 @@
     { id: 'command-palette', label: 'Befehlspalette' },
     { id: 'terminal-search', label: 'Im Terminalverlauf suchen' },
     { id: 'project-manager', label: 'Projektmanager öffnen' }, // PM
+    // Neue Funktionen: Panels, Übergabe, Browser, Aufgaben, Aufbauten, Komfort, Manager-Lagebild
+    { id: 'diff-panel', label: 'Änderungen anzeigen' },
+    { id: 'ports-panel', label: 'Ports anzeigen' },
+    { id: 'attention-panel', label: 'Rückmeldungen anzeigen' },
+    { id: 'progress-panel', label: 'Fortschritt anzeigen' },
+    { id: 'handoff', label: 'Übergabe an anderes Terminal' },
+    { id: 'browser-pick', label: 'Element im Browser kommentieren' },
+    { id: 'task-link', label: 'Second-Brain-Aufgabe der Kachel' },
+    { id: 'layout-start', label: 'Aufbau starten' },
+    { id: 'layout-save', label: 'Aufbau speichern' },
+    { id: 'qol-panel', label: 'Komfort-Einstellungen' },
+    { id: 'auto-sort', label: 'Automatische Sortierung an/aus' },
+    { id: 'pm-situation', label: 'Lagebild im Projektmanager ein/aus' },
     ...Array.from({ length: SLOTS }, (_, i) => ({ id: actionFor(i), label: `Terminal ${i + 1}` }))
   ];
   const modifiers = ['Cmd', 'Ctrl', 'Alt', 'Shift'];
@@ -52,6 +65,14 @@
     result['command-palette'] = [platform === 'darwin' ? 'Cmd+K' : 'Ctrl+Shift+P'];
     result['terminal-search'] = [platform === 'darwin' ? 'Cmd+F' : 'Ctrl+Shift+F'];
     result['project-manager'] = [`${primary}+Shift+O`]; // PM (Cmd+Shift+M ist als reserviert gesperrt)
+    // Mac: Cmd+Umschalt+Buchstabe; sonst Strg+Alt, damit Strg+Umschalt-Kürzel der Shell frei bleiben.
+    const extra = (letter) => [platform === 'darwin' ? `Cmd+Shift+${letter}` : `Ctrl+Alt+${letter}`];
+    Object.assign(result, {
+      'diff-panel': extra('D'), 'ports-panel': extra('P'), 'attention-panel': extra('J'), 'progress-panel': extra('G'),
+      handoff: extra('U'), 'browser-pick': extra('E'), 'task-link': extra('L'), 'layout-start': extra('B'),
+      'layout-save': [platform === 'darwin' ? 'Cmd+Alt+B' : 'Ctrl+Alt+Shift+B'], 'qol-panel': extra('K'), 'auto-sort': extra('S'),
+      'pm-situation': [platform === 'darwin' ? 'Cmd+\\' : 'Ctrl+Alt+\\'], // Strg+Backslash wäre in Terminals SIGQUIT
+    });
     for (let i = 0; i < SLOTS; i++) result[actionFor(i)] = platform === 'darwin' ? [`Cmd+${keyForIndex(i)}`, `Ctrl+${keyForIndex(i)}`] : [`Ctrl+${keyForIndex(i)}`];
     return result;
   }
@@ -63,6 +84,14 @@
     if (/^f([1-9]|1[0-9]|2[0-4])$/i.test(key)) return key.toUpperCase();
     return keyAliases[key.toLowerCase()] || null;
   }
+  // Zeichen-Tasten brauchen Cmd oder Ctrl: Shift+D oder Alt+D würden sonst Großbuchstaben bzw. Sonderzeichen im Terminal verschlucken.
+  // Funktionstasten tippen nichts, deshalb reicht dort jeder Modifikator (Shift, Alt, Ctrl oder Cmd).
+  const isFunctionKey = (key) => /^F([1-9]|1[0-9]|2[0-4])$/.test(key);
+  function modifiersSuffice(mods, key) {
+    const has = (m) => (mods instanceof Set ? mods.has(m) : Boolean(mods[m]));
+    if (has('Cmd') || has('Ctrl')) return true;
+    return isFunctionKey(key) && (has('Alt') || has('Shift'));
+  }
   function canonical(accelerator) {
     if (typeof accelerator !== 'string' || !accelerator.trim()) throw new Error('Bitte ein gültiges Tastenkürzel eingeben.');
     const parts = accelerator.trim().split('+').map(part => part.trim());
@@ -73,7 +102,7 @@
       if (!modifier || seen.has(modifier)) throw new Error(`Ungültiges Tastenkürzel „${accelerator}“. Modifikatoren nur einmal verwenden.`);
       seen.add(modifier);
     }
-    if (!key || (!seen.has('Cmd') && !seen.has('Ctrl'))) throw new Error(`Ungültiges Tastenkürzel „${accelerator}“: Cmd oder Ctrl und eine unterstützte Taste verwenden.`);
+    if (!key || !modifiersSuffice(seen, key)) throw new Error(`Ungültiges Tastenkürzel „${accelerator}“: Cmd oder Ctrl und eine unterstützte Taste verwenden; F1–F24 gehen auch mit Shift oder Alt.`);
     return [...modifiers.filter(modifier => seen.has(modifier)), key].join('+');
   }
   function reserved(accelerator, platform) {
@@ -116,7 +145,7 @@
       if (codeKeys[code]) key = codeKeys[code];
       else if (/^Digit[0-9]$/.test(code)) key = code.slice(-1);
     }
-    if (!key || (!event.metaKey && !event.ctrlKey)) return null;
+    if (!key || !modifiersSuffice({ Cmd: event.metaKey, Ctrl: event.ctrlKey, Alt: event.altKey, Shift: event.shiftKey }, key)) return null;
     return [event.metaKey && 'Cmd', event.ctrlKey && 'Ctrl', event.altKey && 'Alt', event.shiftKey && 'Shift', key].filter(Boolean).join('+');
   }
   function format(accelerator) {

@@ -53,7 +53,7 @@
       root.replaceChildren(
         h('div', { class: 'qol-head' }, h('strong', { text: 'Komfort' }), h('span', { class: 'spacer' }),
           h('button', { class: 'ib', text: '✕', title: 'Schließen', onclick: () => toggle(false) })),
-        row('Agentenstatus empfangen', status ? 'Voraussetzung für Markierung und Sortierung (gilt für neu gestartete Claude-Sitzungen)' : 'Aus: keine Markierung und keine Sortierung möglich',
+        row('Agentenstatus empfangen', status ? 'Voraussetzung für Markierung und Sortierung. Wirkt ab dem nächsten Claude-Start: laufende Sitzungen einmal beenden (/exit) und fortsetzen.' : 'Aus: keine Markierung und keine Sortierung möglich',
           status, async (v) => { await setStatus(v); render(); }, 'qol-status'),
         ...ITEMS.map(([key, label, hint]) => row(label, hint, settings[key], (v) => set(key, v), 'qol-' + key)),
         h('div', { class: 'qol-foot' }, h('button', { class: 'btn-small', text: 'Standard wiederherstellen', onclick: () => { settings = { ...DEFAULTS }; save(storage, settings); apply(); render(); } })));

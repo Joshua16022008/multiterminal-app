@@ -9,6 +9,14 @@ function subscribe(channel, callback) {
 }
 
 contextBridge.exposeInMainWorld('deck', {
+  memory: {
+    read: projectId => ipcRenderer.invoke('memory:read', projectId),
+    saveNotes: (projectId, text, revision) => ipcRenderer.invoke('memory:saveNotes', projectId, text, revision),
+    clear: (projectId, revision) => ipcRenderer.invoke('memory:clear', projectId, revision),
+    getSettings: () => ipcRenderer.invoke('memory:getSettings'),
+    setSettings: patch => ipcRenderer.invoke('memory:setSettings', patch),
+    context: projectId => ipcRenderer.invoke('memory:context', projectId),
+  },
   hotkeys: {
     get: () => ipcRenderer.invoke('hotkeys:get'),
     save: bindings => ipcRenderer.invoke('hotkeys:save', bindings),
@@ -123,6 +131,10 @@ contextBridge.exposeInMainWorld('deck', {
     create: (projectId, options) => ipcRenderer.invoke('worktrees:create', projectId, options),
     inspect: (workspaceId) => ipcRenderer.invoke('worktrees:inspect', workspaceId),
     remove: (workspaceId) => ipcRenderer.invoke('worktrees:remove', workspaceId),
+  },
+  launch: {
+    preview: input => ipcRenderer.invoke('launch:preview', input),
+    prepare: input => ipcRenderer.invoke('launch:prepare', input),
   },
   git: {
     status: (projectId) => ipcRenderer.invoke('git:status', projectId),

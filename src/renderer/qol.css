@@ -19,3 +19,13 @@ body.qol-static .tile-head[data-activity="working"]::after { background: var(--a
 body.qol-static .tile-head[data-activity="idle"]::after { opacity: .3; }
 body.qol-static:not(.qol-no-waiting) .tile-head[data-activity="waiting"] { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--act-color) 14%, transparent); }
 body.qol-no-taskchip .task-chip { display: none; }
+/* Komfort-Schalter gelten auch für die Projektliste */
+body.qol-no-working li.proj[data-activity="working"]::after,
+body.qol-no-idle li.proj[data-activity="idle"]::after,
+body.qol-no-waiting li.proj[data-activity="waiting"]::after { display: none; }
+body.qol-no-waiting li.proj[data-activity="waiting"] { animation: none; box-shadow: none; }
+body.qol-static li.proj[data-activity], body.qol-static li.proj[data-activity]::after { animation: none; }
+body.qol-static li.proj[data-activity="working"]::after { background: var(--accent); }
+body.qol-static li.proj[data-activity="idle"]::after { opacity: .3; }
+body.qol-static:not(.qol-no-waiting) li.proj[data-activity="waiting"] { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--act-color) 14%, transparent); }
+body.qol-no-waiting li.proj[data-activity="waiting"] .proj-count, body.qol-no-working li.proj[data-activity="working"] .proj-count { background: var(--bg); color: var(--dim); font-weight: 400; }

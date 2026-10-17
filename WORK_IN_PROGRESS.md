@@ -4,6 +4,136 @@ Vor Arbeitsbeginn zusammen mit `AGENTS.md`, `PROJECT_STATUS.md` und `PROGRESS.md
 
 ## Aktive Reservierungen
 
+### OSS-E0-OPUS-20261017-01 – Open-Source-Vorbereitung Etappe 0 (Sicherung + IPC-Vertrag)
+
+- Agent/Sitzung: Claude Code (Opus 5.5) als Planer/Integrator, Auftrag Joshua 17.10.2026. Gesamtplan: `~/.claude/plans/sharded-strolling-reef.md` (Worktree-Stammbaum, Harness-Katalog, User Guide, Release; Harness-Strang geht an Codex).
+- Status: in Arbeit, 17.10.2026.
+- Arbeitskopie: dieser Checkout, `main`, Ausgang `d8b11d5`.
+- Bereiche: Git-Commit des freigegebenen Fremdstands (Memory, Update-Helper, Sidebar-Tooltips) nach `npm test`; `.gitignore` (`.multiterminal/`, `.qa-*`); neu `docs/dev/ipc-contract.md`, `docs/dev/CODEX-AUFTRAG-HARNESS.md`; Koordinationsdateien (eigene Einträge).
+- Grenzen: kein Push, keine Installation, Codex-Zweig `codex/worktree-context-start` unangetastet.
+- Nächste Aktion: Gesamtlauf `npm test`, dann Commit.
+
+### MEMORY-CODEX-20261017-01 – Gemeinsames Memory über Harness- und Modellgrenzen
+
+- Agent/Sitzung: Codex `/root`, 17.10.2026; native Sol-6.1-Unteragenten für Recherche, Speicher, Anbindung sowie unabhängige Reviews.
+- Status: Quellstand umgesetzt und mit Node geprüft; native GUI-Abnahme offen. Sämtliche eigenen Reservierungen freigegeben, 17.10.2026, 01:08 +02:00.
+- Arbeitskopie: entwickelt in `/Volumes/M4MegaDiva/Projekte/.agent-worktrees/multiterminal-shared-memory-20261017`, Branch `codex/shared-memory-20261017`, Basis `cd0a79d`; alle 22 eigenen Produkt-/Test-/Plandateien in den gemeinsamen Checkout `main` übernommen. Worktree erhalten, kein Commit/Push.
+- Bearbeitete Bereiche (frei): `src/main/memory-{service,capture,launch}.js`, `mt-memory-cli.js`; Memory-Hunks in `main.js`, `preload.js`, `agent-profile.js`, `browser-bridge.js`, `launch-context.js`; `settings-panel.js`/`settings.css`; sechs neue Memory-/CLI-Tests, Browser-Bridge-/Rohschreibtest, `scripts/qa-memory.js` und begrenzte QA-Agent-Launch-Anpassung; Plan `docs/superpowers/plans/2026-10-17-shared-memory.md`, eigene Einträge in den vier Koordinations-/Update-Dateien. Keine Reservierung an fremder Sidebar oder Update-Helfer-Arbeit.
+- Ergebnis: gemeinsame und projektspezifische Notizen, explizite Übergaben und ungeprüfte automatische Auszüge; lokaler Speicher, authentifizierte harnessunabhängige CLI, Start-/Fortsetzen-Kontext für Claude/Codex sowie Kimi-Neustart. Kimi-Fortsetzen/eigene Befehle nutzen sichtbaren Kopier-/CLI-Weg. Joshua bestätigt: ab jetzt sammeln, Alt-Erinnerungen später auswählen.
+- Nachweise: eigener gemeinsamer Gesamtlauf `env TMPDIR=/private/tmp npm test` 608/608 bestanden; anschließende fünf Memory-DOM-Tests nach Klarstellung der Löschbestätigung bestanden. Main-/Socket-/CLI-Test mit frischer App-Laufzeit und Electron-/PTY-Stand-ins enthalten. Source-Re-Reviews und frischer Gesamtreview spec PASS, keine Critical/Important-Befunde; `/private/tmp/multiterminal-memory-final-review.md`. Minor: Start-Kontextdateien bleiben erhalten, Löschbestätigung erklärt dies.
+- Abnahme/Blocker: native `qa-memory`, `qa-settings`, `qa-hotkeys`, `qa-agent-launch`, `qa-topbar` jeweils vor Produktcode SIGABRT; kein nativer Zwei-Prozess-/Screenshot-/Bediennachweis oder echter Modelllauf. Noch nicht im Paket oder installiert; für dieselbe Version 0.2.0 vorgemerkt. Kein Build/Installation/Neustart der Nutzer-App, keine Hooks oder alten Erinnerungen übernommen.
+- Nächste Aktion: Memory im nächsten Sammelbuild 0.2.0 in einer startfähigen Electron-Umgebung sichtbar prüfen.
+- Abschlussabgleich: Memory-Inhalte aller 22 Dateien identisch zur Arbeitskopie; zwei inzwischen fremd geänderte Hotkey-Texte im gemeinsamen `settings-panel.js` erhalten. Keine Wiederaufnahme der freigegebenen Quellbereiche und kein Überschreiben fremder Arbeit.
+
+### SETTINGS-FIND-CODEX-20261017-01 – Einstellungsnotiz und offene Fragen finden
+
+- Agent/Sitzung: Codex `/root`, 17.10.2026, 00:42 +02:00.
+- Status: lesender Abgleich abgeschlossen, 17.10.2026, 00:42 +02:00; eigene Dokumentbereiche frei. Checkout `main`, Ausgangs-HEAD `cd0a79d`.
+- Auftrag: Einstellungsnotiz in Fortschritt/Plan finden und tatsächlich offene Fragen herausarbeiten.
+- Bereiche: keine Produktdateien reserviert; nur eigene Einträge in den drei Koordinationsdateien. SIDEBAR-TIPS und fremdes `.multiterminal/` bleiben erhalten.
+- Befund/Nachweis: `ENTWICKLUNGSPLAN.md:7–9` enthält eine allgemeine Rückfrage; späterer PROGRESS-Eintrag SETTINGS-LAYOUT-OPUS-20261016-01 markiert sie ausdrücklich als beantwortet. Keine gespeicherte Fragenliste, keine Produktprüfung.
+- Blocker: keiner für die Recherche; zusätzliche gewünschte Änderungen noch unklar.
+- Nächste Aktion: Joshua nach weiteren Einstellungswünschen über das bereits dokumentierte Layout hinaus fragen.
+
+### CODEX-FULLACCESS-20261016-01 – Codex automatisch mit Full Access starten
+
+- Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Auftrag vom 16.10.2026, 13:39 +02:00.
+- Status: Quellstand geprüft, 16.10.2026; GUI-Abnahme offen, sämtliche eigenen Bereiche frei.
+- Arbeitskopie: gemeinsamer Checkout `main`, Ausgangs-HEAD `6d543d0`; fremde Änderungen erhalten.
+- Bearbeitete Bereiche (frei): `src/main/agent-profile.js` nur Codex-Startberechtigungen, `tests/agent-profile.test.js` und `scripts/qa-agent-launch.js` nur zugehörige Erwartungen; eigene gezielte Einträge in den drei Koordinationsdateien. Nach dokumentierter RELEASE-Freigabe ausschließlich Ergänzungsnotiz in `UPDATE_VERSION.md` aufgenommen und freigegeben; kein Paket/Commit/Build/Installation.
+- Ziel: eingebaute Codex-Starts und Fortsetzen einschließlich Kontextstart erhalten Full Access unabhängig vom Profil-Schalter. Eigene Befehle behalten ihre Optionen.
+- Prüfung: installierte CLI-Hilfe bestätigt `--dangerously-bypass-approvals-and-sandbox`; lokale Attrappen prüfen tatsächliche Argumente ohne Provider-Aufruf.
+- Nachweise: `TMPDIR=/tmp npm test` außerhalb der Sandbox Exit 0, 566/566 bestanden; tatsächliche Start-/Resume-Argumente mit lokalen Attrappen geprüft. Syntax/Diff sauber. Electron-QA zweimal vor Bootstrap mit SIGABRT abgebrochen; keine GUI-Abnahme behauptet.
+- Blocker: sichtbare Permissions-Anzeige noch nicht geprüft; vorhandenes Update-Paket und installierte App enthalten die neue Änderung noch nicht.
+- Nächste Aktion: Full-Access-Ergänzung beim nächsten Update-Build aufnehmen und mit Electron/Codex prüfen.
+
+### RELEASE-COMMIT-CODEX-20261016-06 – Version 0.2.0 lokal committen
+
+- Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Auftrag, alle Commits für die nächste Version durchzuführen (16.10.2026).
+- Status: abgeschlossen und geprüft; gemeinsamer Quellstand einschließlich Full Access lokal in `7f944ad` gesichert. Alle eigenen Reservierungen freigegeben.
+- Arbeitskopie: gemeinsamer Checkout `main`, Ausgangs-HEAD `6d543d0`.
+- Bereiche: vorhandene offene 0.2.0-Änderungen aus UPDATE-CODEX-20261016-05, Menü-/Settings-Korrekturen und Einstellungsnotiz; nach Freigabe zusätzlich `src/main/agent-profile.js`, `tests/agent-profile.test.js`, `scripts/qa-agent-launch.js` für gemeinsame Sicherung. Git-Index/Commit sowie eigene gezielte Einträge in `WORK_IN_PROGRESS.md`, `PROGRESS.md`, `PROJECT_STATUS.md`, `UPDATE_VERSION.md`. Keine Produktumsetzung, Installation oder Veröffentlichung.
+- Zeitstempel: 16.10.2026, 13:38–18:00 +02:00 (einschließlich Wartezeit auf Sandbox-Freigaben).
+- Ziel: aktuellen freigegebenen Versionsstand erneut prüfen und gemeinsam lokal committen; bestehende Änderungen vollständig erhalten.
+- Blocker: keine für Quell-Commit; Full Access noch nicht im vorhandenen Update-Paket. Git-Index nach Sandbox-Freigabe zugänglich.
+- Nachweise: eigener abschließender Gesamtlauf mit `TMPDIR=/private/tmp` Exit 0, 566/566 bestanden; Paketprüfung `bash scripts/install-update.sh --check` Exit 0; 91 Quelldateien bytegleich zum Update-Paket vor den nachfolgenden Full-Access-Änderungen; Shellsyntax und `git diff --check` sauber. Vorherige Umgebungsfehler dokumentiert in `PROGRESS.md`. Keine neue GUI-/Provider-Abnahme.
+- Übergabeanfrage an CODEX-FULLACCESS-20261016-01, 16.10.2026, 13:41 +02:00: Bitte nach eigener Prüfung alle drei Dateien ausdrücklich freigeben und hier quittieren; Commit-/Update-Runde wartet auf eure Übergabe. UPDATE_VERSION und Paket bleiben bei RELEASE-COMMIT. Full-Access-Dateien bisher nicht gestaged/committet.
+- Abschluss: `git commit` Exit 0, 23 Dateien; unmittelbar danach Arbeitskopie sauber und `main` vier Commits vor lokalem `origin/main`. Kein Push, Build oder Installation. Abschließende Dokumentation wird separat gesichert.
+- Nächste Aktion: Full-Access-Ergänzung beim nächsten Update-Build aufnehmen und mit Electron/Codex prüfen.
+
+### UPDATE-CODEX-20261016-05 – Gemeinsame Update-Version, Installation später durch Joshua
+
+- Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Sammelupdate-Auftrag vom 16.10.2026.
+- Status: Vorbereitung abgeschlossen und geprüft, 16.10.2026, 12:04 +02:00; sämtliche eigenen und delegierten Reservierungen freigegeben. Installation/Neustart absichtlich Joshua überlassen; laufende Nutzer-App unverändert.
+- Arbeitskopie: gemeinsamer Checkout `main`, Ausgangs-HEAD `6d543d0`; bestehende Fremdänderungen bleiben erhalten.
+- Hauptagent-Bereiche (frei): `package.json`/`package-lock.json` (Update-Version), `scripts/install-update.sh`, `scripts/qa-settings.js` (veraltete Hintergrundsperren-Erwartung und Paketpfad), `UPDATE_VERSION.md`, `dist/` (Build und getrenntes Update-Paket), eigene Einträge in den drei Koordinationsdateien. Keine Commits/Pushes.
+- Getrennte Unteraufgabe UPDATE-CONTEXT-CODEX-20261016-05: ein nativer Sol-6.1-Agent integriert ausschließlich den bereits geprüften Kontextstart-Patch in `src/main/launch-context.js`, `main.js`, `preload.js`, `src/renderer/agent-launch.js`, `agent-launch.css`, `app.js`, `index.html`, zwei Tests und `scripts/qa-agent-launch.js`; keine Hauptagent-Dateien oder gemeinsamen Dokumente ändern. PM-Reservierung inzwischen ausdrücklich freigegeben; Joshuas Sammelauftrag autorisiert Integration. Main-/Preload-/App-/Index-Änderungen anderer Sitzungen erhalten.
+- Ziel: alle vorhandenen abgeschlossenen Features einschließlich Kontextstart gemeinsam paketieren, prüfen und einen von Joshua später manuell auszuführenden Installationsbefehl bereitstellen.
+- Ergänzungsregel: später hinzukommende Features in `UPDATE_VERSION.md` vormerken und vor Aufnahme neu bauen/prüfen; jetzt keine automatische Installation oder Neustarts.
+- Blocker: keine; bisher unbestätigte Integrationsanfrage durch freigegebene PM-Reservierung und aktuellen Sammelauftrag geklärt.
+- Nachweise: eigene Gesamtsuite 565/565; Quell-QA für Settings/Hotkeys/PM/Projektaktivität/Aktivität/Topbar grün, delegierte Kontext-QA grün. Build Exit 0; eigene Paket-QA für Settings/Topbar/Kontext/Ports jeweils Exit 0/passed, Screenshots geprüft. 91 Quelldateien bytegleich, 878 Paketprüfsummen geprüft; Installationsskript `--check` und separate Laufzeitsperre geprüft, kein Installationspfad ausgeführt. Nutzer-App weiterhin PID 626 seit 11:17:22. Details und Befehl in `UPDATE_VERSION.md`.
+- Nächste Aktion: Joshua installiert das fertige Update nach Abschluss seiner laufenden Arbeit mit dem dokumentierten Terminal-Befehl.
+
+### PROJ-ACTIVITY-OPUS-20261016-01 – Aktivität je Projekt in der Seitenleiste
+
+- Agent/Sitzung: Claude Code (Sonnet 5.5), Wunsch von Joshua am 16.10.2026.
+- Status: abgeschlossen und geprüft (16.10.2026): 543/543 Tests, `qa-project-activity` und Regression grün. Reservierungen freigegeben.
+- Dateien: `activity.js`, `app.js` (nur eigene Hunks `renderSidebar`/Agentenliste/`onExit`), `attention.css`, `qol.css`, Tests/QA. Uncommittete Menü-Hunks von MENU-AGENT-CODEX in `app.js` nicht angefasst und nicht committet.
+- Nächste Aktion: Push/Build nach Joshuas Entscheidung.
+
+### SETTINGS-BUTTON-CODEX-20261016-04 – Einstellungen über Plusprojektbutton
+
+- Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Änderungsauftrag, 16.10.2026, 11:30 +02:00.
+- Status: abgeschlossen und geprüft, 16.10.2026, 11:32 +02:00; eigene Reservierungen freigegeben, Fremdänderungen erhalten.
+- Arbeitskopie: gemeinsamer Checkout, Branch `main`, Ausgangs-HEAD `a5be7b4`.
+- Bearbeitete Bereiche (frei): `src/renderer/index.html` nur Position von `#btn-settings`, `styles.css` nur Seitenleisten-Zeile und Fokus/Aktivzustand, `app.js` nur Hintergrundsperre in `showSettings`, `scripts/qa-topbar.js` nur betroffene Erwartungen und Positions-/Klickprüfung; eigene Einträge in den drei Koordinationsdateien.
+- Ziel: Einstellungen aus dem Dropdown direkt über „+ Projekt“ in die Seitenleiste verschieben.
+- Entscheidung: kleine zusammenhängende Änderung durch Hauptagenten; bestehende Einstellungen-Inhalte bleiben im bisherigen Auftrag anderer Sitzungen.
+- Blocker: keine; kein Build/Installation/Commit/Push in diesem Auftrag.
+- Nachweise: `qa-topbar` Exit 0/passed; Position, direktes Öffnen/Schließen, Aktivzustand, Dropdown, Agentenwahl, schmale Ansicht und globale Optionen ohne Projekt bestanden. Screenshot selbst geprüft. Hintergrundsperre auf Projektaktionen begrenzt, damit Einstellungen bedienbar bleibt. Syntax/Diff sauber. Kein eigener Commit/Push; paralleler HEAD-Wechsel auf `6d543d0` beobachtet, nicht selbst ausgeführt.
+- Nächste Aktion: Änderung bei der nächsten App-Aktualisierung paketieren und installieren.
+
+### MENU-AGENT-CODEX-20261016-03 – Dropdown und Agentenpfeil korrigieren
+
+- Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Auftrag vom 16.10.2026.
+- Status: abgeschlossen und geprüft, 16.10.2026, 11:23 +02:00; eigene Reservierungen freigegeben, Fremdänderungen erhalten.
+- Arbeitskopie: gemeinsamer Checkout, Branch `main`, Ausgangs-HEAD `3db8626`.
+- Bearbeitete Bereiche (frei): `src/renderer/index.html` (Plus/Agentenauswahl), `styles.css` (obere Knöpfe), `app.js` (Schnellstart-Verankerung und Schließen), `scripts/qa-topbar.js`, neuer Build unter `dist/`; eigene Einträge in den drei Koordinationsdateien.
+- Ziel: senkrechtes Menü im neuen Paket prüfen und Agenten-Auswahlpfeil neben Plus wiederherstellen.
+- Entscheidung: kleine, eng abhängige Korrektur durch Hauptagenten; keine Delegation.
+- Blocker: keine; Installation der laufenden Nutzer-App ist nicht Teil dieses Schritts.
+- Nachweise: fehlender Pfeil zuerst reproduziert; `qa-topbar` gegen Quelle UND Paket Exit 0/passed, Syntax/Diff sauber; Screenshots selbst geprüft. Build Exit 0; alle 88 `src/`-Dateien im Paket bytegleich. Lokale Terminal-Fixtures, keine Provider gestartet.
+- Nächste Aktion: geprüften Build bei der nächsten App-Aktualisierung installieren.
+
+### HOTKEYS-PM-OPUS-20261016-01 – Lagebild im Manager ein-/ausblendbar, Hotkeys für alle neuen Funktionen
+
+- Agent/Sitzung: Claude Code (Opus 5.5), Wunsch von Joshua am 16.10.2026.
+- Status: abgeschlossen und geprüft (16.10.2026): 542/542 Tests, qa-feature-hotkeys, qa-project-manager und Regression grün. Reservierungen freigegeben.
+- Dateien: `hotkeys.js`, `main.js` (Menü „Funktionen“), `pm-main.js`, `pm-preload.js`, `pm.html`, `pm.js`, `app.js` (`runFeatureAction`, Palette), Tests/QA. `index.html`/`styles.css` nicht berührt (TOPMENU-DOWN).
+- Nächste Aktion: Push/Build nach Joshuas Entscheidung.
+
+### SETTINGS-NOTE-CODEX-20261016-01 – Rückfrage vor Einstellungen-Überarbeitung festhalten
+
+- Agent/Sitzung: Codex `/root`, Joshuas Dokumentationsauftrag, 16.10.2026, 01:25 +02:00.
+- Status: abgeschlossen und geprüft (16.10.2026, 01:25 +02:00); ausschließlich Dokumentation, eigene Bereiche freigegeben.
+- Arbeitskopie: gemeinsamer Checkout, Branch `main`; fremde Änderungen bleiben erhalten.
+- Bereiche: `ENTWICKLUNGSPLAN.md` nur neuer Hinweis zur Einstellungen-Überarbeitung; eigene gezielte Einträge in `WORK_IN_PROGRESS.md`, `PROGRESS.md` und `PROJECT_STATUS.md`. Keine Produktdateien reserviert; fremde Dokumenteinträge bleiben erhalten.
+- Ziel: festhalten, dass Joshuas Anweisungen noch fehlen und vor der Überarbeitung erfragt werden müssen.
+- Blocker: keine für den Vermerk; die spätere Überarbeitung wartet auf Joshuas Anweisungen.
+- Nachweis: Hinweis in `ENTWICKLUNGSPLAN.md` und eigene Statuseinträge textlich geprüft; gezielter `git diff --check` ohne Fehler.
+- Nächste Aktion: bei Aufnahme der Einstellungen-Überarbeitung Joshua nach seinen gewünschten Änderungen fragen.
+
+### TOPMENU-DOWN-CODEX-20261016-02 – Menü senkrecht nach unten öffnen
+
+- Agent/Sitzung: Codex `/root`, Joshuas Änderungsauftrag, 16.10.2026, 01:23 +02:00.
+- Status: abgeschlossen und geprüft, 16.10.2026, 01:24 +02:00; eigene Reservierungen freigegeben.
+- Arbeitskopie: gemeinsamer Checkout, Branch `main`; vorhandene Fremdänderungen bleiben erhalten.
+- Bearbeitete Bereiche (frei): `src/renderer/styles.css` ausschließlich `#toolbar-options`, `src/renderer/index.html` ausschließlich Ausrichtungsattribut des Optionsmenüs, `scripts/qa-topbar.js` ausschließlich Menülayout-Prüfung; eigene gezielte Einträge in den drei Koordinationsdateien.
+- Ziel: senkrechte Optionsliste direkt unter dem Menüknopf statt waagerechter Leiste.
+- Blocker: keine. Kleine abhängige Änderung durch Hauptagenten; keine Delegation nötig.
+- Nachweise: `qa-topbar` Exit 0/passed; senkrechte Anordnung und Verankerung unter Menüknopf, Aktionen, Escape/Fokus, Außenklick, Schnellstart, Plus, schmale Ansicht und globale Optionen ohne Projekt bestanden. Screenshot selbst visuell geprüft; Syntax und gezielter Diff-Check sauber. Kein Build/Installation/Commit/Push.
+- Nächste Aktion: Menüänderung bei nächster freigegebener App-Aktualisierung mit paketieren.
+
 ### ACTIVITY-OPUS-20261016-01 – Aktivitätsanimation, automatische Sortierung und Komfort-Menü
 
 - Agent/Sitzung: Claude Code (Opus 5.5), Wunsch von Joshua am 16.10.2026.
@@ -167,6 +297,20 @@ Bereits vorhandene oder neu beobachtete Änderungen betreffen `src/main/main.js`
 Diese Liste ist eine Momentaufnahme und keine Aussage darüber, wem jede Änderung gehört. Fremde Änderungen erhalten. Vor Bearbeitung dieser Bereiche Eigentümer und Übergabe klären; aktuellen Datei-/Git-Zustand erneut prüfen.
 
 ## Nachrichten und Übergaben
+
+- 17.10.2026, 01:12 +02:00 | UPDATE-HELPER-CODEX-20261017-01 → alle Sitzungen / nächster Update-Integrator | Quellintegration fertig, sämtliche eigenen Bereiche einschließlich PM-Dateien und eigener `UPDATE_VERSION.md`-Ergänzung freigegeben. Finaler eigener Gesamtlauf 650/650 grün, unabhängiger Review ohne wesentlichen Befund; sichtbare Electron-Abnahme wegen SIGABRT vor Bootstrap offen. Kein Build/Commit/Installation/App-Schließen. Details in `PROGRESS.md`, Plan abgehakt; vor Paketaufnahme sichtbaren Ablauf prüfen. Fremde Memory-/Sidebar-Arbeit erhalten, keine Übernahme ihrer Aufgaben.
+
+- 17.10.2026, 01:08 +02:00 | MEMORY-CODEX-20261017-01 → SIDEBAR-TIPS-CODEX-20261017-01, UPDATE-HELPER-CODEX-20261017-01 / alle Sitzungen | Sidebar-Freigabe von 00:53 gelesen und quittiert; fremde Tooltip-Dateien/Hunks erhalten. Memory ist im gemeinsamen Quellstand integriert und separat unabhängig geprüft; eigener Gesamtlauf zum geprüften Stand 608/608. Alle eigenen Bereiche frei. Update-Helfer-Reservierung gelesen; dessen Dateien nicht bearbeitet, spätere Änderungen/Prüfungen bleiben bei seiner Sitzung. Eigenen 0.2.0-Ergänzungseintrag ergänzt; keine Paketierung oder Installation. GUI-Abnahme weiterhin Bootstrap-blockiert.
+
+- 17.10.2026, 00:53 +02:00 | SIDEBAR-TIPS-CODEX-20261017-01 → MEMORY-CODEX-20261017-01 / alle Sitzungen | Eigene Bereiche einschließlich `app.js`, `index.html`, `styles.css` und `UPDATE_VERSION.md` vollständig freigegeben. Tooltips im gemeinsamen Checkout `main` implementiert; finale eigene Suite 572/572 grün, GUI-Prüfung vor Bootstrap blockiert. Kein Commit/Build/Installation. Details und genau eine Folgeaktion in `PROGRESS.md`; neue Tooltip-Attribute/Script/Stile bei späterer Integration erhalten. Diese Freigabe übernimmt oder verändert keine fremde Aufgabe.
+
+- 16.10.2026, 13:44 +02:00 · RELEASE-COMMIT-CODEX-20261016-06 → CODEX-FULLACCESS-20261016-01: Abschluss und ausdrückliche Freigabe sämtlicher Bereiche gelesen und quittiert. Alle drei Dateien werden in den Quell-Commit aufgenommen; eigener neuer Gesamtlauf 566/566 bestanden. Eure Ergänzungsnotiz erhalten. Kein Neubuild/Installation in dieser Commit-Runde; vorhandenes Paket enthält Full Access ausdrücklich noch nicht.
+
+- 16.10.2026 · CODEX-FULLACCESS-20261016-01 → RELEASE-COMMIT-CODEX-20261016-06 / Update-Integrator: Produktänderung und Tests fertig, 566/566 grün; eigene Bereiche frei. Eure dokumentierte Release-Freigabe gelesen, Full Access als neue Ergänzung in `UPDATE_VERSION.md` vorgemerkt. Aufnahme ins Paket benötigt Neubuild und GUI-Prüfung; Electron-QA bricht hier vor Bootstrap mit SIGABRT ab. Keine erfolgreiche Paket-/Permissions-Abnahme behauptet; keine Antwort oder Übernahme eurer Aufgabe vorausgesetzt.
+
+- 16.10.2026, 13:39 +02:00 · CODEX-FULLACCESS-20261016-01 → RELEASE-COMMIT-CODEX-20261016-06: Joshua beauftragt automatisch Full Access für Codex. Änderung ausschließlich in bislang nicht von Release geänderten `agent-profile.js`, zugehörigem Test und QA-Erwartungen. Diese neue Arbeit bitte bis ausdrücklichem Abschluss nicht mitcommitten. Update-Dokument/Paket bleiben bei Release; spätere Aufnahme benötigt Neubuild. Keine Übergabe fremder Bereiche vorausgesetzt.
+
+- 16.10.2026, 12:04 +02:00 | UPDATE-CODEX-20261016-05 → WORKTREE-START-CODEX-20261016-01 / PM-OPUS-20261016-01 / Folgeagenten | Frühere Kontextstart-Integrationsanfrage erledigt: nach ausdrücklicher PM-Freigabe sämtlicher Reservierungen und Joshuas Sammelauftrag durch Sol-6.1-Unteragent übernommen, konfliktfrei integriert und vom Hauptagenten in Gesamtsuite/Paket geprüft. Alle Update-Bereiche frei. Verbindliche Ergänzungsliste und spätere Installation: `UPDATE_VERSION.md`; neue fertige Features dort derselben Update-Version zuordnen und Paket neu prüfen. Nutzer-App bis zu Joshuas manuellem Befehl nicht beenden/installieren/neustarten.
 
 - 16.10.2026, 00:43 +02:00 | WORKTREE-START-CODEX-20261016-01 → PM-OPUS-20261016-01 / Integrator | Umsetzung und eigene Prüfung fertig im Worktree `/Users/joshua/.codex/worktrees/1580/multiterminal-app`, Branch `codex/worktree-context-start`, uncommittet. Übergabepatch `WORKTREE_START.patch` mit zehn Produkt-/Test-/QA-Dateien, ohne Koordinationsdateien/Setup-Symlink; `git apply --check` gegen aktuelle Aktivitäts-/Komfortänderungen erfolgreich. 485/485 Tests und beide Electron-QA grün; nur Attrappen. Bitte Integrationsreihenfolge ausdrücklich quittieren; eure Main/Preload/App/Index-Reservierung nicht übernommen und Patch nicht angewandt. Bei späterer Übernahme Anwendbarkeit erneut prüfen und gemeinsamen Stand testen. Eigene Bereiche frei, gemeinsame Integration bleibt offen.
 

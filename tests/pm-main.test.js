@@ -7,7 +7,7 @@ const os = require('os');
 const path = require('path');
 const { createPmMain } = require('../src/main/pm-main.js');
 
-function setup() {
+function setup(updateService) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pm-main-'));
   const handlers = new Map();
   const listeners = new Map();
@@ -46,6 +46,7 @@ function setup() {
   const ptys = { snapshot: () => [], create: () => ({ ok: true }), write() {}, resize() {}, kill: (id) => killed.push(id) };
   const projects = new Map([['p1', { id: 'p1', name: 'Eins', path: '/tmp/e1' }], ['p2', { id: 'p2', name: 'Zwei', path: '/tmp/e2' }]]);
   const pm = createPmMain({
+    updateService,
     electron: { BrowserWindow: FakeWindow, ipcMain, shell: { openExternal() {} } },
     getMainWindow: () => mainWin,
     getDataDir: () => dataDir,
@@ -105,7 +106,7 @@ test('pm:*-Kanäle: das Projekt kommt aus der Fensterzuordnung, fremde Absender 
   await c.handlers.get('pm:openWindow')(c.eventFrom(c.mainWin), 'p1');
   const pmWin = c.windowsCreated[1];
   // Das Hauptfenster darf die Manager-Kanäle nicht benutzen
-  for (const ch of ['pm:start', 'pm:write', 'pm:resize', 'pm:restart', 'pm:state']) {
+  for (const ch of ['pm:start', 'pm:write', 'pm:resize', 'pm:restart', 'pm:state', 'pm:updateSelect', 'pm:updateInstall', 'pm:updateStatus']) {
     await assert.rejects(async () => c.handlers.get(ch)(c.eventFrom(c.mainWin), 'p1', 80, 24), /Nicht erlaubt/, ch);
   }
   // Das Manager-Fenster von p1 fragt nach p2: bekommt trotzdem p1
@@ -119,6 +120,31 @@ test('pm:*-Kanäle: das Projekt kommt aus der Fensterzuordnung, fremde Absender 
   const started = await c.handlers.get('pm:start')(c.eventFrom(pmWin), 'p1', 80, 24);
   assert.strictEqual(started.ok, false);
   assert.match(started.error, /nicht verfügbar/);
+});
+
+test('Update-Aktionen nur aus zugeordnetem Manager-Fenster und mit dessen Dialog-Elternfenster', async () => {
+  const calls = [];
+  const updates = {
+    select: async win => { calls.push(['select', win]); return { ok: true, token: 'opaque' }; },
+    install: async (token, win) => { calls.push(['install', token, win]); return { ok: true, started: true }; },
+    status: async () => ({ ok: true, supported: true }),
+  };
+  const c = setup(updates);
+  await c.handlers.get('pm:openWindow')(c.eventFrom(c.mainWin), 'p1');
+  const win = c.windowsCreated[1];
+  for (const channel of ['pm:updateSelect', 'pm:updateInstall', 'pm:updateStatus']) {
+    const fn = c.handlers.get(channel);
+    assert.throws(() => fn({ sender: win.webContents, senderFrame: {} }, 'p1', 'opaque'), /Nicht erlaubt/);
+    assert.throws(() => fn({ sender: { id: 999 }, senderFrame: win.webContents.mainFrame }, 'p1', 'opaque'), /Nicht erlaubt/);
+  }
+  const event = c.eventFrom(win);
+  assert.deepStrictEqual(await c.handlers.get('pm:updateSelect')(event, 'p2'), { ok: true, token: 'opaque' });
+  assert.deepStrictEqual(calls[0], ['select', win], 'spoofed project cannot change parent window');
+  assert.deepStrictEqual(await c.handlers.get('pm:updateInstall')(event, 'p2', 'opaque'), { ok: true, started: true });
+  assert.deepStrictEqual(calls[1], ['install', 'opaque', win]);
+  assert.deepStrictEqual(await c.handlers.get('pm:updateStatus')(event, 'p1'), { ok: true, supported: true });
+  win.destroy();
+  assert.throws(() => c.handlers.get('pm:updateSelect')(event, 'p1'), /Nicht erlaubt/);
 });
 
 test('pm:sendResult nur aus dem Hauptfenster; ohne offene Anfrage folgenlos', async () => {

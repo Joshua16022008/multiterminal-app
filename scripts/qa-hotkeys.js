@@ -53,7 +53,7 @@ app.on('browser-window-created', (_event, win) => {
       await click('#settings-panel button', 'Hotkeys speichern');
       await wait("document.querySelector('.settings-message')?.textContent.includes('sofort aktiv')");
     };
-    const open = async () => { await click('#btn-settings'); await click('.settings-tab', 'Hotkeys'); await wait("document.querySelectorAll('.hotkey-row').length===17"); };
+    const open = async () => { await click('#btn-settings'); await click('.settings-tab', 'Hotkeys'); await wait("document.querySelectorAll('.hotkey-row').length===window.DeckHotkeys.actions.length"); };
     try {
       await wait(`${panes}?.length===2 && ${panes}.every(p=>p.plainText().includes('HOTKEY_QA_READY'))`);
       assert.equal(item('Neues Terminal').accelerator, 'Cmd+T');
@@ -78,13 +78,19 @@ app.on('browser-window-created', (_event, win) => {
       await capture('new-terminal', 'T', ['meta', 'shift']);
       await capture('focus-terminal:3', 'B', ['control', 'shift']);
       await click('#settings-panel button[aria-label="Terminal 3: Kürzel 2 entfernen"]');
-      await capture('settings', 'P', ['meta', 'shift']);
+      await capture('settings', 'N', ['meta', 'shift']);
+      // Funktionstasten gehen auch mit Shift allein; Shift+Buchstabe bleibt gesperrt (würde Großbuchstaben verschlucken).
+      await capture('command-palette', 'F5', ['shift']);
+      await capture('terminal-search', 'D', ['shift']);
+      await wait("document.querySelector('.settings-error')?.textContent.includes('Funktionstasten')");
       // Drafts never affect active menus until explicitly saved.
       assert.equal(item('Neues Terminal').accelerator, 'Cmd+T');
       await save();
       assert.equal(item('Neues Terminal').accelerator, 'Cmd+Shift+T');
       assert.equal(item('Terminal 3').accelerator, 'Ctrl+Shift+B');
-      assert.equal(item('Einstellungen…').accelerator, 'Cmd+Shift+P');
+      assert.equal(item('Einstellungen…').accelerator, 'Cmd+Shift+N');
+      assert.equal(item('Befehlspalette…').accelerator, 'Shift+F5', 'Shift+function key accepted and active in the menu');
+      assert.equal(item('Im Terminalverlauf suchen…').accelerator, 'Cmd+F', 'Shift+letter was refused, old binding kept');
       assert.equal(menuItems().some(i => i.accelerator === 'Ctrl+3'), false);
       assert.equal(await run("window.DeckHotkeys.isHotkeyEvent({ctrlKey:true,shiftKey:true,key:'B'})"), true);
       assert.equal(await run("window.DeckHotkeys.isHotkeyEvent({ctrlKey:true,key:'3'})"), false);
@@ -136,7 +142,7 @@ app.on('browser-window-created', (_event, win) => {
       await run('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
       const screenshot = path.join(root, 'hotkeys.png');
       fs.writeFileSync(screenshot, (await win.webContents.capturePage()).toPNG());
-      console.log(JSON.stringify({ result: 'passed', productMain: mainFile, checks: ['17 hotkey actions in real settings tab', 'keyboard capture with menu suppression', 'conflict and reserved key rejection', 'Escape cancels capture', 'draft vs live menu', 'save real IPC and disk', 'live menu descriptors and actions', 'secondary binding removal', 'DOM keys to real PTY: remapped xterm interception and old key release', 'disabled binding', 'renderer reload persistence', 'restore defaults'], limitation: 'Menu actions exercised directly; OS-level physical shortcut dispatch not simulated', screenshot, data }));
+      console.log(JSON.stringify({ result: 'passed', productMain: mainFile, checks: ['all hotkey actions in real settings tab', 'keyboard capture with menu suppression', 'conflict and reserved key rejection', 'Escape cancels capture', 'draft vs live menu', 'save real IPC and disk', 'live menu descriptors and actions', 'secondary binding removal', 'DOM keys to real PTY: remapped xterm interception and old key release', 'disabled binding', 'renderer reload persistence', 'restore defaults'], limitation: 'Menu actions exercised directly; OS-level physical shortcut dispatch not simulated', screenshot, data }));
       clearTimeout(timer); app.exit(0);
     } catch (error) { clearTimeout(timer); console.error(JSON.stringify({ stage, root })); console.error(error.stack); app.exit(1); }
   });

@@ -131,6 +131,26 @@
     refresh();
   }
 
+  // Lagebild rechts ein-/ausblenden; der Zustand wird pro Gerät gemerkt.
+  const SITUATION_KEY = 'mt.pm.situation';
+  function situationVisible() { return !$('pm-situation').hidden; }
+  function setSituation(visible) {
+    $('pm-situation').hidden = !visible;
+    $('pm-refresh').hidden = !visible;
+    const b = $('pm-toggle-situation');
+    b.setAttribute('aria-expanded', String(visible));
+    b.textContent = visible ? 'Lagebild ⟩' : '⟨ Lagebild';
+    try { localStorage.setItem(SITUATION_KEY, visible ? 'on' : 'off'); } catch { /* nur diese Sitzung */ }
+    requestAnimationFrame(() => { safeFit(); pm.resize(term.cols, term.rows); });
+    if (visible) refresh();
+  }
+  let initialSituation = true;
+  try { initialSituation = localStorage.getItem(SITUATION_KEY) !== 'off'; } catch { /* Standard: sichtbar */ }
+  if (!initialSituation) { $('pm-situation').hidden = true; $('pm-refresh').hidden = true; $('pm-toggle-situation').textContent = '⟨ Lagebild'; $('pm-toggle-situation').setAttribute('aria-expanded', 'false'); }
+  $('pm-toggle-situation').onclick = () => setSituation(!situationVisible());
+  if (pm.onMenu) pm.onMenu((action) => { if (action === 'pm-situation') setSituation(!situationVisible()); });
+  window.__pmSituation = { visible: situationVisible, set: setSituation }; // für QA-Skripte
+
   $('pm-refresh').onclick = refresh;
   $('pm-restart').onclick = () => startManager(true);
   $('pm-exit-restart').onclick = () => startManager(true);
@@ -141,8 +161,8 @@
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(safeFit, 60); });
 
   // Automatisch alle 10 s, aber nur solange das Fenster sichtbar ist.
-  setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, REFRESH_MS);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(); });
+  setInterval(() => { if (document.visibilityState === 'visible' && situationVisible()) refresh(); }, REFRESH_MS);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && situationVisible()) refresh(); });
 
   requestAnimationFrame(() => startManager(false));
 })();
