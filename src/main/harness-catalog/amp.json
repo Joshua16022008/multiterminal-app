@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "id": "amp",
+  "label": "Amp",
+  "binary": "amp",
+  "kind": "tui",
+  "evidence": "unconfirmed",
+  "verifiedWith": "2026-10-17: Rechercheplan; keine lokale CLI-Prüfung",
+  "docsUrl": "https://ampcode.com/docs",
+  "install": [
+    { "method": "manual", "display": "https://ampcode.com/docs" }
+  ],
+  "start": [
+    "amp"
+  ],
+  "model": null,
+  "resume": null,
+  "prompt": null,
+  "endpoints": {},
+  "profileInjection": null,
+  "supportsHooks": false,
+  "accounts": null
+}

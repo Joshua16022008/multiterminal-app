@@ -9,11 +9,11 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const dir = path.join(__dirname, '../src/renderer');
-const PAGES = ['einstellungen', 'worktrees', 'terminals-und-agenten', 'ports', 'diff-und-git', 'uebergaben-und-anhaenge'];
+const PAGES = ['einstellungen', 'harnesses-modelle', 'worktrees', 'terminals-und-agenten', 'ports', 'diff-und-git', 'uebergaben-und-anhaenge'];
 
 // Modul -> Schlüssel, die es per Link anbietet (Seite bzw. Seite#anker).
 const EXPECTED = {
-  'settings-panel.js': ['einstellungen'],
+  'settings-panel.js': ['einstellungen', 'harnesses-modelle'],
   'worktree-picker.js': ['worktrees'],
   'worktree-tree.js': ['worktrees'],
   'agent-launch.js': ['terminals-und-agenten'],

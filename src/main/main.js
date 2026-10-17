@@ -40,6 +40,16 @@ const { createAgentSessionService, resumePlan: planResume } = require('./agent-s
 const { claudeWrapperScript, eventWrapperScript, zdotdirZshenv } = require('./agent-wrapper');
 const attentionLabels = require('../renderer/attention-panel');
 const { createPmMain } = require('./pm-main'); // PM: Projektmanager
+// Harness-Katalog und Endpunkte (Etappe 3b)
+const { createHarnessCatalog } = require('./harness-catalog');
+const { createHarnessDetect } = require('./harness-detect');
+const { createModelSources } = require('./model-sources');
+const { createKeychain } = require('./keychain');
+const { createEndpointStore } = require('./endpoint-store');
+const { createHarnessLaunch } = require('./harness-launch');
+const { sanitizeLaunch } = require('./launch-spec');
+const { sanitizeNativeSession } = require('./agent-session-service');
+const execFileAsync = require('util').promisify(require('child_process').execFile);
 
 const BROWSER_PARTITION = 'persist:minibrowser';
 const QUIT_FLUSH_TIMEOUT_MS = 2000;
@@ -77,6 +87,16 @@ let browserBridge = null; // null when it could not start; terminals then simply
 let browserBinDir = null;
 let browserReady = Promise.resolve();
 let pm = null; // PM: Projektmanager (Fenster, Manager-Terminal, mt-pm-Brücke)
+let appDataDir = null;
+let harnessCatalog; // validated JSON catalog (built-in + own entries)
+let harnessDetect;
+let modelSources;
+let keychain;
+let endpointStore;
+// Context starts prepared for a catalog harness: command line -> public start metadata.
+// One-time and short-lived; lets terminals:create skip re-decoration and the Claude account.
+const preparedLaunches = new Map();
+const PREPARED_TTL_MS = 10 * 60 * 1000;
 // Agent status (F01): state per terminal, switches, and what the page reports as visible.
 let agentStore;
 const agentSessions = createAgentSessionService(); // F02
@@ -217,6 +237,76 @@ function forgetTerminal(id) {
   if (visibleTerminal === String(id)) visibleTerminal = null;
 }
 
+// Main-side view of a catalog entry for the renderer (IPC §2 HarnessView). No secrets.
+function harnessView(entry, detection) {
+  return {
+    id: entry.id, label: entry.label, kind: entry.kind, evidence: entry.evidence, docsUrl: entry.docsUrl,
+    install: (entry.install || []).map((item) => ({ method: item.method, display: item.display })),
+    installed: Boolean(detection && detection.installed), path: (detection && detection.path) || null,
+    canPrompt: Boolean(entry.prompt), canResume: Boolean(entry.resume), supportsHooks: entry.supportsHooks === true,
+    accounts: entry.accounts || null, endpointTypes: Object.keys(entry.endpoints || {}),
+    builtin: entry.builtin === true, defaultModel: entry.defaultModel || null,
+  };
+}
+
+// The Memory adapter is bound to one project; build() itself has no project field (IPC §2 b).
+function harnessBuilderFor(projectId) {
+  const scopedMemory = {
+    decorateCommand: (options) => memoryLaunch.decorateCommand({ ...options, projectId }),
+    contextArgs: (options) => memoryLaunch.contextArgs({ ...options, projectId }),
+  };
+  return createHarnessLaunch({ catalog: harnessCatalog, endpoints: endpointStore, keychain, agentProfile, memoryLaunch: scopedMemory, dataDir: appDataDir });
+}
+
+// Builds a harness start exactly once. Returns the line plus public metadata: provider for
+// meta, whether Claude runs with its own isolated config (then no account), and the chip text.
+async function buildHarnessStart(projectId, spec, extra = {}) {
+  const entry = harnessCatalog.get(spec.harnessId);
+  if (!entry) throw new Error('Unbekanntes Harness.');
+  const built = await harnessBuilderFor(projectId).build({ ...spec, ...extra });
+  const endpoint = spec.endpointId && entry.evidence !== 'unconfirmed' ? await endpointStore.get(spec.endpointId) : null;
+  const isolated = Boolean(endpoint) && entry.binary === 'claude' && entry.profileInjection === 'claude-append'
+    && endpoint.isolateClaudeConfig !== false;
+  const model = entry.evidence === 'unconfirmed' ? null : (spec.model || (endpoint && endpoint.defaultModel) || entry.defaultModel || null);
+  return {
+    command: built.command, provider: built.provider, isolated,
+    info: { harnessLabel: entry.label, model, endpointLabel: endpoint ? endpoint.label : null },
+  };
+}
+
+function takePreparedLaunch(command) {
+  const now = Date.now();
+  for (const [key, value] of preparedLaunches) if (value.expires < now) preparedLaunches.delete(key);
+  if (typeof command !== 'string' || !preparedLaunches.has(command)) return null;
+  const value = preparedLaunches.get(command);
+  preparedLaunches.delete(command);
+  return value;
+}
+
+// Fortsetzen / Neu starten of a harness tile: the line is rebuilt here from the stored launch.
+async function runHarnessLine(id, meta, request) {
+  try {
+    const spec = sanitizeLaunch(request && request.launch);
+    if (!spec) throw new Error('Ungültige Harness-Startvorgabe.');
+    const entry = harnessCatalog.get(spec.harnessId);
+    if (!entry) throw new Error('Unbekanntes Harness.');
+    let resume;
+    if (request.resume === true && entry.evidence !== 'unconfirmed' && entry.resume) {
+      const ns = sanitizeNativeSession(request.nativeSession);
+      if (ns && ns.provider === entry.id && entry.resume.byId && (ns.projectId === null || ns.projectId === meta.projectId)) resume = { sessionId: ns.nativeSessionId };
+      else if (entry.resume.last) resume = 'last';
+    }
+    const built = await buildHarnessStart(meta.projectId, spec, resume ? { resume } : {});
+    if (terminalMeta.get(String(id)) !== meta) return; // tile closed meanwhile
+    meta.provider = built.provider;
+    if (built.isolated) meta.accountId = null;
+    memoryCapture.detach(String(id)); memoryCapture.attach({ terminalId: String(id), ...meta });
+    ptys.write(id, built.command + '\r');
+  } catch (err) {
+    sendToWindow('terminals:data', String(id), '\r\n[Harness konnte nicht gestartet werden: ' + err.message + ']\r\n');
+  }
+}
+
 function registerIpc() {
   handle('agents:list', () => pm.withoutManagers(agentStore.list())); // PM
   // F02: how a tile is resumed; the command is built here from the validated ID only.
@@ -297,7 +387,10 @@ function registerIpc() {
   });
 
   handle('presets:list', () => presets.list());
-  handle('presets:add', (preset) => presets.add(preset || {}));
+  handle('presets:add', (preset) => {
+    if (preset && preset.harnessId !== undefined && !harnessCatalog.get(String(preset.harnessId))) throw new Error('Unbekanntes Harness.');
+    return presets.add(preset || {});
+  });
   handle('presets:remove', (id) => presets.remove(String(id)));
 
   handle('attachments:pickFiles', async () => {
@@ -312,7 +405,7 @@ function registerIpc() {
 
   handle('terminals:create', async (options) => {
     await browserReady; // mt-browser must be ready before the first shell starts
-    const { id, projectId, cols, rows, command, accountOverrides, workspaceId } = options || {};
+    const { id, projectId, cols, rows, command, accountOverrides, workspaceId, launch } = options || {};
     const project = projects.get(String(projectId));
     if (!project) return { ok: false, error: 'Projekt nicht gefunden.' };
     // A tile with a working copy starts there; a missing one is an error, never the project folder.
@@ -324,11 +417,31 @@ function registerIpc() {
     }
     // Resolve Memory before registering a token: a damaged store fails visibly, without leaking registration.
     let launchCommand;
-    try { launchCommand = memoryLaunch.decorateCommand({ command, projectId: project.id }); }
-    catch (err) { return { ok: false, error: 'Memory konnte nicht geladen werden: ' + err.message }; }
+    let harnessStart = null; // set for a catalog start (launch) or a prepared harness context start
+    if (launch !== undefined && launch !== null) {
+      // Harness start: validated public fields only; the line is built here exactly once.
+      const spec = sanitizeLaunch(launch);
+      if (!spec) return { ok: false, error: 'Ungültige Harness-Startvorgabe.' };
+      if (terminalMeta.has(String(id))) return { ok: false, error: 'Terminal bereits vorhanden.' };
+      try { harnessStart = await buildHarnessStart(project.id, spec); }
+      catch (err) { return { ok: false, error: 'Harness konnte nicht gestartet werden: ' + err.message }; }
+      launchCommand = harnessStart.command;
+    } else if ((harnessStart = takePreparedLaunch(command))) {
+      launchCommand = command; // already built by the start service; never decorated twice
+    } else {
+      try { launchCommand = memoryLaunch.decorateCommand({ command, projectId: project.id }); }
+      catch (err) { return { ok: false, error: 'Memory konnte nicht geladen werden: ' + err.message }; }
+    }
     if (terminalMeta.has(String(id))) return { ok: false, error: 'Terminal bereits vorhanden.' };
     // The working directory always comes from the stored project, never from the page.
-    const { env, accounts: applied } = accounts.envFor(accountOverrides);
+    const envResult = accounts.envFor(accountOverrides);
+    let env = envResult.env;
+    let applied = envResult.accounts;
+    // Claude with an isolated endpoint config: no account choice and no account metadata.
+    if (harnessStart && harnessStart.isolated) {
+      applied = applied.filter((a) => a.provider !== 'claude');
+      env = { ...env, CLAUDE_CONFIG_DIR: null };
+    }
     // Claude Code writes its quota state to a per-account file through the status line script.
     const claude = applied.find((a) => a.provider === 'claude');
     let extraEnv = claude ? { ...env, MULTITERMINAL_USAGE_FILE: usage.usageFileFor(claude.id) } : env;
@@ -353,10 +466,11 @@ function registerIpc() {
     catch (err) { if (browserBridge) browserBridge.unregister(String(id)); return { ok: false, error: err.message }; }
     if (!result.ok && browserBridge) browserBridge.unregister(String(id));
     if (result.ok) {
-      const meta = { projectId: project.id, accountId: claude ? claude.id : null, provider: builtinProvider(command) || 'custom', cwd, ...(workspaceId ? { workspaceId: String(workspaceId) } : {}) };
+      const meta = { projectId: project.id, accountId: claude ? claude.id : null, provider: harnessStart ? harnessStart.provider : (builtinProvider(command) || 'custom'), cwd, ...(workspaceId ? { workspaceId: String(workspaceId) } : {}) };
       terminalMeta.set(String(id), meta);
       try { memoryCapture.attach({ terminalId: String(id), ...meta }); } catch (err) { reportMemoryError(err, id); }
     }
+    if (result.ok && harnessStart) return { ...result, accounts: applied, launchInfo: harnessStart.info };
     return result.ok ? { ...result, accounts: applied } : result;
   });
   handle('accounts:list', () => accounts.list());
@@ -450,6 +564,8 @@ function registerIpc() {
   listen('terminals:runBuiltin', (id, command) => {
     const meta = terminalMeta.get(String(id));
     if (!meta || meta.manager) return;
+    // Harness tile: { launch, resume, nativeSession } instead of a line; the line is rebuilt here.
+    if (command && typeof command === 'object') { runHarnessLine(id, meta, command); return; }
     try {
       const line = memoryLaunch.builtinLine(command, requireProject(meta.projectId).id);
       if (line !== null) {
@@ -522,15 +638,24 @@ function registerIpc() {
     scope: input && input.scope,
     acceptance: input && input.acceptance,
   }));
-  handle('launch:prepare', (input) => launchContext.prepare({
-    project: requireProject(input && input.projectId),
-    workspaceId: input && input.workspaceId,
-    provider: input && input.provider,
-    text: input && input.text,
-    expectedHead: input && input.expectedHead,
-    expectedCwd: input && input.expectedCwd,
-    expectedBranch: input && input.expectedBranch,
-  }));
+  handle('launch:prepare', async (input) => {
+    const result = await launchContext.prepare({
+      project: requireProject(input && input.projectId),
+      workspaceId: input && input.workspaceId,
+      provider: input && input.provider,
+      model: input && input.model,
+      endpointId: input && input.endpointId,
+      text: input && input.text,
+      expectedHead: input && input.expectedHead,
+      expectedCwd: input && input.expectedCwd,
+      expectedBranch: input && input.expectedBranch,
+    });
+    if (!result || !result.ok || !result.launchMeta) return result;
+    // Harness context start: remember the built line once and hand only public data back.
+    const { launchMeta, ...rest } = result;
+    preparedLaunches.set(result.command, { ...launchMeta, expires: Date.now() + PREPARED_TTL_MS });
+    return { ...rest, launchInfo: launchMeta.info };
+  });
   handle('worktrees:create', (projectId, options) => worktrees.create({
     project: requireProject(projectId),
     branch: options && options.branch,
@@ -566,6 +691,40 @@ function registerIpc() {
     const rec = worktrees.get(String(workspaceId));
     return rec && rec.projectId === project.id ? worktreeTree.branchOf(rec.cwd) : null;
   });
+
+  // Harnesses & Modelle (IPC §2). Detection and model lists only on request; no secret leaves main.
+  const harnessId = (id) => { if (typeof id !== 'string' || !/^[a-z][a-z0-9-]{0,63}$/.test(id)) throw new Error('Ungültige Harness-ID.'); return id; };
+  handle('harness:list', async () => {
+    const rows = await harnessDetect.detect();
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    return harnessCatalog.list().map((entry) => harnessView(entry, byId.get(entry.id)));
+  });
+  handle('harness:detect', async (id) => {
+    if (id === undefined || id === null) return harnessDetect.detect();
+    const rows = await harnessDetect.detect(harnessId(id));
+    if (rows[0] && rows[0].installed) rows[0].version = await harnessDetect.version(id);
+    return rows;
+  });
+  handle('harness:models', (id, endpointId) => modelSources.models(harnessId(id),
+    endpointId === undefined || endpointId === null || endpointId === '' ? undefined : String(endpointId)));
+  handle('harness:addOwn', (entry) => harnessCatalog.addOwn(entry));
+  handle('harness:removeOwn', (id) => harnessCatalog.removeOwn(harnessId(id)));
+  handle('harness:export', (id) => harnessCatalog.exportEntry(harnessId(id)));
+  // Types the first non-manual install hint into an existing project terminal. Never Enter.
+  handle('harness:typeInstall', (id, terminalId) => {
+    const entry = harnessCatalog.get(harnessId(id));
+    if (!entry) throw new Error('Harness nicht gefunden.');
+    const meta = terminalMeta.get(String(terminalId));
+    if (!meta || meta.manager) throw new Error('Terminal nicht gefunden.');
+    const item = (entry.install || []).find((option) => option.method !== 'manual');
+    if (!item || typeof item.display !== 'string' || /[\x00-\x1f\x7f]/.test(item.display)) return false;
+    ptys.write(String(terminalId), item.display);
+    return true;
+  });
+  handle('endpoints:list', () => endpointStore.list());
+  handle('endpoints:save', (profile, secret) => endpointStore.save(profile, secret));
+  handle('endpoints:remove', (id) => endpointStore.remove(String(id)));
+  handle('endpoints:templates', () => endpointStore.templates());
 
   // User Guide (read-only; the service checks every slug against its index).
   handle('guide:index', () => guide.index());
@@ -664,6 +823,7 @@ function buildMenu() {
         ...shortcutItems('attention-panel', 'Rückmeldungen'),
         ...shortcutItems('progress-panel', 'Fortschritt'),
         ...shortcutItems('worktree-tree', 'Arbeitskopien-Stammbaum…'),
+        { label: 'Harnesses & Modelle…', click: menuAction('harness-settings') },
         { type: 'separator' },
         ...shortcutItems('handoff', 'Übergabe an anderes Terminal…'),
         ...shortcutItems('browser-pick', 'Element im Browser kommentieren'),
@@ -849,6 +1009,7 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(() => {
     const dataDir = app.getPath('userData');
+    appDataDir = dataDir;
     projects = createProjectStore(path.join(dataDir, 'projects.json'));
     presets = createPresetStore(path.join(dataDir, 'presets.json'));
     sessions = createSessionStore(path.join(dataDir, 'session'));
@@ -883,7 +1044,31 @@ if (!app.requestSingleInstanceLock()) {
     try { captureSettings = memory.getSettings(); } catch (err) { console.error('Memory nicht verfügbar:', err.message); }
     memoryLaunch = createMemoryLaunch({ dataDir, memory, agentProfile, readProfile: scope => settings.readProfile(scope) });
     memoryCapture = createMemoryCapture({ memory: { getSettings: () => captureSettings, checkpoint: (...args) => memory.checkpoint(...args) }, onError: reportMemoryError });
-    launchContext = createLaunchContextService({ dataDir, worktrees, decorateCommand: options => agentProfile.decorateCommand(options), readMemory: id => memoryLaunch.context(id) });
+    // Harness catalog, detection, model sources, keychain and endpoint profiles (IPC §2).
+    keychain = createKeychain({});
+    endpointStore = createEndpointStore({ file: path.join(dataDir, 'endpoints.json'), keychain });
+    try { harnessCatalog = createHarnessCatalog({ userFile: path.join(dataDir, 'harnesses.json') }); }
+    catch (err) {
+      // A damaged own catalog stays untouched on disk; the built-in entries keep working.
+      console.error('Eigene Harnesses nicht lesbar:', err.message);
+      harnessCatalog = createHarnessCatalog({});
+    }
+    harnessDetect = createHarnessDetect({ catalog: harnessCatalog, env: process.env });
+    modelSources = createModelSources({
+      catalog: harnessCatalog, endpoints: endpointStore,
+      // Model queries run the binary found by detection (login PATH) directly, never a shell.
+      run: async (binary, argv, options) => {
+        const entry = harnessCatalog.list().find((item) => item.binary === binary);
+        const [found] = entry ? await harnessDetect.detect(entry.id) : [];
+        if (!found || !found.installed || !found.path) throw new Error('CLI nicht gefunden.');
+        return execFileAsync(found.path, argv, { ...options, env: process.env });
+      },
+    });
+    launchContext = createLaunchContextService({
+      dataDir, worktrees, decorateCommand: options => agentProfile.decorateCommand(options), readMemory: id => memoryLaunch.context(id),
+      harnessCatalog,
+      buildLaunch: ({ project, launch: spec, prompt }) => buildHarnessStart(project.id, spec, { prompt }),
+    });
     settings = createSettingsService({ dataDir, loadsAtStart: (scope) => agentProfile.isEnabled(scope) });
     hotkeys = createHotkeyStore({ filePath: path.join(dataDir, 'hotkeys.json') });
     workspaceTemplates = createWorkspaceTemplateStore({ filePath: path.join(dataDir, 'workspace-templates.json') }); // F08

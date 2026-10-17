@@ -9,6 +9,22 @@
   // „?“-Link zur Hilfe (gemeinsamer Zugang in help-panel.js); ohne Hilfe-Panel bleibt er weg.
   const helpLink = (key, opts) => (typeof window !== 'undefined' && window.DeckHelp && window.DeckHelp.linkFor ? window.DeckHelp.linkFor(key, opts) : null);
 
+  // Claude Code and Codex are always offered (legacy context start). Further catalog
+  // harnesses appear when installed, confirmed and able to take a start prompt; Kimi never.
+  const BASE_PROVIDERS = [{ id: 'claude', label: 'Claude Code', endpointTypes: ['anthropic', 'ollama'] }, { id: 'codex', label: 'Codex', endpointTypes: ['openai', 'ollama'] }];
+  function providerList(entries) {
+    const list = BASE_PROVIDERS.map((base) => {
+      const entry = Array.isArray(entries) && entries.find((item) => item && item.id === base.id);
+      return entry ? { id: base.id, label: entry.label || base.label, endpointTypes: Array.isArray(entry.endpointTypes) ? entry.endpointTypes : [] } : { ...base };
+    });
+    for (const entry of Array.isArray(entries) ? entries : []) {
+      if (!entry || typeof entry.id !== 'string' || list.some((item) => item.id === entry.id)) continue;
+      if (entry.id === 'kimi' || !entry.installed || !entry.canPrompt || entry.evidence === 'unconfirmed') continue;
+      list.push({ id: entry.id, label: String(entry.label || entry.id), endpointTypes: Array.isArray(entry.endpointTypes) ? entry.endpointTypes : [] });
+    }
+    return list;
+  }
+
   function createController({ api, launch, onChange = () => {}, notify = () => {} }) {
     let generation = 0;
     let state = { opened: false, busy: false, loading: false };
@@ -29,10 +45,14 @@
       state = {
         opened: true, project, busy: false, loading: true, step: 'edit', error: '',
         provider: 'claude', folder: preset, workspaceId: preset === 'existing' ? workspaceId : '', workspaces: [],
+        providers: providerList(null), endpoints: [], model: '', endpointId: '',
         branch: '', baseRef: 'HEAD', task: '', scope: '', acceptance: '',
         preview: null, text: '', creationWarning: '', createdBase: '', createdWorkspaceId: '',
       };
       emit();
+      // Harness catalog and endpoint profiles (optional): loaded once per opening, never blocking.
+      const harnessLoad = api.harness && api.endpoints
+        ? Promise.all([api.harness.list(), api.endpoints.list()]).catch(() => [null, []]) : Promise.resolve([null, []]);
       try {
         const items = await api.worktrees.list(project.id);
         if (!current(token)) return false;
@@ -49,7 +69,22 @@
       if (!current(token)) return false;
       state.loading = false;
       emit();
+      // Further harnesses join the list when detection answers; Claude/Codex are usable at once.
+      harnessLoad.then(([entries, endpoints]) => {
+        if (!current(token)) return;
+        state.providers = providerList(entries);
+        state.endpoints = Array.isArray(endpoints) ? endpoints.filter((ep) => ep && typeof ep.id === 'string') : [];
+        if (state.endpointId && !endpointsFor(state.provider).some((ep) => ep.id === state.endpointId)) state.endpointId = '';
+        emit();
+      });
       return true;
+    }
+
+    // Endpoint profiles whose type the chosen harness supports.
+    function endpointsFor(providerId) {
+      const item = state.providers && state.providers.find((entry) => entry.id === providerId);
+      const types = item ? item.endpointTypes : [];
+      return (state.endpoints || []).filter((ep) => types.includes(ep.type));
     }
 
     function close() {
@@ -60,8 +95,10 @@
 
     function update(field, value) {
       if (!state.opened || state.busy || state.loading) return false;
-      if (!['provider', 'folder', 'workspaceId', 'branch', 'baseRef', 'task', 'scope', 'acceptance', 'text'].includes(field)) return false;
-      if (field === 'provider' && !['claude', 'codex'].includes(value)) return false;
+      if (!['provider', 'model', 'endpointId', 'folder', 'workspaceId', 'branch', 'baseRef', 'task', 'scope', 'acceptance', 'text'].includes(field)) return false;
+      if (field === 'provider' && !state.providers.some((item) => item.id === value)) return false;
+      if (field === 'endpointId' && value !== '' && !endpointsFor(state.provider).some((ep) => ep.id === value)) return false;
+      if (field === 'provider' && state.endpointId && !endpointsFor(value).some((ep) => ep.id === state.endpointId)) state.endpointId = '';
       if (field === 'folder' && !['new', 'project', 'existing'].includes(value)) return false;
       if (state[field] === value) return true;
       state[field] = value;
@@ -139,11 +176,15 @@
       const token = generation;
       state.busy = true; state.error = ''; emit();
       try {
-        const prepared = requireOK(await api.launch.prepare({
+        const request = {
           projectId: state.project.id, workspaceId: state.preview.workspaceId || null,
           provider: state.provider, text: state.text,
           expectedHead: state.preview.head, expectedCwd: state.preview.cwd, expectedBranch: state.preview.branch,
-        }), 'Der Start konnte nicht vorbereitet werden.');
+        };
+        // Model and endpoint only when chosen: Claude/Codex without them keep the original start.
+        if (state.model.trim()) request.model = state.model.trim();
+        if (state.endpointId) request.endpointId = state.endpointId;
+        const prepared = requireOK(await api.launch.prepare(request), 'Der Start konnte nicht vorbereitet werden.');
         if (!current(token)) return false;
         const result = await launch({ project: state.project, provider: state.provider, prepared });
         if (!current(token)) return false;
@@ -158,7 +199,7 @@
       }
     }
 
-    return { open, close, update, preview, back, start, getState: () => state };
+    return { open, close, update, preview, back, start, endpointsFor, getState: () => state };
   }
 
   function create({ document: doc, api, notify, launch }) {
@@ -180,6 +221,8 @@
     const button = (name, text, primary = false) => el('button', { id: id(name), type: 'button', class: primary ? 'btn-primary' : 'btn-small', text });
     const provider = field('provider', 'Agent', 'select');
     for (const [value, label] of [['claude', 'Claude Code'], ['codex', 'Codex']]) provider.input.append(el('option', { value, text: label }));
+    const model = field('model', 'Modell (optional)', 'input', { placeholder: 'Standard des CLI', spellcheck: 'false' });
+    const endpoint = field('endpoint', 'Endpunkt (optional)', 'select');
     const folder = field('folder', 'Arbeitsordner', 'select');
     for (const [value, label] of [['new', 'Neue Arbeitskopie für diese Aufgabe'], ['project', 'Projektordner verwenden'], ['existing', 'Vorhandene Arbeitskopie verwenden']]) folder.input.append(el('option', { value, text: label }));
     const workspace = field('workspace', 'Vorhandene Arbeitskopie', 'select');
@@ -199,8 +242,9 @@
     const cancel = button('cancel', 'Abbrechen');
     const newFolder = el('div', { class: 'agent-launch-columns' }, [branch.label, base.label]);
     const edit = el('div', { id: id('edit') }, [
-      el('div', { class: 'agent-launch-columns' }, [provider.label, folder.label]), workspace.label, newFolder,
-      el('p', { class: 'agent-launch-note', text: 'Kontextstart für Claude Code und Codex. Kimi bleibt im Schnellstart verfügbar.' }),
+      el('div', { class: 'agent-launch-columns' }, [provider.label, folder.label]),
+      el('div', { class: 'agent-launch-columns' }, [model.label, endpoint.label]), workspace.label, newFolder,
+      el('p', { class: 'agent-launch-note', text: 'Kontextstart für Claude Code, Codex und installierte Harnesses mit belegtem Startauftrag. Kimi bleibt im Schnellstart verfügbar.' }),
       el('p', { class: 'agent-launch-note', text: 'Eine Git-Arbeitskopie (Worktree) trennt die Dateien. Nicht gesicherte Änderungen im Projektordner werden nicht automatisch übernommen. Ports und Datenbanken bleiben gemeinsam.' }),
       task.label, scope.label, acceptance.label,
     ]);
@@ -215,6 +259,8 @@
     ]);
     doc.body.append(dialog);
     let listSignature = '';
+    let providerSignature = '';
+    let endpointSignature = '';
     let focusStep = '';
     let renderedPreview = null;
 
@@ -242,7 +288,19 @@
         workspace.input.replaceChildren(el('option', { value: '', text: 'Bitte auswählen …' }), ...state.workspaces.map((ws) =>
           el('option', { value: ws.workspaceId, text: `${ws.branch || 'ohne Branch'} · ${ws.cwd}` })));
       }
-      for (const [input, value] of [[provider.input, state.provider], [folder.input, state.folder], [workspace.input, state.workspaceId],
+      const providerSig = JSON.stringify(state.providers || []);
+      if (providerSig !== providerSignature) {
+        providerSignature = providerSig;
+        provider.input.replaceChildren(...(state.providers || []).map((item) => el('option', { value: item.id, text: item.label })));
+      }
+      const usable = controller.endpointsFor(state.provider);
+      const endpointSig = JSON.stringify(usable.map((ep) => [ep.id, ep.label]));
+      if (endpointSig !== endpointSignature) {
+        endpointSignature = endpointSig;
+        endpoint.input.replaceChildren(el('option', { value: '', text: 'Standard des CLI' }), ...usable.map((ep) => el('option', { value: ep.id, text: ep.label })));
+      }
+      endpoint.label.hidden = !usable.length;
+      for (const [input, value] of [[provider.input, state.provider], [model.input, state.model], [endpoint.input, state.endpointId], [folder.input, state.folder], [workspace.input, state.workspaceId],
         [branch.input, state.branch], [base.input, state.baseRef], [task.input, state.task], [scope.input, state.scope], [acceptance.input, state.acceptance], [context.input, state.text]]) {
         if (input.value !== value) input.value = value;
         input.disabled = state.busy || state.loading;
@@ -276,7 +334,7 @@
       }
     }
     const controller = createController({ api, launch, notify, onChange: paint });
-    for (const [control, key] of [[provider.input, 'provider'], [folder.input, 'folder'], [workspace.input, 'workspaceId'], [branch.input, 'branch'], [base.input, 'baseRef'], [task.input, 'task'], [scope.input, 'scope'], [acceptance.input, 'acceptance'], [context.input, 'text']]) {
+    for (const [control, key] of [[provider.input, 'provider'], [model.input, 'model'], [endpoint.input, 'endpointId'], [folder.input, 'folder'], [workspace.input, 'workspaceId'], [branch.input, 'branch'], [base.input, 'baseRef'], [task.input, 'task'], [scope.input, 'scope'], [acceptance.input, 'acceptance'], [context.input, 'text']]) {
       control.addEventListener(control.tagName === 'SELECT' ? 'change' : 'input', () => controller.update(key, control.value));
     }
     prepare.addEventListener('click', () => controller.preview());

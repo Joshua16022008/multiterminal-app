@@ -226,4 +226,4 @@ button:disabled { opacity: .4; cursor: not-allowed; }
    Der Branch-Chip behält am längsten Platz, der Start-Chip weicht zuerst (kann ganz verschwinden). */
 .tile-head .acct-chip:not(.wt-chip):not(.launch-chip):has(~ .wt-chip:not([hidden])) { max-width: 24%; flex-shrink: 3; }
 .tile-head .acct-chip.wt-chip { max-width: 34%; flex-shrink: 1; }
-.tile-head .acct-chip.launch-chip { max-width: 22%; flex-shrink: 6; }
+.tile-head .acct-chip.launch-chip { max-width: 26%; min-width: 7ch; flex-shrink: 4; }

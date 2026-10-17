@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { sanitizeNativeSession } = require('./agent-session-service'); // F02
+const { sanitizeLaunch } = require('./launch-spec');
 
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const MAX_TERMINALS = 30;
@@ -62,6 +63,20 @@ function sanitizeTerminal(t) {
   if (ns) out.nativeSession = ns;
   // F10: verknüpfte Second-Brain-Aufgabe (nur die ID; Titel/Status werden live gelesen)
   if (validId(t.secondBrainTodoId)) out.secondBrainTodoId = t.secondBrainTodoId;
+  // Harness start: only the public whitelist { harnessId, model?, endpointId? } is kept.
+  // The finished line (environment, keychain lookup, prompt) is rebuilt in main on resume
+  // and never stored. An invalid value keeps the tile but marks it, so it opens without an
+  // agent start instead of silently falling back to another provider.
+  if (t.launch !== undefined && t.launch !== null) {
+    const launch = sanitizeLaunch(t.launch);
+    out.command = null;
+    out.resumeCommand = null;
+    if (launch) out.launch = launch; else out.launchInvalid = true;
+  } else if (t.launchInvalid === true) {
+    out.command = null;
+    out.resumeCommand = null;
+    out.launchInvalid = true;
+  }
   return out;
 }
 

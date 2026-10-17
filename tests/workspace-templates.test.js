@@ -75,3 +75,14 @@ test('Startplan respektiert abgewählte Häkchen und führt ohne Befehl nie etwa
   assert.equal(plan[0].command, 'claude');
   assert.equal(plan[1].run, false);
 });
+
+test('previewModel/startPlan: Harness-Schnellstart behält den öffentlichen Start statt einer leeren Shell', () => {
+  const M = require('../src/renderer/workspace-templates.js');
+  const presets = [{ id: 'h1', label: 'H', command: null, harnessId: 'opencode', model: 'a/b', endpointId: 'e1', secret: 'x' }];
+  const preview = M.previewModel({ tiles: [{ title: 'H', presetId: 'h1' }] }, { presets });
+  assert.deepEqual(preview.items[0].launch, { harnessId: 'opencode', model: 'a/b', endpointId: 'e1' });
+  assert.equal(preview.items[0].kind, 'agent');
+  const plan = M.startPlan(preview, [true]);
+  assert.equal(plan[0].run, true);
+  assert.deepEqual(plan[0].launch, { harnessId: 'opencode', model: 'a/b', endpointId: 'e1' });
+});

@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "aider",
+  "label": "Aider",
+  "binary": "aider",
+  "kind": "tui",
+  "evidence": "doc",
+  "verifiedWith": "2026-10-17: offizielle Aider-Modell-Dokumentation im Rechercheplan",
+  "docsUrl": "https://aider.chat/docs/llms/openrouter.html",
+  "install": [
+    { "method": "manual", "display": "https://aider.chat/docs/install.html" }
+  ],
+  "start": [
+    "aider"
+  ],
+  "model": {
+    "args": [
+      "--model",
+      "{model}"
+    ],
+    "format": "name",
+    "static": [],
+    "query": null
+  },
+  "resume": null,
+  "prompt": null,
+  "endpoints": {},
+  "profileInjection": null,
+  "supportsHooks": false,
+  "accounts": null
+}

@@ -1,0 +1,27 @@
+.harness-panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.harness-panel h3, .harness-panel h4 { margin: 0; }
+.harness-panel .settings-note { margin: 4px 0; }
+.harness-catalog { display: grid; gap: 12px; }
+.harness-card, .harness-editor, .harness-own, .harness-confirm { border: 1px solid var(--border, #353b48); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.harness-heading, .harness-actions, .harness-install, .harness-endpoint, .harness-check { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.harness-heading h4 { margin-right: auto; }
+.harness-heading a { color: var(--accent, #90b8ff); }
+.harness-badge { padding: 2px 6px; border: 1px solid var(--border, #353b48); border-radius: 4px; color: var(--muted, #a0a8b8); font-size: 11px; }
+.harness-badge.installed, .harness-badge.evidence-local { color: var(--green, #91d1a0); }
+.harness-badge.evidence-unconfirmed, .harness-badge.evidence-third-party { color: var(--yellow, #dfbf7c); }
+.harness-path, .harness-install code, .harness-endpoint code { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+.harness-install { padding-top: 8px; border-top: 1px solid var(--border, #353b48); }
+.harness-install code { flex-basis: 100%; user-select: text; }
+.harness-model-row { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; }
+.harness-field { display: flex; flex: 1 1 170px; flex-direction: column; gap: 5px; min-width: 0; font-size: 12px; }
+.harness-field input, .harness-field select, .harness-field textarea { box-sizing: border-box; width: 100%; min-width: 0; border: 1px solid var(--border, #353b48); border-radius: 5px; padding: 7px 8px; color: var(--text, #dbe0e9); background: var(--bg, #181c25); font: inherit; }
+.harness-field textarea { resize: vertical; font-family: ui-monospace, monospace; }
+.harness-field input:focus, .harness-field select:focus, .harness-field textarea:focus { outline: 2px solid var(--accent, #90b8ff); outline-offset: 1px; }
+.harness-panel button:disabled, .harness-panel input:disabled, .harness-panel select:disabled { opacity: .5; }
+.harness-endpoints { display: flex; flex-direction: column; gap: 12px; }
+.harness-endpoint { padding: 9px 0; border-bottom: 1px solid var(--border, #353b48); }
+.harness-endpoint code { flex: 1 1 200px; }
+.harness-endpoint span { font-size: 12px; color: var(--muted, #a0a8b8); }
+.harness-confirm { border-color: var(--yellow, #dfbf7c); }
+.harness-check { font-size: 12px; }
+@media (max-width: 650px) { .harness-model-row > .harness-field { flex-basis: 100%; } .harness-heading h4 { flex-basis: 100%; } }

@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "id": "codex",
+  "label": "Codex",
+  "binary": "codex",
+  "kind": "tui",
+  "evidence": "local",
+  "verifiedWith": "2026-10-17: codex-cli 0.163.0 --help/resume --help; eigener Provider mit wire_api=responses nur per features list konfigurationsgeprüft",
+  "docsUrl": "https://developers.openai.com/codex/config-reference/",
+  "install": [
+    {
+      "method": "npm",
+      "display": "npm install -g @openai/codex"
+    }
+  ],
+  "start": [
+    "codex"
+  ],
+  "model": {
+    "args": [
+      "-m",
+      "{model}"
+    ],
+    "format": "name",
+    "static": [],
+    "query": null
+  },
+  "resume": {
+    "last": [
+      "codex",
+      "resume",
+      "--last"
+    ],
+    "byId": [
+      "codex",
+      "resume",
+      "{sessionId}"
+    ]
+  },
+  "prompt": {
+    "args": [
+      "--",
+      "{prompt}"
+    ]
+  },
+  "endpoints": {
+    "openai": {
+      "args": [
+        "-c",
+        "model_provider=\"mt\"",
+        "-c",
+        "model_providers.mt.name=\"Multiterminal\"",
+        "-c",
+        "model_providers.mt.base_url=\"{baseUrl}\"",
+        "-c",
+        "model_providers.mt.env_key=\"MT_ENDPOINT_KEY\"",
+        "-c",
+        "model_providers.mt.wire_api=\"responses\""
+      ],
+      "secretEnv": "MT_ENDPOINT_KEY"
+    },
+    "ollama": {
+      "args": [
+        "--oss",
+        "--local-provider",
+        "ollama"
+      ]
+    }
+  },
+  "profileInjection": "codex-developer",
+  "supportsHooks": false,
+  "accounts": "codex",
+  "fullAccess": [
+    "--dangerously-bypass-approvals-and-sandbox"
+  ],
+  "detect": {
+    "version": {
+      "argv": [
+        "codex",
+        "--version"
+      ]
+    }
+  }
+}

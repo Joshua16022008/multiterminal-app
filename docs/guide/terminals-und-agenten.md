@@ -25,7 +25,7 @@ Ein Schnellstart ist ein Befehl, der in einem neuen Terminal automatisch getippt
 | Codex | `codex` | `codex resume --last` |
 | Kimi Code | `kimi` | `kimi --continue` |
 
-Diese Programme musst du selbst installieren (siehe [Erste Schritte](erste-schritte.md#voraussetzungen)).
+Diese Programme musst du selbst installieren (siehe [Erste Schritte](erste-schritte.md#voraussetzungen)). Weitere Agenten, Modelle und Anbieter-Endpunkte legst du als Schnellstart an: siehe [Harnesses und Modelle](harnesses-modelle.md) und [Endpunkte](endpunkte.md).
 
 ### Eigene Schnellstarts
 
@@ -77,7 +77,7 @@ Eine Anzeige „Status unbekannt“ heißt: Die App hat kein Signal erhalten. Si
 
 ## Agent mit Kontext starten
 
-Im Menü „▾“ gibt es „Agent mit Kontext starten…“. Der Dialog bereitet einen Auftrag vor, bevor der Agent loslegt. Er unterstützt Claude Code und Codex. Kimi startest du über den normalen Schnellstart.
+Im Menü „▾“ gibt es „Agent mit Kontext starten…“. Der Dialog bereitet einen Auftrag vor, bevor der Agent loslegt. Er unterstützt Claude Code und Codex sowie installierte Harnesses mit belegtem Startauftrag (siehe [Harnesses und Modelle](harnesses-modelle.md)). Kimi startest du über den normalen Schnellstart.
 
 1. Wähle den **Anbieter** und den **Arbeitsordner**: „Neue Arbeitskopie für diese Aufgabe“ (mit neuem Branch und optionaler Ausgangsbasis), „Projektordner verwenden“ oder „Vorhandene Arbeitskopie verwenden“. Was Arbeitskopien sind, steht unter [Worktrees](worktrees.md).
 2. Beschreibe die **Aufgabe** (Pflichtfeld). Optional: **Erlaubte Dateien und Grenzen** und **Woran erkennst du das Ergebnis?**
