@@ -1028,18 +1028,31 @@
       node.replaceChildren(h('div', { class: 'guide-table-wrap' }, h('table', { class: 'guide-table' },
         h('thead', null, h('tr', null, h('th', { text: 'Aktion' }), h('th', { text: 'Tastenkürzel' }))), h('tbody', null, ...rows))));
     }
+    let helpReturn = null;
     if (window.DeckHelp && api.guide) {
       D.help = window.DeckHelp.create({
         document, api: api.guide, h, palette: window.DeckCommandPalette, storage,
         hooks: { hotkeys: hotkeyTable },
-        onToggle: (open) => {
+        onToggle: (open, meta) => {
           $('btn-help').classList.toggle('on', open);
           $('btn-help').setAttribute('aria-expanded', String(open));
           if (open) {
+            // Kam der Aufruf von einem „?“-Link, merken wir uns das Panel, aus dem er kam, und öffnen es beim Schließen der Hilfe wieder.
+            helpReturn = meta && meta.viaLink ? {
+              ports: D.portsPanel.isOpen(), diff: D.diffPanel.isOpen(), settings: D.settingsPanel.isOpen(),
+              tree: Boolean(D.worktreeTree && D.worktreeTree.isOpen()), accounts: D.accountsPanel.isOpen(),
+            } : null;
             showPorts(false); showAttention(false); if (D.diffPanel.isOpen()) showDiff(false);
             showSettings(false); if (D.worktreeTree) D.worktreeTree.close();
             $('btn-accounts').classList.toggle('on', D.accountsPanel.toggle(false));
             $('btn-progress').classList.toggle('on', D.progressPanel.toggle(false));
+          } else if (helpReturn) {
+            const back = helpReturn; helpReturn = null;
+            if (back.settings) showSettings(true);
+            else if (back.tree && D.openTree) D.openTree(activeProject());
+            else if (back.diff) showDiff(true);
+            else if (back.ports) showPorts(true);
+            else if (back.accounts) $('btn-accounts').classList.toggle('on', D.accountsPanel.toggle(true));
           }
           requestAnimationFrame(() => panesOf(S.activeId).forEach((p) => p.refit()));
         },

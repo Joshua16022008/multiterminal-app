@@ -1,8 +1,8 @@
 'use strict';
 /* F09: editierbare Übergabe an eine bewusst gewählte andere Kachel. Eingefügt wird ausschließlich über die Promptvorschau (F06). */
 (function () {
-  // „?“-Link zur Hilfe; ohne Hilfe-Panel (Tests, Node) bleibt er weg.
-  const helpLink = (key) => (typeof window !== 'undefined' && window.DeckApp && window.DeckApp.help && window.DeckApp.help.link ? window.DeckApp.help.link(key) : null);
+  // „?“-Link zur Hilfe (gemeinsamer Zugang in help-panel.js); ohne Hilfe-Panel bleibt er weg.
+  const helpLink = (key, opts) => (typeof window !== 'undefined' && window.DeckHelp && window.DeckHelp.linkFor ? window.DeckHelp.linkFor(key, opts) : null);
   const EXCERPT_LINES = 60;
   const EXCERPT_MAX = 4000;
   // Steuerzeichen außer Zeilenumbruch würde die Promptvorschau ablehnen; sie werden hier entfernt.
@@ -59,7 +59,9 @@
   function createHandoffDialog({ document: doc, h, getSource, getTargets, getProjectId, readProgress, promptDraft, notify }) {
     let source = null, targets = [], openToken = 0;
 
-    const title = h('h2', { id: 'handoff-title', text: 'Übergabe an anderes Terminal' }, ...[helpLink('uebergaben-und-anhaenge')].filter(Boolean));
+    const title = h('h2', { id: 'handoff-title', text: 'Übergabe an anderes Terminal' });
+    const titleRow = h('div', { class: 'handoff-head', style: 'display:flex;align-items:center;gap:8px' }, title);
+    let helpEl = null;
     const sourceEl = h('p', { class: 'handoff-source' });
     const select = h('select', { id: 'handoff-target' });
     const noTargets = h('p', { class: 'handoff-note', hidden: true, text: 'Keine andere laufende Kachel in diesem Projekt.' });
@@ -80,7 +82,7 @@
     const cancel = h('button', { type: 'button', class: 'btn-small', text: 'Abbrechen', onclick: () => dialog.close() });
     const submit = h('button', { type: 'button', id: 'handoff-submit', class: 'btn-primary', text: 'In Promptvorschau', onclick: submitHandoff });
     const dialog = h('dialog', { id: 'handoff-dialog', class: 'handoff', 'aria-labelledby': 'handoff-title' },
-      title, sourceEl,
+      titleRow, sourceEl,
       h('div', { class: 'handoff-field' }, h('label', { for: 'handoff-target', text: 'Ziel-Kachel' }), select),
       noTargets, goal.node, results.node, files.node, questions.node, next.node,
       progressLabel, progressNote, progressText, error,
@@ -133,6 +135,11 @@
       for (const f of [goal, results, files, questions, next]) f.area.value = '';
       results.area.value = selectionOf(pane);
       error.hidden = true; error.textContent = '';
+      if (!helpEl) {
+        // Der Dialog entsteht vor dem Hilfe-Panel; der Link kommt daher erst beim Öffnen dazu.
+        helpEl = helpLink('uebergaben-und-anhaenge', { beforeOpen: () => dialog.close() });
+        if (helpEl) titleRow.append(helpEl);
+      }
       dialog.showModal();
       goal.area.focus();
       await loadProgress();

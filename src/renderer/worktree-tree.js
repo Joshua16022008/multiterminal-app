@@ -3,6 +3,8 @@
    Arbeitet gegen den Vertrag in docs/dev/ipc-contract.md, nicht gegen eine Layout-Implementierung. */
 (function () {
   'use strict';
+  // „?“-Link zur Hilfe (gemeinsamer Zugang in help-panel.js); ohne Hilfe-Panel bleibt er weg.
+  const helpLink = (key, opts) => (typeof window !== 'undefined' && window.DeckHelp && window.DeckHelp.linkFor ? window.DeckHelp.linkFor(key, opts) : null);
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const CARD_GAP = 10;
   const FALLBACK = { x0: 28, y0: 36, row: 168 };
@@ -305,7 +307,7 @@
         h('div', { class: 'wtv-head' },
           h('button', { class: 'btn-small', type: 'button', text: '← Zurück zu den Terminals', onclick: close }),
           h('strong', { class: 'wtv-title', text: 'Arbeitskopien' + (project && project.name ? ' · ' + project.name : '') }),
-          (typeof window !== 'undefined' && window.DeckApp && window.DeckApp.help && window.DeckApp.help.link ? window.DeckApp.help.link('worktrees') : null),
+          helpLink('worktrees'),
           h('span', { class: 'spacer' }),
           h('button', { class: 'btn-small', type: 'button', text: '⟳ Aktualisieren', disabled: loading, title: 'Stammbaum neu einlesen', onclick: load })),
         h('p', { class: 'wtv-note', text: BRANCH_HINT }),

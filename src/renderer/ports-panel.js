@@ -2,8 +2,8 @@
 (function () {
   'use strict';
   const POLL_MS = 3000;
-  // „?“-Link zur Hilfe; ohne Hilfe-Panel (Tests, alte Seite) bleibt er weg.
-  const helpLink = (key) => (typeof window !== 'undefined' && window.DeckApp && window.DeckApp.help && window.DeckApp.help.link ? window.DeckApp.help.link(key) : null);
+  // „?“-Link zur Hilfe (gemeinsamer Zugang in help-panel.js); ohne Hilfe-Panel bleibt er weg.
+  const helpLink = (key, opts) => (typeof window !== 'undefined' && window.DeckHelp && window.DeckHelp.linkFor ? window.DeckHelp.linkFor(key, opts) : null);
 
   function createPortsPanel({ root, h, api, getLabel, onJump, onBrowser, onClose,
     schedule = setTimeout, cancel = clearTimeout, pollMs = POLL_MS }) {

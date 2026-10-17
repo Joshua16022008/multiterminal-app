@@ -1,8 +1,8 @@
 /* F04: Projektänderungen lesend ansehen; ausgewählte Zeilen mit Kommentar gehen über die Promptvorschau (F06). */
 (function () {
   'use strict';
-  // „?“-Link zur Hilfe; ohne Hilfe-Panel (Tests, alte Seite) bleibt er weg.
-  const helpLink = (key) => (typeof window !== 'undefined' && window.DeckApp && window.DeckApp.help && window.DeckApp.help.link ? window.DeckApp.help.link(key) : null);
+  // „?“-Link zur Hilfe (gemeinsamer Zugang in help-panel.js); ohne Hilfe-Panel bleibt er weg.
+  const helpLink = (key, opts) => (typeof window !== 'undefined' && window.DeckHelp && window.DeckHelp.linkFor ? window.DeckHelp.linkFor(key, opts) : null);
   const MAX_EXCERPT_LINES = 40;
   const MAX_EXCERPT_CHARS = 3000;
   const STATUS = { M: 'geändert', A: 'neu', D: 'gelöscht', R: 'umbenannt', C: 'kopiert', T: 'Typ geändert', U: 'Konflikt' };
