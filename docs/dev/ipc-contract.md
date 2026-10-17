@@ -27,9 +27,20 @@ createWorktreeTree({ run = runGit, worktrees /* createWorktreeService-Instanz */
 ```
 
 `src/main/worktree-service.js` bekommt zusätzlich:
-- `adopt({ projectId, cwd })` → Datensatz `{ workspaceId, projectId, cwd, branch, managed:false, createdAt }`
+- `adopt({ projectId, cwd, projectPath? })` → Datensatz `{ workspaceId, projectId, cwd, branch, managed:false, createdAt }`
   (nur wenn `cwd` in `git worktree list` des Projekts steht; idempotent per realpath).
-- `remove(workspaceId)`: bei `managed:false` **nur Datensatz vergessen**, nie `git worktree remove`.
+  **Integriert (Etappe 3a):** Der Dienst kennt den Repo-Ordner nicht aus `projectId` allein. Main übergibt
+  `createWorktreeService({ dataDir, getProjectPath: (id) => projects.get(id)?.path })`; ein optionales
+  `projectPath` im Argument hätte Vorrang, wird vom IPC-Handler aber bewusst **nicht** aus dem Renderer
+  übernommen. Ohne beides liefert `adopt` `{ ok:false, error:'Projekt unbekannt.' }`.
+- `remove(workspaceId, projectPath)`: bei `managed:false` **nur Datensatz vergessen**, nie `git worktree remove`;
+  Rückgabe dann `{ ok:true, forgotten:true }` (kein `branchKept`), bei `managed:true` unverändert
+  `{ ok:true, branchKept }`. Der Renderer darf sich bei verknüpften Kopien nicht auf `branchKept` verlassen.
+  Die Sperre `sessionUsesWorkspace` in `main.js` greift **auch** vor dem Vergessen eines `managed:false`-Datensatzes.
+- Nach erfolgreichem `adopt` und `remove` ruft Main `worktreeTree.invalidate(projectId)` (der Cache erkennt neue
+  Datensätze zusätzlich selbst über ihre Signatur).
+- Factory tatsächlich: `createWorktreeTree({ worktrees, appDir /* <dataDir>/worktrees */, run?, homeDir? })`;
+  `run` und `homeDir` haben Defaults, `invalidate(projectId)` ist zusätzlich exportiert. Aufrufer erhalten Kopien.
 
 | Kanal | `deck.worktrees.*` | Rückgabe |
 |---|---|---|
@@ -47,7 +58,7 @@ Tree = {
     kind: 'project' | 'managed' | 'linked' | 'external',  // linked = managed:false-Datensatz
     origin: 'app' | 'codex' | 'agent-worktrees' | 'other',
     workspaceId /* string|null */,
-    forkPoint /* sha|null */, ahead /* number|null */, behind, merged /* bool|null */,
+    forkPoint /* sha|null */, forkTime /* ms|null, Zusatzfeld */, ahead /* number|null */, behind, merged /* bool|null */,
     last: { sha, subject, time, author } | null,
     changes /* number|null */,
   }],
@@ -55,11 +66,34 @@ Tree = {
 // isGit:false → nodes: [], trunk: null. Fehler je Knoten → betroffene Felder null.
 ```
 
+Präzisierungen aus der Integration (Etappe 3a):
+- Zeitfelder (`generatedAt`, `trunk.time`, `last.time`, `forkTime`) sind Millisekunden; die Ansicht akzeptiert auch Sekunden.
+- `forkTime` (Zusatzfeld): Commit-Zeit des Gabelpunkts. `tree-layout.js` sortiert Äste nach `forkTime`
+  (neueste zuerst), dann `forkPoint`, dann `last.time`; Geschwister mit gleichem Gabelpunkt verlassen den Stamm
+  auf gleicher Höhe.
+- `merged`: `true` nur, wenn der Branch im Stamm enthalten ist **und nicht** auf der Stammspitze steht. Ein frischer
+  Branch (ahead 0, behind 0) hat `merged:false`. Am Projekt-/Stammknoten: `ahead=0, behind=0, forkPoint=head, merged=null`.
+- Prunable-Knoten: `ahead/behind/merged/last/changes/forkPoint/forkTime = null`. Detached: `branch=null, detached=true`.
+  Bare-Einträge entfallen, höchstens 100 Knoten. Nur `isGit:true`-Ergebnisse werden 10 s gecacht.
+- Stamm ist der Knoten mit `kind:'project'` (realpath = Projektordner); fehlt er (Projekt in einem Unterordner
+  des Repos), nimmt das Layout den ersten Knoten.
+
 Renderer `src/renderer/worktree-tree.js`: `window.DeckWorktreeTree.create({ document, api, h, notify })`
 → `{ open({ project, focusId }), close(), isOpen(), refresh() }`; Callbacks per `setHooks({ panesFor(nodeId),
 onJump(paneId), onOpenTerminal(project, workspace|null), onStartAgent(project, workspaceId|null),
 onShowDiff(project, workspaceId|null), onAdopt(project, node) })`.
-`src/renderer/tree-layout.js`: `window.DeckTreeLayout = { layout(tree) → {width,height,nodes:[{id,x,y}],edges:[{from,to,d}]}, colorFor(branch) → '#rrggbb' }`.
+`src/renderer/tree-layout.js`: `window.DeckTreeLayout = { layout(tree, options?) → {width,height,trunk,nodes:[{id,x,y}],edges:[{from,to,d}]}, colorFor(branch) → '#rrggbb', PALETTE }`.
+
+Präzisierungen aus der Integration (Etappe 3a):
+- `create(...)` nimmt zusätzlich optional `errText`, `confirm`, `now`, `layout`, `rootId` (Standard `#worktree-view`) sowie den Hook `onClose()`.
+- `panesFor(nodeId)` liefert Einträge der Form `{ id /* paneId */, title, activity: 'working'|'waiting'|'idle'|null }`.
+  `app.js` merkt sich den zuletzt geladenen Baum und ordnet zu: Kacheln mit `desc.workspaceId === node.workspaceId`;
+  Kacheln ohne `workspaceId` hängen am Knoten mit `kind:'project'`.
+- `layout(tree, { heights, gap })`: optionale gemessene Kartenhöhen je Knoten-ID. Die Ansicht rendert einmal,
+  misst die Karten und legt neu aus, damit Kurven und Punkte an ihren Karten enden. `trunk` = `{x,y1,y2,d}|null`.
+- `onBranchClick` aus dem Kachelkopf öffnet den Stammbaum mit `focusId = desc.workspaceId` bzw. der ID des Projektknotens.
+- „Änderungen ansehen“ setzt im Diff-Panel einen einmaligen Kontext dieses Asts (`workspaceId|null`), der beim
+  Schließen des Panels oder beim Klick auf den Diff-Knopf verfällt.
 
 Kachelkopf (`terminal-pane.js`, Paket K): Hook `hooks.onBranchClick(pane)`, Methode
 `pane.refreshBranch()`, Slot `pane.setLaunchInfo({ harnessLabel, model, endpointLabel } | null)`.
@@ -117,6 +151,18 @@ je Endpunkt (`isolateClaudeConfig: true` Standard), dann keine Kontowahl; Hooks 
 Renderer `src/renderer/harness-panel.js`: `window.DeckHarnessPanel.create({ document, api, h, notify, guard })`
 → `{ el, render() }`; wird vom Integrator als Bereich in `settings-panel.js` eingehängt.
 
+Bestätigte Klarstellungen (Integrator, Etappe 3a, 17.10.2026):
+- **(a) Erkennung:** `createHarnessDetect` darf die Login-Shell zum Auflösen des Programms nutzen, und zwar
+  ausschließlich in der Form `execFile('/bin/zsh', ['-lc', 'command -v -- "$1"', 'mt-harness-detect', binary])`.
+  Der Programmname geht als Positionsparameter `$1` hinein, nie in den Befehlstext; Timeout ≤ 10 s. Das ist die
+  einzige erlaubte Ausnahme von „keine Shell“ in diesem Vertrag.
+- **(b) Memory-Adapter:** Der Memory-Adapter ist projektgebunden und wird der `createHarnessLaunch`-Factory
+  übergeben (Main erzeugt die Factory je Projekt bzw. reicht den projektgebundenen Adapter durch). Die
+  IPC-Signatur bleibt unverändert: `terminals:create` mit `launch: { harnessId, model?, endpointId? }`.
+- **(c) Modellquellen:** `createModelSources({ catalog, run, fetch, endpoints? })` bekommt optional den
+  Endpunkt-Speicher (`createEndpointStore`-Instanz), um `baseUrl`/Typ eines `endpointId` aufzulösen. Ohne
+  `endpoints` liefert eine Abfrage mit `endpointId` `{ models: [], source, error }` statt einer Exception.
+
 ## 3. User Guide (Claude-Strang G)
 
 ```js
@@ -131,7 +177,22 @@ createGuideService({ dir /* docs/guide */ }) → { index() → GuideIndex, read(
 Renderer: `window.DeckGuideMarkdown = { render(markdown, { h, onLink }) → DocumentFragment, anchor(text) }`
 (nie `innerHTML`); `window.DeckHelp.create({ document, api, h, palette })` → `{ open(slug?, anchor?), close(), link(key) → HTMLElement }`.
 
+Präzisierungen aus der Integration (Etappe 3a):
+- `guide.index()` und `guide.read()` sind **synchron** implementiert; `handle()` reicht den Wert durch, im
+  Renderer kommen trotzdem Promises an. `read` mit Nicht-String-Slug wird als `''` behandelt → `null`.
+- `dir`: `path.join(__dirname, '..', '..', 'docs', 'guide')` – gilt in der Entwicklung und im Paket (`asar: false`).
+  `scripts/build.js` packt von `docs/` nur `docs/guide` ein; `docs/dev` und `docs/superpowers` bleiben draußen.
+- `DeckHelp.create` nimmt zusätzlich `storage`, `markdown`, `hooks: { hotkeys(node) }`, `onToggle(open)`,
+  `onExternal(href)`, `restoreFocus()`; Zusatz-API `toggle(force)`, `isOpen()`, `el`. `app.js` hängt `help.el`
+  in `#content` ein und füllt den Platzhalter `<!-- mt:hotkeys -->` mit der aktuellen Tastenbelegung.
+- Die Suche umfasst Titel, `keywords` und Überschriften (kein Volltext).
+
 ## 4. Hotkeys und Menü (nur Integrator)
 
-Neue Aktionen: `worktree-tree` (Standard `Cmd+Shift+Y`), `help` (Standard `Cmd+Shift+H`).
+Neue Aktionen: `worktree-tree` (Standard `Cmd+Shift+Y`, Linux/Windows `Ctrl+Alt+Y`), `help` (Standard
+`Cmd+Shift+H`, Linux/Windows `Ctrl+Alt+H`). `reserved()` gibt dafür `Cmd/Ctrl+Shift+H` und `Cmd/Ctrl+Shift+Y`
+frei; `Cmd+H`, `Cmd+Alt+H` (Ausblenden), `Cmd/Ctrl+Y` (Redo/Yank) und `Cmd/Ctrl+Shift+Z` bleiben reserviert.
+Menü: „Funktionen → Arbeitskopien-Stammbaum…“ und ein natives Hilfe-Menü (`role:'help'`) mit
+„Multiterminal-Hilfe“, beide über `shortcutItems`. Topbar: `#btn-tree` („⑂ n“, nur bei Git-Projekten sichtbar,
+n = alle Arbeitskopien inkl. Projektordner) rechts von `#ws-title`/`#counter`, `#btn-help` („?“) vor dem Menü-Knopf.
 Befehlspalette: „Stammbaum / Arbeitskopien“, „Hilfe öffnen“, „Harnesses & Modelle“.
