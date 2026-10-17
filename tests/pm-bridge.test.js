@@ -115,7 +115,7 @@ test('send legt nur eine Vorschau an: richtige Kachel, bereinigter Text, Antwort
   const ctx = await setup();
   try {
     const r = await ask(ctx.sock, { token: ctx.tokens.p1, cmd: 'send', args: { terminal: 'Backend', text: 'Mach\x1b[31m das\r\n\tund dies\x07' } });
-    assert.deepStrictEqual(r, { ok: true, result: 'In Promptvorschau von Backend gelegt – wartet auf Bestätigung durch Joshua.' });
+    assert.deepStrictEqual(r, { ok: true, result: 'In Promptvorschau von Backend gelegt – wartet auf Bestätigung durch den Nutzer.' });
     assert.deepStrictEqual(ctx.sends, [{ projectId: 'p1', terminalId: 't1', text: 'Mach[31m das\nund dies' }]);
   } finally { await cleanup(ctx); }
 });

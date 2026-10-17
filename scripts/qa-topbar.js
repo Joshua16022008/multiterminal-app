@@ -6,6 +6,8 @@ const os = require('node:os');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const { app } = require('electron');
+// Live-Diktat gibt es nur in der Entwicklerversion (edition.json / MULTITERMINAL_EDITION_FILE).
+const dictation = require('../src/main/edition').features.dictation;
 const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'mt-topbar-qa-'));
 const home = path.join(root, 'home'), data = path.join(root, 'data'), project = path.join(root, 'project');
 for (const dir of [home, data, project, path.join(data, 'session')]) fs.mkdirSync(dir, { recursive: true });
@@ -47,7 +49,7 @@ app.on('browser-window-created', (_event, win) => {
     };
     try {
       await wait(() => run('window.DeckApp?.state.activeId === "qa" && !!window.DeckApp.state.panes.get("qa")?.length'), 'app ready');
-      const actions = ['btn-settings', 'btn-attention', 'btn-diff', 'btn-ports', 'btn-live', 'btn-accounts', 'btn-progress', 'btn-handoff'];
+      const actions = ['btn-settings', 'btn-attention', 'btn-diff', 'btn-ports', ...(dictation ? ['btn-live'] : []), 'btn-accounts', 'btn-progress', 'btn-handoff'];
       assert.deepEqual(await run('[...document.querySelectorAll("#topbar button")].filter(b=>b.getClientRects().length).map(b=>b.id)'), ['btn-plus', 'btn-menu', 'btn-help', 'btn-toolbar']); // ⑂ fehlt: kein Git-Projekt
       assert.equal(await run('document.getElementById("btn-menu").parentElement === document.getElementById("btn-plus").parentElement'), true);
       assert.equal(await hidden('btn-settings'), false);
@@ -81,14 +83,16 @@ app.on('browser-window-created', (_event, win) => {
         await open(); await click(button);
         await wait(() => hidden(panel), panel + ' closes');
       }
-      await open();
-      const liveBefore = await run('document.getElementById("btn-live").getAttribute("aria-pressed")');
-      await click('btn-live');
-      assert.notEqual(await run('document.getElementById("btn-live").getAttribute("aria-pressed")'), liveBefore);
+      if (dictation) {
+        await open();
+        const liveBefore = await run('document.getElementById("btn-live").getAttribute("aria-pressed")');
+        await click('btn-live');
+        assert.notEqual(await run('document.getElementById("btn-live").getAttribute("aria-pressed")'), liveBefore);
+      } else assert.equal(await run('!!document.getElementById("btn-live")'), false, 'no live dictation switch without dictation');
       await open(); await click('btn-handoff');
       assert.equal(await run('!!document.getElementById("handoff-title")'), true);
       await run('document.querySelector("dialog.handoff").close()');
-      console.log('PASS settings, attention, diff, ports, accounts, progress, live dictation, handoff');
+      console.log('PASS settings, attention, diff, ports, accounts, progress, ' + (dictation ? 'live dictation' : 'no live dictation') + ', handoff');
 
       await open(); await click('btn-menu');
       assert.equal(await hidden('menu'), false);

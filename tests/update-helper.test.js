@@ -8,6 +8,10 @@ const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
 const helperSource = path.resolve(__dirname, '../src/main/update-helper.sh');
 const mac = process.platform === 'darwin';
+// The helper gets the edition's identity from the environment, as update-service starts it.
+const { helperEnv } = require('../src/main/update-service');
+Object.assign(process.env, helperEnv());
+const BUNDLE_ID = process.env.MT_UPDATE_BUNDLE_ID;
 async function fixture(t) {
   const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'mt-update-helper-')));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
@@ -15,7 +19,7 @@ async function fixture(t) {
   await fs.mkdir(path.join(stage, 'Multiterminal.app', 'Contents'), { recursive: true });
   await fs.mkdir(target);
   await fs.writeFile(path.join(target, 'old'), 'previous');
-  const plist = '<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>de.joshua.multiterminal</string><key>CFBundleShortVersionString</key><string>0.2.0</string></dict></plist>';
+  const plist = `<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>${BUNDLE_ID}</string><key>CFBundleShortVersionString</key><string>0.2.0</string></dict></plist>`;
   await fs.writeFile(path.join(stage, 'Multiterminal.app', 'Contents', 'Info.plist'), plist);
   const hash = crypto.createHash('sha256').update(plist).digest('hex');
   await fs.writeFile(path.join(stage, 'CHECKSUMS.sha256'), `${hash}  Multiterminal.app/Contents/Info.plist\n`);

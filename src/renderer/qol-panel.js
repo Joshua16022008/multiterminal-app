@@ -1,4 +1,4 @@
-/* Komfort-Einstellungen: Aktivitätsmarkierung, Animation, Sortierung und Aufgaben-Chip ein-/ausschalten.
+/* Komfort-Einstellungen: Aktivitätsmarkierung, Animation, Sortierung (und, falls vorhanden, Aufgaben-Chip) ein-/ausschalten.
    Gespeichert pro Gerät im Browser-Speicher; ohne Speicher gelten die Standards. */
 (function () {
   'use strict';
@@ -10,8 +10,13 @@
     ['markIdle', 'Markierung „Inaktiv“', 'Dezente Linie bei bereiten Agenten'],
     ['animate', 'Animationen', 'Aus: Markierungen bleiben, bewegen sich aber nicht'],
     ['autoSort', 'Automatisch sortieren', 'Wartet vorne, arbeitet Mitte, inaktiv hinten'],
-    ['taskChip', '„+ Aufgabe“ im Kachelkopf', 'Verknüpfung mit Second-Brain-Aufgaben'],
   ];
+  // Schalter für den Aufgaben-Chip bringt task-link.js mit, und nur, wenn die Funktion an ist.
+  function items() {
+    const w = typeof window !== 'undefined' ? window : null;
+    const extra = w && w.DeckTaskLink && w.DeckTaskLink.QOL_ITEM && w.deck && w.deck.secondBrain ? [w.DeckTaskLink.QOL_ITEM] : [];
+    return [...ITEMS, ...extra];
+  }
   // Body-Klassen, die eine ausgeschaltete Option sichtbar umsetzen.
   const OFF_CLASS = { markWorking: 'qol-no-working', markWaiting: 'qol-no-waiting', markIdle: 'qol-no-idle', animate: 'qol-static', taskChip: 'qol-no-taskchip' };
 
@@ -55,7 +60,7 @@
           h('button', { class: 'ib', text: '✕', title: 'Schließen', onclick: () => toggle(false) })),
         row('Agentenstatus empfangen', status ? 'Voraussetzung für Markierung und Sortierung. Wirkt ab dem nächsten Claude-Start: laufende Sitzungen einmal beenden (/exit) und fortsetzen.' : 'Aus: keine Markierung und keine Sortierung möglich',
           status, async (v) => { await setStatus(v); render(); }, 'qol-status'),
-        ...ITEMS.map(([key, label, hint]) => row(label, hint, settings[key], (v) => set(key, v), 'qol-' + key)),
+        ...items().map(([key, label, hint]) => row(label, hint, settings[key], (v) => set(key, v), 'qol-' + key)),
         h('div', { class: 'qol-foot' }, h('button', { class: 'btn-small', text: 'Standard wiederherstellen', onclick: () => { settings = { ...DEFAULTS }; save(storage, settings); apply(); render(); } })));
     }
     function toggle(force) {
@@ -73,7 +78,7 @@
     return { toggle, get: () => ({ ...settings }), set, render, isOpen: () => open };
   }
 
-  const api = { createQolPanel, normalize, bodyClasses, load, DEFAULTS, ITEMS, KEY };
+  const api = { createQolPanel, normalize, bodyClasses, load, items, DEFAULTS, ITEMS, KEY };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.DeckQol = api;
 })();

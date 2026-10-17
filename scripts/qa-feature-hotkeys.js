@@ -1,13 +1,16 @@
 'use strict';
 
 // Hotkeys der neuen Funktionen: echter Renderer/Preload/Main/PTY, Menüeinträge wie beim Tastendruck ausgelöst.
-// Second Brain zeigt auf einen geschlossenen lokalen Port, damit die echte Web-App nie angesprochen wird.
+// Die Aufgabenquelle der Entwicklerversion zeigt auf einen geschlossenen lokalen Port, damit die echte Web-App nie angesprochen wird.
+// Läuft in beiden Editionen (MULTITERMINAL_EDITION_FILE): ohne Aufgaben-Funktion fehlen Menüpunkt und Kürzel ganz.
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const net = require('node:net');
 const assert = require('node:assert/strict');
 const { app, Menu } = require('electron');
+const edition = require('../src/main/edition');
+const taskLabel = edition.features.taskLink ? edition.devFeatures.TASK_LINK_LABEL + '…' : null;
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mt-feature-hotkeys-qa-'));
 const home = path.join(root, 'home'), data = path.join(root, 'data'), project = path.join(root, 'p');
 for (const d of [home, data, project, path.join(data, 'session')]) fs.mkdirSync(d, { recursive: true });
@@ -50,8 +53,8 @@ app.on('browser-window-created', (_e, win) => {
       const mac = process.platform === 'darwin';
       assert.deepEqual(accel, mac ? {
         'Änderungen': 'Cmd+Shift+D', 'Ports': 'Cmd+Shift+P', 'Rückmeldungen': 'Cmd+Shift+J', 'Fortschritt': 'Cmd+Shift+G',
-        'Arbeitskopien-Stammbaum…': 'Cmd+Shift+Y',
-        'Übergabe an anderes Terminal…': 'Cmd+Shift+U', 'Element im Browser kommentieren': 'Cmd+Shift+E', 'Second-Brain-Aufgabe der Kachel…': 'Cmd+Shift+L',
+        'Arbeitskopien-Stammbaum…': 'Cmd+Shift+Y', 'Harnesses & Modelle…': null,
+        'Übergabe an anderes Terminal…': 'Cmd+Shift+U', 'Element im Browser kommentieren': 'Cmd+Shift+E', ...(taskLabel ? { [taskLabel]: 'Cmd+Shift+L' } : {}),
         'Aufbau starten…': 'Cmd+Shift+B', 'Aufbau speichern…': 'Cmd+Alt+B', 'Komfort…': 'Cmd+Shift+K', 'Automatisch sortieren an/aus': 'Cmd+Shift+S',
         'Lagebild im Projektmanager ein/aus': 'Cmd+\\',
       } : accel);
@@ -88,15 +91,17 @@ app.on('browser-window-created', (_e, win) => {
       stage = 'tile actions';
       press('Element im Browser kommentieren');
       await until(async () => (await notices()).some((n) => n.includes('Mini-Browser dieser Kachel ist nicht offen')), 'browser closed message');
-      press('Second-Brain-Aufgabe der Kachel…');
+      if (taskLabel) {
+      press(taskLabel);
       await until(() => run("!!document.querySelector('.task-pop')"), 'task popover');
       await until(() => run("document.querySelector('.task-pop').textContent.includes('nicht erreichbar')"), 'closed port: not reachable', 8000);
       await run("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");
       await run("document.querySelector('.task-pop .ib')?.click()");
       await run("window.DeckApp.qol.set('taskChip', false)");
-      press('Second-Brain-Aufgabe der Kachel…');
+      press(taskLabel);
       await until(async () => (await notices()).some((n) => n.includes('Aufgaben-Chip ist ausgeschaltet')), 'chip off message');
       await run("window.DeckApp.qol.set('taskChip', true)");
+      } else assert.equal(await run("document.querySelectorAll('.task-chip').length"), 0, 'no task chip without the feature');
 
       stage = 'palette and settings list the actions';
       press('Befehlspalette…');
@@ -105,7 +110,8 @@ app.on('browser-window-created', (_e, win) => {
       for (const label of ['Änderungen anzeigen', 'Übergabe an anderes Terminal', 'Aufbau starten', 'Komfort-Einstellungen']) assert.ok(pal.includes(label), 'palette misses ' + label);
       await run("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); document.activeElement && document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");
       const bindings = await run('window.deck.hotkeys.get().then(r=>Object.keys(r.bindings))');
-      for (const id of ['diff-panel', 'ports-panel', 'attention-panel', 'progress-panel', 'handoff', 'browser-pick', 'task-link', 'layout-start', 'layout-save', 'qol-panel', 'auto-sort', 'pm-situation']) assert.ok(bindings.includes(id), 'binding missing: ' + id);
+      for (const id of ['diff-panel', 'ports-panel', 'attention-panel', 'progress-panel', 'handoff', 'browser-pick', ...(taskLabel ? ['task-link'] : []), 'layout-start', 'layout-save', 'qol-panel', 'auto-sort', 'pm-situation']) assert.ok(bindings.includes(id), 'binding missing: ' + id);
+      if (!taskLabel) assert.ok(!bindings.includes('task-link'), 'task-link binding without the feature');
 
       stage = 'screenshot';
       press('Komfort…'); await until(() => visible('qol-panel'), 'menu for screenshot');
@@ -118,6 +124,6 @@ app.on('browser-window-created', (_e, win) => {
   });
 });
 closedPort().then((port) => {
-  process.env.MULTITERMINAL_SECOND_BRAIN_URL = 'http://127.0.0.1:' + port;
+  process.env.MULTITERMINAL_TASKS_URL = 'http://127.0.0.1:' + port;
   require('../src/main/main');
 });

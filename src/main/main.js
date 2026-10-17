@@ -27,10 +27,9 @@ const { createWorktreeTree } = require('./worktree-tree');
 const { createGuideService } = require('./guide-service');
 const { createLaunchContextService } = require('./launch-context');
 const { createAttachmentStore, MAX_IMAGE_BYTES } = require('./attachment-store');
-const { createDictation } = require('./dictation');
+const edition = require('./edition'); // dev/public; developer-only parts come from edition.devFeatures
 const { createPortService } = require('./port-service');
 const { createDiffService } = require('./diff-service'); // F04
-const { createSecondBrainTasks, resolveBaseUrl } = require('./second-brain-tasks'); // F10
 const { createBrowserBridge, MAX_SOCKET_PATH_BYTES } = require('./browser-bridge');
 const { createBrowserControl, createConsoleStore, createRendererLink } = require('./browser-control');
 const mtBrowserCli = require('./mt-browser-cli');
@@ -53,10 +52,9 @@ const execFileAsync = require('util').promisify(require('child_process').execFil
 
 const BROWSER_PARTITION = 'persist:minibrowser';
 const QUIT_FLUSH_TIMEOUT_MS = 2000;
-// New clones go next to the existing projects; a plain folder in the home directory otherwise.
-const SECOND_BRAIN_PROJECTS = path.join(
-  os.homedir(), 'Desktop', 'Second_Brain', 'Arbeit', 'Ai Builds and projekts', 'Claude_code_tasks', 'Projekte',
-);
+// Developer-only features (null in the public edition); each part also needs its switch.
+const devFeatures = edition.devFeatures;
+const HOME_DIR = os.homedir();
 
 let mainWindow = null;
 let quitting = false;
@@ -181,7 +179,7 @@ function attentionLog(...args) {
 function notifyAgent(entry) {
   const s = agentSettings.get();
   const project = projects.get(String(entry.projectId));
-  const title = project ? project.name : 'Multiterminal';
+  const title = project ? project.name : edition.appName;
   const body = attentionLabels.providerLabel(entry.provider) + ': ' + attentionLabels.stateLabel(entry);
   attentionLog('notify', JSON.stringify({ terminalId: entry.terminalId, state: entry.state, desktop: s.desktopNotification, sound: s.sound }));
   if (s.desktopNotification && Notification.isSupported()) {
@@ -343,10 +341,12 @@ function registerIpc() {
     const { cwd } = await diffCwd(projectId, workspaceId);
     return diffs.fileDiff(cwd, file, mode);
   });
-  // F10: Second Brain nur lesend, ausschließlich im Main-Prozess (kein Origin-Header)
-  const secondBrain = createSecondBrainTasks({ baseUrl: resolveBaseUrl(process.env.MULTITERMINAL_SECOND_BRAIN_URL) });
-  handle('secondBrain:listTasks', () => secondBrain.list());
-  handle('secondBrain:getTask', (id) => secondBrain.get(id));
+  // F10: verknüpfte Aufgaben, nur lesend und nur in der Entwicklerversion (dev-features.js)
+  if (devFeatures && edition.features.taskLink) {
+    const tasks = devFeatures.createTasks(process.env);
+    handle('secondBrain:listTasks', () => tasks.list());
+    handle('secondBrain:getTask', (id) => tasks.get(id));
+  }
   handle('ports:list', () => ports.list());
   handle('ports:resolve', async (id) => {
     if (typeof id !== 'string' || id.length > 512) return { ok: false, error: 'Ungültiger Port.' };
@@ -554,7 +554,7 @@ function registerIpc() {
   });
 
   handle('terminals:kill', (id) => {
-    dictation.cancelFor(String(id));
+    if (dictation) dictation.cancelFor(String(id));
     forgetTerminal(id);
     if (browserBridge) browserBridge.unregister(String(id));
     ptys.kill(id);
@@ -726,13 +726,18 @@ function registerIpc() {
   handle('endpoints:remove', (id) => endpointStore.remove(String(id)));
   handle('endpoints:templates', () => endpointStore.templates());
 
+  // Edition for the preload, synchronously before the page builds anything (no flicker).
+  ipcMain.on('edition:get', (event) => { event.returnValue = fromApp(event) ? edition.publicInfo() : null; });
+
   // User Guide (read-only; the service checks every slug against its index).
   handle('guide:index', () => guide.index());
   handle('guide:read', (slug) => guide.read(typeof slug === 'string' ? slug : ''));
 
-  handle('dictation:start', (terminalId, live) => dictation.start(terminalId, live));
-  handle('dictation:stop', () => dictation.stop());
-  handle('dictation:cancel', () => dictation.cancel());
+  if (dictation) {
+    handle('dictation:start', (terminalId, live) => dictation.start(terminalId, live));
+    handle('dictation:stop', () => dictation.stop());
+    handle('dictation:cancel', () => dictation.cancel());
+  }
 
   // F05: Element im Mini-Browser der eigenen Kachel markieren; die Oberfläche nennt ihre Kachel-ID.
   const feedbackId = (id) => { if (typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(id)) throw new Error('Ungültige Kachel.'); return id; };
@@ -747,7 +752,7 @@ function registerIpc() {
 function finishQuit() {
   if (quitting) return;
   quitting = true;
-  dictation.shutdown();
+  if (dictation) dictation.shutdown();
   if (memoryCapture) memoryCapture.dispose();
   ptys.killAll();
   if (browserBridge) browserBridge.stop().catch(() => {});
@@ -827,7 +832,7 @@ function buildMenu() {
         { type: 'separator' },
         ...shortcutItems('handoff', 'Übergabe an anderes Terminal…'),
         ...shortcutItems('browser-pick', 'Element im Browser kommentieren'),
-        ...shortcutItems('task-link', 'Second-Brain-Aufgabe der Kachel…'),
+        ...(edition.features.taskLink ? shortcutItems('task-link', devFeatures.TASK_LINK_LABEL + '…') : []),
         { type: 'separator' },
         ...shortcutItems('layout-start', 'Aufbau starten…'),
         ...shortcutItems('layout-save', 'Aufbau speichern…'),
@@ -851,7 +856,7 @@ function buildMenu() {
     },
     { role: 'windowMenu' },
     // macOS adds its menu search field to the help menu by itself.
-    { role: 'help', submenu: [...shortcutItems('help', 'Multiterminal-Hilfe')] },
+    { role: 'help', submenu: [...shortcutItems('help', edition.appName + '-Hilfe')] },
   ]));
 }
 
@@ -940,7 +945,7 @@ function createWindow() {
     minHeight: 560,
     backgroundColor: '#14161a',
     titleBarStyle: 'hiddenInset',
-    title: 'Multiterminal',
+    title: edition.appName,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -1090,7 +1095,7 @@ if (!app.requestSingleInstanceLock()) {
       scriptPath: usageScript,
     });
     git = createGitService({
-      cloneDir: fs.existsSync(SECOND_BRAIN_PROJECTS) ? SECOND_BRAIN_PROJECTS : path.join(os.homedir(), 'Multiterminal'),
+      cloneDir: edition.cloneDir(HOME_DIR),
     });
     ptys = createPtyManager({
       onData: (id, data) => {
@@ -1132,13 +1137,16 @@ if (!app.requestSingleInstanceLock()) {
     });
     browserReady = browserReady.then(() => pm.startBridge(dataDir)).catch((err) => console.error('mt-pm nicht verfügbar:', err.message));
 
-    const testAudio = process.env.MULTITERMINAL_DICTATION_TEST_AUDIO;
-    dictation = createDictation({
-      serviceDir: path.join(SECOND_BRAIN_PROJECTS, 'Flüsterflow'),
-      write: (id, data) => ptys.write(id, data),
-      notify: (event) => sendToWindow('dictation:event', event),
-      extraArgs: testAudio ? ['--audio-file', testAudio] : [],
-    });
+    // Diktat nur in der Entwicklerversion (dev-features.js); sonst bleibt dictation null.
+    if (devFeatures && edition.features.dictation) {
+      const testAudio = process.env.MULTITERMINAL_DICTATION_TEST_AUDIO;
+      dictation = devFeatures.createDictation({
+        home: HOME_DIR,
+        write: (id, data) => ptys.write(id, data),
+        notify: (event) => sendToWindow('dictation:event', event),
+        extraArgs: testAudio ? ['--audio-file', testAudio] : [],
+      });
+    }
 
     // Websites in a mini browser get no camera, microphone, location etc.
     session.fromPartition(BROWSER_PARTITION).setPermissionRequestHandler((_wc, _permission, callback) => callback(false));

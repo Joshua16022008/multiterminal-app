@@ -1,0 +1,44 @@
+{
+  "comment": "Nur Entwicklerversion. Was der öffentliche Export weglässt bzw. umschreibt; Erläuterung in docs/dev/edition.md.",
+  "devOnly": [
+    "src/main/dev-features.js",
+    "src/main/dictation.js",
+    "src/main/second-brain-tasks.js",
+    "src/renderer/dictation.js",
+    "src/renderer/task-link.js",
+    "src/renderer/task-link.css",
+    "scripts/qa-task-link.js",
+    "scripts/export-manifest.json",
+    "tests/dictation.test.js",
+    "tests/second-brain-tasks.test.js",
+    "tests/task-link.test.js",
+    "tests/private-terms.js",
+    "tests/edition-dev.test.js",
+    "scripts/export.js",
+    "tests/export.test.js",
+    "export/"
+  ],
+  "internal": [
+    "AGENTEN_AUFTRAEGE.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "ENTWICKLUNGSPLAN.md",
+    "FEATURE_RECHERCHE.md",
+    "PROGRESS.md",
+    "PROJECT_STATUS.md",
+    "UPDATE_VERSION.md",
+    "WORK_IN_PROGRESS.md",
+    "docs/dev/",
+    "docs/superpowers/"
+  ],
+  "stripLines": {
+    "src/renderer/index.html": "dev-only"
+  },
+  "publicEdition": {
+    "edition": "public",
+    "appName": "Multiterminal",
+    "bundleId": "io.github.multiterminal"
+  },
+  "overlay": "export/overlay",
+  "identityConfirmed": false
+}

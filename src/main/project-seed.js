@@ -21,17 +21,17 @@ Dieses Projekt ist neu und befindet sich in der **Planungsphase**.
 
 ## Deine Aufgabe
 
-1. Besprich das Projekt mit Joshua im Gespräch: Ziel, Nutzer, Kernfunktionen, Technik, Umfang und Reihenfolge.
+1. Besprich das Projekt mit dem Nutzer im Gespräch: Ziel, Nutzer, Kernfunktionen, Technik, Umfang und Reihenfolge.
    Stelle Rückfragen, jeweils nur wenige auf einmal. Schlage Optionen mit einer Empfehlung vor.
 2. Halte den Stand laufend in \`PLAN.md\` fest (Ziel, Entscheidungen, Umfang, Schritte, offene Fragen).
-3. Baue **nichts**, bevor Joshua ausdrücklich sagt, dass der Plan steht.
-4. Sobald Joshua zustimmt: Lege das Projekt nach dem Plan an (Grundgerüst, \`README.md\`,
+3. Baue **nichts**, bevor der Nutzer ausdrücklich sagt, dass der Plan steht.
+4. Sobald der Nutzer zustimmt: Lege das Projekt nach dem Plan an (Grundgerüst, \`README.md\`,
    passende \`CLAUDE.md\`/\`AGENTS.md\` für die Bauphase, \`.gitignore\`) und committe es.
    Ersetze dabei diese Planungsanweisung durch Projektregeln für die Bauphase.
 
 ## Grenzen
 
-- Veröffentliche nichts auf GitHub und lege kein Repo an; das macht Joshua in der App.
+- Veröffentliche nichts auf GitHub und lege kein Repo an; das macht der Nutzer in der App.
 - Ändere nichts außerhalb dieses Ordners.
 `;
 }

@@ -6,20 +6,24 @@ const crypto = require('node:crypto');
 const { spawn, execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const run = promisify(execFile);
-const ID = 'de.joshua.multiterminal';
+const edition = require('./edition');
+// App identity of this edition (edition.json); the helper checks the same values.
+const ID = edition.bundleId;
+const BUNDLE = `${edition.appName}.app`;
+const MANIFEST_LINE = new RegExp(`^([a-fA-F0-9]{64})  (${BUNDLE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\/.+)$`);
 const within = (base, item) => item === base || item.startsWith(base + path.sep);
 async function plistValue(file, key) {
   return (await run('/usr/libexec/PlistBuddy', ['-c', `Print :${key}`, file])).stdout.trim();
 }
 async function validatePackage(folder, target, readPlist = plistValue) {
   const root = await fsp.realpath(folder);
-  const bundle = path.join(root, 'Multiterminal.app');
+  const bundle = path.join(root, BUNDLE);
   if (within(root, target) || within(target, root)) throw new Error('Update-Paket und installierte App überlappen.');
   if ((await fsp.lstat(bundle)).isSymbolicLink()) throw new Error('App-Bundle darf kein symbolischer Link sein.');
   const manifest = await fsp.readFile(path.join(root, 'CHECKSUMS.sha256'), 'utf8');
   const entries = new Map();
   for (const line of manifest.trimEnd().split('\n')) {
-    const match = /^([a-fA-F0-9]{64})  (Multiterminal\.app\/.+)$/.exec(line);
+    const match = MANIFEST_LINE.exec(line);
     if (!match || /[\x00-\x1f\\]/.test(match[2]) || match[2].split('/').some(p => p === '..' || p === '.' || !p) || entries.has(match[2])) throw new Error('Ungültige Prüfsummenliste.');
     entries.set(match[2], match[1].toLowerCase());
   }
@@ -49,12 +53,14 @@ async function validatePackage(folder, target, readPlist = plistValue) {
   if (!/^\d+\.\d+\.\d+(?:[-+][\w.-]+)?$/.test(version)) throw new Error('Ungültige App-Version.');
   return { packagePath: root, version, fileCount: count, manifestDigest: crypto.createHash('sha256').update(manifest).digest('hex') };
 }
+// Identity for update-helper.sh: expected bundle id and app name of this edition.
+function helperEnv() { return { MT_UPDATE_BUNDLE_ID: ID, MT_UPDATE_APP_NAME: edition.appName }; }
 function createUpdateService(options) {
   const { app, dialog, dataDir, getParentWindow = () => undefined } = options;
   const platform = options.platform || process.platform;
   const readPlist = options.readPlist || plistValue;
   const targetPath = options.targetPath || path.resolve(path.dirname(app.getPath('exe')), '..', '..');
-  const supported = platform === 'darwin' && app.isPackaged && path.basename(targetPath) === 'Multiterminal.app';
+  const supported = platform === 'darwin' && app.isPackaged && path.basename(targetPath) === BUNDLE;
   const resultFile = path.join(dataDir, 'updates', 'last-result.json');
   let busy = false;
   const selections = new Map();
@@ -79,7 +85,7 @@ function createUpdateService(options) {
     const selected = selections.get(token); selections.delete(token);
     let work, started = false;
     try {
-      const answer = await dialog.showMessageBox(parentWindow, { type: 'warning', title: 'Multiterminal aktualisieren', message: `Multiterminal ${app.getVersion()} → ${selected.version} installieren?`, detail: `Alle Terminals und Projektmanager-Agenten werden beendet. Die App wird danach neu gestartet.\n\nPaket: ${selected.packagePath}\nZiel: ${targetPath}`, buttons: ['Abbrechen', 'Installieren und neu starten'], defaultId: 0, cancelId: 0, noLink: true });
+      const answer = await dialog.showMessageBox(parentWindow, { type: 'warning', title: `${edition.appName} aktualisieren`, message: `${edition.appName} ${app.getVersion()} → ${selected.version} installieren?`, detail: `Alle Terminals und Projektmanager-Agenten werden beendet. Die App wird danach neu gestartet.\n\nPaket: ${selected.packagePath}\nZiel: ${targetPath}`, buttons: ['Abbrechen', 'Installieren und neu starten'], defaultId: 0, cancelId: 0, noLink: true });
       if (answer.response !== 1) return { ok: false, cancelled: true };
       const target = await fsp.realpath(targetPath);
       const current = await validatePackage(selected.packagePath, target, readPlist);
@@ -88,7 +94,7 @@ function createUpdateService(options) {
       work = await fsp.mkdtemp(path.join(path.dirname(target), '.multiterminal-update-'));
       await fsp.chmod(work, 0o700);
       const stage = path.join(work, 'package'); await fsp.mkdir(stage);
-      await (options.copyBundle || (async (source, dest) => { await run('/usr/bin/ditto', [source, dest]); }))(path.join(selected.packagePath, 'Multiterminal.app'), path.join(stage, 'Multiterminal.app'));
+      await (options.copyBundle || (async (source, dest) => { await run('/usr/bin/ditto', [source, dest]); }))(path.join(selected.packagePath, BUNDLE), path.join(stage, BUNDLE));
       await fsp.copyFile(path.join(selected.packagePath, 'CHECKSUMS.sha256'), path.join(stage, 'CHECKSUMS.sha256'));
       const staged = await validatePackage(stage, target, readPlist);
       if (staged.manifestDigest !== selected.manifestDigest || staged.version !== selected.version) throw new Error('Das kopierte Update-Paket wurde verändert.');
@@ -97,7 +103,7 @@ function createUpdateService(options) {
       const ready = path.join(work, 'ready');
       const launchHelper = options.launchHelper || ((args, log) => {
         const fd = fs.openSync(log, 'a', 0o600);
-        try { const child = spawn('/bin/bash', args, { detached: true, stdio: ['ignore', fd, fd] }); child.on('error', () => {}); child.unref(); return child; } finally { fs.closeSync(fd); }
+        try { const child = spawn('/bin/bash', args, { detached: true, stdio: ['ignore', fd, fd], env: { ...process.env, ...helperEnv() } }); child.on('error', () => {}); child.unref(); return child; } finally { fs.closeSync(fd); }
       });
       const child = launchHelper([helper, String(process.pid), stage, target, resultFile, ready, '60', '/usr/bin/open', '/bin/mv', selected.manifestDigest], path.join(work, 'update.log'));
       await (options.waitReady || (async () => {
@@ -136,4 +142,4 @@ function createUpdateService(options) {
   }
   return { select, install, status };
 }
-module.exports = { createUpdateService, validatePackage };
+module.exports = { createUpdateService, validatePackage, helperEnv };

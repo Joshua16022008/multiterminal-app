@@ -1,0 +1,5 @@
+{
+  "comment": "Edition exclusions and stripLines are inherited from scripts/export-manifest.json. No privacy exceptions.",
+  "exclude": ["scripts/install-update.sh", ".claude/", ".claude-flow/", ".gstack/", ".multiterminal/"],
+  "forbidden": ["Joshua", "/Users/", "Second_Brain", "Second Brain", "Second-Brain", "Flüsterflow", "Fluesterflow", "gulla", "de.joshua", "M4MegaDiva"]
+}

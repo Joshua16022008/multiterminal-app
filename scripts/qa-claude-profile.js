@@ -11,7 +11,8 @@ const { spawn } = require('node:child_process');
 const { createSettingsService } = require('../src/main/settings-service');
 const { createAgentProfile, shellQuote } = require('../src/main/agent-profile');
 
-const CLI = '/Users/joshua/.local/bin/claude';
+// Real claude CLI: MULTITERMINAL_QA_CLAUDE or the usual install location in the home folder.
+const CLI = process.env.MULTITERMINAL_QA_CLAUDE || path.join(os.homedir(), '.local', 'bin', 'claude');
 const LIMIT = 2 * 1024 * 1024;
 const requests = [];
 const children = new Set();

@@ -33,7 +33,7 @@ function make(over = {}) {
       { port: 5173, terminalId: null, projectId: 'p1', url: 'http://localhost:5173' },
     ] }) },
     readDocs: () => ({
-      projectStatus: '# Status\n\n## Nächster Schritt\n\nJoshua prüft den Build.\nZweite Zeile.\n\nAnderer Absatz.\n',
+      projectStatus: '# Status\n\n## Nächster Schritt\n\nDer Nutzer prüft den Build.\nZweite Zeile.\n\nAnderer Absatz.\n',
       workInProgress: '## Aktive Reservierungen\n\n### A\n- Status: in Arbeit\n\n### B\n- Status: abgeschlossen und geprüft\n\n### C\n- Status: pausiert\n',
       progress: 'P',
     }),
@@ -67,7 +67,7 @@ test('Lagebild aus Fakes: Kacheln, Arbeitskopien, Änderungen, Ports, Doku', asy
     { port: 3000, terminalId: 't1', url: 'http://localhost:3000' },
     { port: 5173, terminalId: null, url: 'http://localhost:5173' },
   ]);
-  assert.deepStrictEqual(s.docs, { nextStep: 'Joshua prüft den Build. Zweite Zeile.', activeReservations: 2 });
+  assert.deepStrictEqual(s.docs, { nextStep: 'Der Nutzer prüft den Build. Zweite Zeile.', activeReservations: 2 });
   assert.deepStrictEqual(s.manager, { running: true, resumed: true });
 });
 

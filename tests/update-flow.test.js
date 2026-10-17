@@ -16,7 +16,7 @@ test('PM update UI reaches verified staging only after native confirmation', asy
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const input = path.join(root, 'prepared update'), target = path.join(root, 'Multiterminal.app');
   const data = path.join(root, 'data');
-  const info = version => JSON.stringify({ CFBundleIdentifier: 'de.joshua.multiterminal', CFBundleShortVersionString: version });
+  const info = version => JSON.stringify({ CFBundleIdentifier: require('../src/main/edition').bundleId, CFBundleShortVersionString: version });
   for (const base of [target, path.join(input, 'Multiterminal.app')]) await fs.mkdir(path.join(base, 'Contents'), { recursive: true });
   await fs.writeFile(path.join(target, 'Contents/Info.plist'), info('0.2.0'));
   const next = info('0.3.0');

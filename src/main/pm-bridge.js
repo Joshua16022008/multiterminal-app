@@ -112,7 +112,7 @@ function createPmBridge({ socketPath, service, requestSend, requestTimeoutMs, ha
       throw new Error(err && err.message ? err.message : 'Promptvorschau nicht möglich.');
     }
     if (!answer || answer.ok !== true) throw new Error((answer && answer.error) || 'Promptvorschau nicht möglich.');
-    return `In Promptvorschau von ${target.title} gelegt – wartet auf Bestätigung durch Joshua.`;
+    return `In Promptvorschau von ${target.title} gelegt – wartet auf Bestätigung durch den Nutzer.`;
   }
 
   async function run(projectId, cmd, args) {

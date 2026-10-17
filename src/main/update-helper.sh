@@ -4,12 +4,16 @@ set -u
 umask 077
 owner="$1"; stage="$2"; target="$3"; result="$4"; ready="$5"; timeout="${6:-60}"
 open_command="${7:-/usr/bin/open}"; move_command="${8:-/bin/mv}"; expected_manifest="${9:-}"; process_command="${10:-/bin/ps}"
-work="${stage%/*}"; backup="$work/previous.app"; bundle="$stage/Multiterminal.app"
+# Identity of the edition (bundle id, app name) comes from the main process environment (update-service helperEnv).
+identity="${MT_UPDATE_BUNDLE_ID:-}"; app_name="${MT_UPDATE_APP_NAME:-Multiterminal}"
+name_pattern='^[A-Za-z0-9][A-Za-z0-9 ._-]{0,62}$'
+[[ "$app_name" =~ $name_pattern ]] || exit 2
+work="${stage%/*}"; backup="$work/previous.app"; bundle="$stage/$app_name.app"
 state() {
   # Fixed strings only: no user-controlled JSON interpolation.
   local code="$1" message
   case "$code" in
-    installed) message="Multiterminal wurde aktualisiert und der Neustart angefordert.";;
+    installed) message="$app_name wurde aktualisiert und der Neustart angefordert.";;
     waiting_for_exit) message="Die Aktualisierung wartet auf das Beenden der App.";;
     parent_timeout) message="Die App wurde nicht rechtzeitig beendet. Die bisherige App bleibt erhalten.";;
     target_running) message="Die App wird noch verwendet. Die bisherige App bleibt erhalten.";;
@@ -57,10 +61,10 @@ if [ -n "$expected_manifest" ]; then
   [ "${actual_manifest%% *}" = "$expected_manifest" ] || fail invalid_manifest
 fi
 # Complete file inventory must match the checksummed files, before shasum consumes paths.
-/usr/bin/awk 'length($1)!=64 || $1 !~ /^[0-9a-fA-F]+$/ || substr($0,65,2)!="  " {exit 1} {p=substr($0,67); if(p !~ /^Multiterminal.app\// || p ~ /(^|\/)\.\.?($|\/)/ || p ~ /\\/ || p ~ /\/\//) exit 1; print p}' CHECKSUMS.sha256 > "$work/expected" || fail invalid_manifest
+/usr/bin/awk -v prefix="$app_name.app/" 'length($1)!=64 || $1 !~ /^[0-9a-fA-F]+$/ || substr($0,65,2)!="  " {exit 1} {p=substr($0,67); if(index(p, prefix)!=1 || p ~ /(^|\/)\.\.?($|\/)/ || p ~ /\\/ || p ~ /\/\//) exit 1; print p}' CHECKSUMS.sha256 > "$work/expected" || fail invalid_manifest
 /usr/bin/sort "$work/expected" > "$work/expected.sorted"
 [ "$(/usr/bin/uniq -d "$work/expected.sorted" | /usr/bin/wc -l | /usr/bin/tr -d ' ')" = 0 ] || fail invalid_manifest
-/usr/bin/find Multiterminal.app -type f | LC_ALL=C /usr/bin/sort > "$work/actual"
+/usr/bin/find "$app_name.app" -type f | LC_ALL=C /usr/bin/sort > "$work/actual"
 LC_ALL=C /usr/bin/sort "$work/expected" > "$work/expected.sorted"
 /usr/bin/cmp -s "$work/expected.sorted" "$work/actual" || fail invalid_inventory
 # Framework aliases are allowed only when their fully resolved destination stays inside bundle.
@@ -77,7 +81,7 @@ while IFS= read -r link; do
   case "$resolved" in "$bundle"|"$bundle/"*) [ -e "$resolved" ] || fail invalid_symlink;; *) fail invalid_symlink;; esac
 done < <(/usr/bin/find "$bundle" -type l)
 /usr/bin/shasum -a 256 -c CHECKSUMS.sha256 >/dev/null 2>&1 || fail invalid_checksums
-[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$bundle/Contents/Info.plist")" = de.joshua.multiterminal ] || fail invalid_identity
+[ -n "$identity" ] && [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$bundle/Contents/Info.plist")" = "$identity" ] || fail invalid_identity
 [ -d "$work" ] || exit 1
 [ -f "$work/go" ] && [ ! -f "$work/cancelled" ] || fail start_cancelled
 version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$bundle/Contents/Info.plist") || fail invalid_version
