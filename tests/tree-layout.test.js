@@ -84,6 +84,20 @@ test('colorFor is stable, valid and falls back to a neutral', () => {
 test('every palette color is readable on light and dark backgrounds', () => {
   for (const c of PALETTE) {
     assert.ok(contrast(c, '#ffffff') >= 3, `${c} on white`);
-    assert.ok(contrast(c, '#111111') >= 3, `${c} on dark`);
+    for (const bg of ['#14161a', '#1a1d23', '#22262e']) assert.ok(contrast(c, bg) >= 3, `${c} on ${bg}`);
   }
+});
+
+test('branches with the same fork point leave the trunk at the same height', () => {
+  const l = layout({ nodes: [
+    { id: 'proj', kind: 'project', branch: 'main', last: { time: 1000 } },
+    { id: 'a', kind: 'managed', forkPoint: 'f1', forkTime: 500, last: { time: 900 } },
+    { id: 'b', kind: 'managed', forkPoint: 'f1', forkTime: 500, last: { time: 800 } },
+    { id: 'c', kind: 'managed', forkPoint: 'f0', forkTime: 100, last: { time: 950 } },
+  ] });
+  const startY = (id) => Number(l.edges.find((e) => e.to === id).d.split(' ')[2]);
+  assert.strictEqual(startY('a'), startY('b'));
+  assert.ok(startY('c') > startY('a'), 'older fork point sits lower on the trunk');
+  const y = (id) => l.nodes.find((n) => n.id === id).y;
+  assert.ok(y('a') < y('c') && y('b') < y('c'));
 });

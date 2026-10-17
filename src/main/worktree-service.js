@@ -218,7 +218,7 @@ function createWorktreeService({ dataDir, run = runGit, getProjectPath } = {}) {
       const existing = load().find((r) => r.projectId === projectId && real(r.cwd) === target);
       if (existing) return { ok: true, workspace: existing, existing: true };
 
-      const listed = await run(['worktree', 'list', '--porcelain'], repo);
+      const listed = await run(['worktree', 'list', '--porcelain'], repo, 10000);
       if (!listed.ok) return { ok: false, error: listed.stderr || 'Arbeitskopien nicht lesbar.' };
       const entry = parsePorcelain(listed.stdout).find((e) => real(e.path) === target);
       if (!entry) return { ok: false, error: 'Dieser Ordner ist bei Git keine Arbeitskopie des Projekts.' };
@@ -243,7 +243,11 @@ function createWorktreeService({ dataDir, run = runGit, getProjectPath } = {}) {
       // A linked working copy belongs to someone else: only forget the record,
       // never touch the folder or git's worktree registration.
       if (!rec.managed) {
-        save(load().filter((r) => r.workspaceId !== rec.workspaceId));
+        try {
+          save(load().filter((r) => r.workspaceId !== rec.workspaceId));
+        } catch (err) {
+          return { ok: false, error: `Zuordnung nicht gespeichert: ${err.message}` };
+        }
         return { ok: true, forgotten: true };
       }
       const cwd = real(rec.cwd);
@@ -254,7 +258,11 @@ function createWorktreeService({ dataDir, run = runGit, getProjectPath } = {}) {
         const r = await run(['worktree', 'remove', cwd], projectPath);
         if (!r.ok) return { ok: false, error: r.stderr || 'Entfernen fehlgeschlagen.' };
       }
-      save(load().filter((r) => r.workspaceId !== rec.workspaceId));
+      try {
+        save(load().filter((r) => r.workspaceId !== rec.workspaceId));
+      } catch (err) {
+        return { ok: false, error: `Zuordnung nicht gespeichert: ${err.message}` };
+      }
       return { ok: true, branchKept: rec.branch };
     },
   };

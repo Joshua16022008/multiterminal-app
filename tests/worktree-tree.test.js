@@ -232,10 +232,10 @@ test('result is cached for 10 s per project, invalidated by new records and by t
   const project = { id: 'p1', path: os.tmpdir() };
   const first = await t.tree(project);
   const n = f.calls.length;
-  assert.strictEqual(await t.tree(project), first);
+  assert.deepStrictEqual(await t.tree(project), first);
   assert.strictEqual(f.calls.length, n);
   clock += 9999;
-  assert.strictEqual(await t.tree(project), first);
+  assert.deepStrictEqual(await t.tree(project), first);
   clock += 2;
   const second = await t.tree(project);
   assert.notStrictEqual(second, first);
@@ -340,7 +340,7 @@ test('real repository: project, managed, external codex, merged and pruned workt
     const cx = by('codex/job');
     assert.deepStrictEqual([cx.kind, cx.origin, cx.workspaceId], ['external', 'codex', null]);
     assert.strictEqual(cx.ahead, 0);
-    assert.strictEqual(cx.merged, true, 'no own commits: contained in main');
+    assert.strictEqual(cx.merged, false, 'fresh branch on the trunk tip is not "merged"');
 
     const mg = by('merged-b');
     assert.strictEqual(mg.merged, true);
@@ -380,4 +380,47 @@ test('real folder that is not a repository: isGit false', async () => {
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('forkTime comes from the fork point commit', async () => {
+  const f = fakeRun({ 'log -1': (args) => (args.includes(SHA('0'))
+    ? { ok: true, stdout: `${SHA('0')}\x00base\x0050\x00A\n`, stderr: '' }
+    : { ok: true, stdout: `${SHA('a')}\x00s\x00100\x00A\n`, stderr: '' }) });
+  const t = createWorktreeTree({ run: f.run, worktrees: noRecords });
+  const tree = await t.tree({ id: 'p1', path: os.tmpdir() });
+  assert.strictEqual(tree.nodes[1].forkTime, 50000);
+});
+
+test('classifyOrigin sees codex worktrees behind a symlinked home', async () => {
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'mt-home-')));
+  try {
+    const realHome = path.join(root, 'real-home');
+    const wt = path.join(realHome, '.codex', 'worktrees', '1', 'repo');
+    fs.mkdirSync(wt, { recursive: true });
+    const linkHome = path.join(root, 'link-home');
+    fs.symlinkSync(realHome, linkHome);
+    const f = fakeRun({
+      'worktree list': { ok: true, stdout: `worktree ${os.tmpdir()}\nHEAD ${SHA('a')}\nbranch refs/heads/main\n\nworktree ${wt}\nHEAD ${SHA('b')}\nbranch refs/heads/cx\n`, stderr: '' },
+    });
+    const t = createWorktreeTree({ run: f.run, worktrees: noRecords, homeDir: linkHome });
+    const tree = await t.tree({ id: 'p1', path: os.tmpdir() });
+    assert.strictEqual(tree.nodes[1].origin, 'codex');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('concurrent identical requests share one run and get independent copies', async () => {
+  const f = fakeRun();
+  const t = createWorktreeTree({ run: f.run, worktrees: noRecords });
+  const proj = { id: 'p1', path: os.tmpdir() };
+  const [a, b] = await Promise.all([t.tree(proj), t.tree(proj)]);
+  const gitCalls = f.calls.filter((c) => c.args[0] === 'rev-parse' && c.args[1] === '--is-inside-work-tree').length;
+  assert.strictEqual(gitCalls, 1);
+  assert.deepStrictEqual(a, b);
+  assert.notStrictEqual(a, b);
+  a.nodes[0].branch = 'mutated';
+  const c = await t.tree(proj);
+  assert.notStrictEqual(c.nodes[0].branch, 'mutated');
+  assert.ok(f.maxActive() <= 4);
 });

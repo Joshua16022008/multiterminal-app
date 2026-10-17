@@ -14,10 +14,11 @@ const FORK_RISE = 36;
 const BOTTOM_PAD = 40;
 const WIDTH = 300;
 
-// Mid-luminance hues: at least 3:1 against both white and near-black backgrounds.
+// Mid-luminance hues: at least 3:1 against white and the app's dark surfaces
+// (--bg #14161a, --bg-2 #1a1d23, --bg-3 #22262e).
 const PALETTE = [
   '#d9480f', '#b7791f', '#2f9e44', '#0c8599', '#1c7ed6',
-  '#7048e8', '#c2255c', '#5c940d', '#a855f7', '#0d9488',
+  '#7c5cff', '#d6336c', '#5c940d', '#a855f7', '#0d9488',
 ];
 const NEUTRAL = '#868e96';
 
@@ -47,19 +48,25 @@ function layout(tree) {
     return { width: WIDTH, height: TOP + BOTTOM_PAD, trunk: null, nodes: [], edges: [] };
   }
   const stem = nodes.find((n) => n.kind === 'project') || nodes[0];
-  // Newest activity first; ties and missing times fall back to the id so the
-  // result never depends on the input order.
-  const branches = nodes.filter((n) => n !== stem).sort((a, b) => {
-    const d = timeOf(b) - timeOf(a);
-    if (d) return d;
-    return String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0;
-  });
+  // Branches are ordered by where they leave the trunk: newest fork point
+  // first, then fork point (so siblings stay together), then newest activity;
+  // the id makes the result independent of the input order.
+  const forkT = (n) => (Number.isFinite(Number(n.forkTime)) ? Number(n.forkTime) : 0);
+  const forkP = (n) => (typeof n.forkPoint === 'string' ? n.forkPoint : '');
+  const cmp = (x, y) => (x < y ? -1 : x > y ? 1 : 0);
+  const branches = nodes.filter((n) => n !== stem).sort((a, b) => (
+    forkT(b) - forkT(a) || cmp(forkP(a), forkP(b)) || timeOf(b) - timeOf(a) || cmp(String(a.id), String(b.id))
+  ));
 
   const out = [{ id: stem.id, x: TRUNK_X, y: TOP }];
   const edges = [];
+  // Branches sharing a fork point leave the trunk at the same height.
+  const forkYs = new Map();
   branches.forEach((n, i) => {
     const y = TOP + (i + 1) * ROW;
-    const forkY = y - FORK_RISE;
+    const fp = forkP(n);
+    if (fp && !forkYs.has(fp)) forkYs.set(fp, y - FORK_RISE);
+    const forkY = fp ? forkYs.get(fp) : y - FORK_RISE;
     out.push({ id: n.id, x: BRANCH_X, y });
     const c1y = forkY + (y - forkY) * 0.6;
     const c2x = TRUNK_X + (BRANCH_X - TRUNK_X) * 0.4;

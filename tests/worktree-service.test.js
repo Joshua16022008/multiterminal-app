@@ -291,3 +291,23 @@ test('remove of a managed record still runs git worktree remove (regression)', a
     assert.ok(!fs.existsSync(a.worktree.cwd));
   } finally { f.cleanup(); }
 });
+
+test('adopt asks git with a timeout of at most 10 s; remove(linked) survives a failing save', async () => {
+  const f = fixture();
+  try {
+    const wt = path.join(f.root, 'ext');
+    git(f.repo, 'worktree', 'add', '-q', '-b', 'ext', wt);
+    const seen = [];
+    const spy = createWorktreeService({ dataDir: f.dataDir, run: async (args, cwd, t) => { seen.push([args[0], t]); return require('../src/main/worktree-service.js').runGit(args, cwd, t); } });
+    const r = await spy.adopt({ projectId: 'p1', cwd: wt, projectPath: f.repo });
+    assert.strictEqual(r.ok, true);
+    const listCall = seen.find(([a]) => a === 'worktree');
+    assert.ok(listCall[1] > 0 && listCall[1] <= 10000);
+    // Make the data file unwritable by replacing it with a directory.
+    const file = fs.readdirSync(f.dataDir).map((n) => path.join(f.dataDir, n)).find((p) => fs.statSync(p).isFile() && p.endsWith('.json') && fs.readFileSync(p, 'utf8').includes(r.workspace.workspaceId));
+    assert.ok(file, 'data file found');
+    fs.rmSync(file); fs.mkdirSync(file);
+    const out = await spy.remove(r.workspace.workspaceId, f.repo);
+    assert.strictEqual(typeof out.ok, 'boolean');
+  } finally { f.cleanup(); }
+});

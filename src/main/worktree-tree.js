@@ -92,6 +92,10 @@ function createLimiter(limit) {
 function createWorktreeTree({ run, worktrees, homeDir = os.homedir(), appDir = null, now = Date.now, cacheMs = CACHE_MS } = {}) {
   const baseRun = run || ((args, cwd, timeout) => require('./worktree-service.js').runGit(args, cwd, timeout));
   const cache = new Map(); // project key -> { at, signature, value }
+  const inflight = new Map(); // project key + signature -> running promise
+  const limit = createLimiter(MAX_PARALLEL); // one limit for the whole instance
+  // Callers get their own copy so nobody can mutate the cached tree.
+  const copy = (v) => JSON.parse(JSON.stringify(v));
 
   async function tree(project) {
     if (!project || typeof project.path !== 'string' || !project.path) {
@@ -101,9 +105,15 @@ function createWorktreeTree({ run, worktrees, homeDir = os.homedir(), appDir = n
     const signature = JSON.stringify(records.map((r) => [r.workspaceId, r.cwd, r.managed, r.branch]));
     const key = `${project.id}\u0000${project.path}`;
     const hit = cache.get(key);
-    if (hit && hit.signature === signature && now() - hit.at < cacheMs) return hit.value;
+    if (hit && hit.signature === signature && now() - hit.at < cacheMs) return copy(hit.value);
+    const flightKey = `${key}\u0000${signature}`;
+    if (inflight.has(flightKey)) return copy(await inflight.get(flightKey));
+    const running = compute(project, records, key, signature);
+    inflight.set(flightKey, running);
+    try { return copy(await running); } finally { inflight.delete(flightKey); }
+  }
 
-    const limit = createLimiter(MAX_PARALLEL);
+  async function compute(project, records, key, signature) {
     const git = (args, cwd) => limit(async () => {
       try {
         const r = await baseRun(args, cwd, GIT_TIMEOUT_MS);
@@ -146,7 +156,8 @@ function createWorktreeTree({ run, worktrees, homeDir = os.homedir(), appDir = n
     for (const r of records) { const rp = real(r.cwd); if (rp && !recByPath.has(rp)) recByPath.set(rp, r); }
 
     const nodes = await Promise.all(entries.map((e) => nodeFor(git, e, {
-      projectReal, projectPath: project.path, recByPath, trunkRef, trunkName, homeDir, appDir,
+      projectReal, projectPath: project.path, recByPath, trunkRef, trunkName, trunkSha: trunk ? trunk.sha : null, trunkTime: trunk ? trunk.time : null,
+      homeDir: (homeDir && real(homeDir)) || homeDir, appDir: (appDir && real(appDir)) || appDir,
     })));
     return {
       ok: true, isGit: true, projectPath: project.path, generatedAt: now(),
@@ -178,7 +189,7 @@ function createWorktreeTree({ run, worktrees, homeDir = os.homedir(), appDir = n
       path: e.path, branch: e.detached ? null : e.branch, head: e.head, detached: Boolean(e.detached),
       locked: e.locked, prunable: e.prunable, missing, kind, origin,
       workspaceId: rec ? rec.workspaceId : null,
-      forkPoint: null, ahead: null, behind: null, merged: null, last: null, changes: null,
+      forkPoint: null, forkTime: null, ahead: null, behind: null, merged: null, last: null, changes: null,
     };
     const ref = e.head;
     const canRead = !e.prunable && Boolean(ref);
@@ -189,17 +200,20 @@ function createWorktreeTree({ run, worktrees, homeDir = os.homedir(), appDir = n
       if (ctx.trunkRef) {
         const isTrunkNode = !node.detached && node.branch === ctx.trunkName;
         if (isTrunkNode) {
-          node.ahead = 0; node.behind = 0; node.forkPoint = ref;
+          node.ahead = 0; node.behind = 0; node.forkPoint = ref; node.forkTime = ctx.trunkTime;
         } else {
           tasks.push(git(['merge-base', ctx.trunkRef, ref], ctx.projectPath).then((r) => {
             node.forkPoint = r.ok ? (r.stdout.trim() || null) : null;
+            if (!node.forkPoint) return null;
+            return commitInfo(git, ctx.projectPath, node.forkPoint).then((c) => { node.forkTime = c ? c.time : null; });
           }));
           tasks.push(git(['rev-list', '--left-right', '--count', `${ctx.trunkRef}...${ref}`], ctx.projectPath).then((r) => {
             const parts = r.ok ? r.stdout.trim().split(/\s+/) : [];
             if (parts.length === 2) { node.behind = toInt(parts[0]); node.ahead = toInt(parts[1]); }
           }));
           tasks.push(git(['merge-base', '--is-ancestor', ref, ctx.trunkRef], ctx.projectPath).then((r) => {
-            if (r.ok) node.merged = true;
+            // A branch still sitting on the trunk tip has nothing of its own yet: not "merged".
+            if (r.ok) node.merged = ref !== ctx.trunkSha;
             else if (r.code === 1 || (r.code === undefined && !r.stderr)) node.merged = false;
           }));
         }
