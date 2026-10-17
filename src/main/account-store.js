@@ -89,7 +89,7 @@ function createAccountStore({ filePath, profilesDir, homeDir = os.homedir() }) {
   }
 
   function read() {
-    const empty = { accounts: [], active: {} };
+    const empty = { accounts: [], active: {}, defaultLabels: {} };
     let text;
     try {
       text = fs.readFileSync(filePath, 'utf8');
@@ -122,7 +122,13 @@ function createAccountStore({ filePath, profilesDir, homeDir = os.homedir() }) {
         active[provider] = id;
       }
     }
-    return { accounts, active };
+    const defaultLabels = {};
+    for (const provider of Object.keys(PROVIDERS)) {
+      try {
+        defaultLabels[provider] = checkLabel(data.defaultLabels && data.defaultLabels[provider]);
+      } catch { /* Older files and invalid labels keep the built-in name. */ }
+    }
+    return { accounts, active, defaultLabels };
   }
 
   // Writes to a temp file in the same folder, then renames it over the real file.
@@ -150,6 +156,18 @@ function createAccountStore({ filePath, profilesDir, homeDir = os.homedir() }) {
     return state.active[provider] || defaultId(provider);
   }
 
+  function defaultLabelOf(state, provider) {
+    return state.defaultLabels[provider] || 'Standard';
+  }
+
+  function checkUniqueLabel(state, provider, label, id) {
+    const lower = label.toLowerCase();
+    if ((id !== defaultId(provider) && defaultLabelOf(state, provider).toLowerCase() === lower)
+      || state.accounts.some((a) => a.id !== id && a.provider === provider && a.label.toLowerCase() === lower)) {
+      throw new Error('Dieser Name ist bei diesem Anbieter schon vergeben.');
+    }
+  }
+
   // Links the shared settings into a new account folder. Failures are ignored:
   // the account is still usable, just without that shared entry.
   function linkShared(provider, target) {
@@ -172,7 +190,7 @@ function createAccountStore({ filePath, profilesDir, homeDir = os.homedir() }) {
       const activeId = activeIdOf(state, provider);
       const own = state.accounts.filter((a) => a.provider === provider);
       const accounts = [
-        { id: defaultId(provider), provider, label: 'Standard', builtin: true, folder: defaultDirOf(provider) },
+        { id: defaultId(provider), provider, label: defaultLabelOf(state, provider), builtin: true, folder: defaultDirOf(provider) },
         ...own.map((a) => ({ ...a, builtin: false, folder: folderOf(provider, a.id) })),
       ].map((a) => ({ ...a, active: a.id === activeId }));
       const { name, loginCommand } = PROVIDERS[provider];
@@ -184,10 +202,7 @@ function createAccountStore({ filePath, profilesDir, homeDir = os.homedir() }) {
     checkProvider(provider);
     const trimmed = checkLabel(label);
     const state = read();
-    const lower = trimmed.toLowerCase();
-    if (lower === 'standard' || state.accounts.some((a) => a.provider === provider && a.label.toLowerCase() === lower)) {
-      throw new Error('Dieser Name ist bei diesem Anbieter schon vergeben.');
-    }
+    checkUniqueLabel(state, provider, trimmed);
     const account = { id: `${provider}-${crypto.randomBytes(4).toString('hex')}`, provider, label: trimmed };
     const folder = folderOf(provider, account.id);
     fs.mkdirSync(folder, { recursive: true });
@@ -200,12 +215,16 @@ function createAccountStore({ filePath, profilesDir, homeDir = os.homedir() }) {
   function rename(id, label) {
     const trimmed = checkLabel(label);
     const state = read();
+    const provider = Object.keys(PROVIDERS).find((p) => defaultId(p) === id);
+    if (provider) {
+      checkUniqueLabel(state, provider, trimmed, id);
+      state.defaultLabels[provider] = trimmed;
+      write(state);
+      return { id, provider, label: trimmed };
+    }
     const account = state.accounts.find((a) => a.id === id);
     if (!account) throw new Error('Konto nicht gefunden oder nicht änderbar.');
-    const lower = trimmed.toLowerCase();
-    if (lower === 'standard' || state.accounts.some((a) => a.id !== id && a.provider === account.provider && a.label.toLowerCase() === lower)) {
-      throw new Error('Dieser Name ist bei diesem Anbieter schon vergeben.');
-    }
+    checkUniqueLabel(state, account.provider, trimmed, id);
     account.label = trimmed;
     write(state);
     return { ...account };
@@ -250,7 +269,7 @@ function createAccountStore({ filePath, profilesDir, homeDir = os.homedir() }) {
       }
       const own = state.accounts.find((a) => a.id === id);
       env[PROVIDERS[provider].envVar] = own ? folderOf(provider, id) : null;
-      accounts.push({ provider, id, label: own ? own.label : 'Standard' });
+      accounts.push({ provider, id, label: own ? own.label : defaultLabelOf(state, provider) });
     }
     return { env, accounts };
   }

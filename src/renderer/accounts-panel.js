@@ -110,7 +110,7 @@
       acc.active ? h('span', { class: 'gh-tag local', text: 'aktiv' }) : null,
       h('span', { class: 'spacer' }),
       h('button', { class: 'ib', title: 'In einem neuen Terminal anmelden (' + p.loginCommand + ')', text: 'Anmelden', onclick: () => login(p, acc) }),
-      acc.builtin ? null : h('button', { class: 'ib', title: 'Umbenennen', text: '✎', onclick: () => { renaming = acc.id; render(); } }),
+      h('button', { class: 'ib', title: 'Umbenennen', text: '✎', onclick: () => { renaming = acc.id; render(); } }),
       acc.builtin ? null : h('button', { class: 'ib close', title: 'Entfernen', text: '✕', onclick: () => { removing = acc.id; render(); } }));
     const box = h('div', { class: 'acct-row' + (acc.active ? ' active' : '') }, line);
     if (usage[acc.id] && window.DeckUsage) box.append(window.DeckUsage.buildAccountRow(usage[acc.id], null));

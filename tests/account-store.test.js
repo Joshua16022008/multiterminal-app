@@ -85,12 +85,56 @@ test('rename and setActive', () => {
   const b = store.add({ provider: 'claude', label: 'B' });
   store.rename(a.id, 'Neu');
   assert.throws(() => store.rename(b.id, 'neu'), /vergeben/);
-  assert.throws(() => store.rename('claude-default', 'X'), /nicht gefunden/);
+  assert.throws(() => store.rename('missing-default', 'X'), /nicht gefunden/);
   store.setActive('claude', b.id);
   assert.deepStrictEqual(claude(store).accounts.filter((x) => x.active).map((x) => x.label), ['B']);
   assert.throws(() => store.setActive('codex', b.id), /nicht gefunden/);
   store.setActive('claude', 'claude-default');
   assert.strictEqual(claude(store).accounts[0].active, true);
+});
+
+test('default account names persist for every provider without changing account identity or folders', () => {
+  const { store, filePath, profilesDir, homeDir } = setup();
+  for (const group of store.list()) {
+    const before = group.accounts[0];
+    const label = `${group.provider} privat`;
+    assert.strictEqual(store.rename(before.id, `  ${label}  `).label, label);
+    const again = createAccountStore({ filePath, profilesDir, homeDir });
+    assert.deepStrictEqual(again.list().find((g) => g.provider === group.provider).accounts[0], { ...before, label });
+    assert.strictEqual(again.envFor().accounts.find((a) => a.id === before.id).label, label);
+    assert.strictEqual(again.remove(before.id), null);
+    assert.deepStrictEqual(again.envFor().env, { CLAUDE_CONFIG_DIR: null, CODEX_HOME: null });
+    const own = again.add({ provider: group.provider, label: 'Arbeit' });
+    again.setActive(group.provider, own.id);
+    assert.strictEqual(again.envFor({ [group.provider]: before.id }).accounts.find((a) => a.provider === group.provider).label, label);
+    again.remove(own.id);
+  }
+  assert.strictEqual(fs.existsSync(profilesDir), true); // only the explicitly added accounts create profiles
+});
+
+test('renaming validates all names against the current default name', () => {
+  const { store } = setup();
+  const own = store.add({ provider: 'claude', label: 'Arbeit' });
+  assert.throws(() => store.rename('claude-default', 'arbeit'), /vergeben/);
+  assert.throws(() => store.rename('claude-default', '  '), /nicht leer/);
+  assert.throws(() => store.rename('codex-default', 'x'.repeat(41)), /länger/);
+  store.rename('claude-default', 'Privat');
+  assert.throws(() => store.add({ provider: 'claude', label: 'PRIVAT' }), /vergeben/);
+  assert.throws(() => store.rename(own.id, 'privat'), /vergeben/);
+  assert.doesNotThrow(() => store.rename('codex-default', 'Privat'));
+  assert.doesNotThrow(() => store.rename(own.id, 'Standard'));
+  assert.throws(() => store.rename('claude-default', 'Standard'), /vergeben/);
+  store.rename(own.id, 'Arbeit');
+  assert.doesNotThrow(() => store.rename('claude-default', 'Standard'));
+});
+
+test('invalid stored default names fall back to Standard', () => {
+  const { store, filePath } = setup();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  for (const defaultLabels of [null, [], 'invalid', { claude: '', codex: 42 }, { claude: 'x'.repeat(41) }]) {
+    fs.writeFileSync(filePath, JSON.stringify({ accounts: [], active: {}, defaultLabels }));
+    assert.ok(store.list().every((g) => g.accounts[0].label === 'Standard'));
+  }
 });
 
 test('remove returns the folder, keeps it on disk, and falls back to default', () => {
