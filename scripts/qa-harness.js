@@ -49,7 +49,7 @@ if(args.includes('--version')){console.log(provider+' QA 1.0.0');process.exit(0)
 if(args.includes('--help')){console.log(provider==='kimi'?'Kimi Code CLI usage':provider+' QA CLI usage');process.exit(0)}
 if(args.includes('models')){console.log('qa/model');process.exit(0)}
 const key=process.env.ANTHROPIC_AUTH_TOKEN||process.env.MT_ENDPOINT_KEY||'';
-fs.appendFileSync(${JSON.stringify(records)},JSON.stringify({provider,args,cwd:process.cwd(),keyHash:key?crypto.createHash('sha256').update(key).digest('hex'):null})+'\\n');
+fs.appendFileSync(${JSON.stringify(records)},JSON.stringify({provider,args,cwd:process.cwd(),keyHash:key?crypto.createHash('sha256').update(key).digest('hex'):null,configDir:process.env.CLAUDE_CONFIG_DIR||null,baseUrl:process.env.ANTHROPIC_BASE_URL||null})+'\\n');
 console.log('INERT_HARNESS_READY');process.stdin.resume();setInterval(()=>{},10000);
 `);
   for (const name of ['claude', 'codex', 'kimi', 'opencode', 'dsh']) {
@@ -218,9 +218,18 @@ function runPhase() {
           await wait(() => records().some(item => item.keyHash === expectedHash), 'child env receives key');
           const launched = records().find(item => item.keyHash === expectedHash);
           assert.ok(launched.args.includes('qa-model'));
+          // Endpoint start: own isolated Claude config per endpoint, base URL from the profile.
+          assert.equal(launched.configDir, path.join(data, 'endpoint-configs', 'claude', endpoint.id));
+          assert.equal(launched.baseUrl, 'https://qa.example.invalid/anthropic');
+          assert.equal(fs.existsSync(path.join(launched.configDir, 'settings.json')), false, 'isolated config links no settings.json');
+          // Legacy starts above ran without any endpoint configuration.
+          assert.ok(records().filter(item => item.keyHash === null && item.provider === 'claude').every(item => item.configDir === null && item.baseUrl === null));
           stage = 'opencode context start';
           await menu('Agent mit Kontext starten…');
           await wait(() => run("document.getElementById('agent-launch-dialog').open"), 'context dialog');
+          // Catalog harnesses join the provider list once detection answers.
+          await wait(() => run("!!document.querySelector('#agent-launch-provider option[value=opencode]')"), 'opencode offered');
+          assert.equal(await run("!!document.querySelector('#agent-launch-provider option[value=kimi]')"), false, 'Kimi context start stays excluded');
           await set('agent-launch-provider', 'opencode'); await set('agent-launch-folder', 'project');
           await set('agent-launch-task', 'Inspect the inert QA fixture');
           await run("document.getElementById('agent-launch-prepare').click()");
@@ -235,9 +244,18 @@ function runPhase() {
           await run("(()=>{const pane=[...window.DeckApp.state.panes.values()].flat().find(p=>p.desc.launch?.endpointId);const button=pane.el.querySelector('.btn-resume');if(!button || button.hidden)throw Error('Missing resume action');button.click()})()");
           await wait(() => records().filter(item => item.keyHash === expectedHash).length > before, 'resumed endpoint CLI');
         }
+        stage = 'launch chip';
+        // Harness tiles show public launch info (harness, model) in the tile head, never a command line.
+        await wait(() => run("[...document.querySelectorAll('.launch-chip')].some(el=>!el.hidden && el.textContent.includes('qa-model'))"), 'launch chip');
+        assert.equal(await run("[...document.querySelectorAll('.launch-chip')].some(el=>/security|\\$\\(/.test(el.textContent+el.title))"), false, 'command line in chip');
+        win.showInactive();
+        fs.writeFileSync(path.join(root, 'harness-tiles-' + phase + '.png'), (await win.webContents.capturePage()).toPNG());
         stage = 'persisted session and renderer scan';
         await run("window.deck.session.save({version:1,activeProjectId:'qa-harness',projects:{'qa-harness':{terminals:window.DeckApp.state.panes.get('qa-harness').map(p=>({...p.desc}))}}})");
-        const saved = JSON.parse(fs.readFileSync(path.join(data, 'session/session.json'), 'utf8'));
+        const savedText = fs.readFileSync(path.join(data, 'session/session.json'), 'utf8');
+        // session.json keeps only the public launch: no line, no keychain lookup, no endpoint URL.
+        for (const needle of ['find-generic-password', 'ANTHROPIC_', 'qa.example.invalid', 'launch-contexts']) assert.equal(savedText.includes(needle), false, 'session.json contains ' + needle);
+        const saved = JSON.parse(savedText);
         assert.ok(saved.projects['qa-harness'].terminals.some(item => item.launch?.endpointId));
         const rendererText = await run("document.body.textContent + JSON.stringify([...window.DeckApp.state.panes.values()].flat().map(p=>({desc:p.desc,scroll:p.serialize()})))");
         assert.equal(rendererText.includes('FAKE_KEY_'), false, 'secret sentinel reached renderer');

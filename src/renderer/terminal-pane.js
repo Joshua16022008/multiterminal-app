@@ -216,7 +216,10 @@
     const api = window.deck;
     const id = desc.id;
     const pane = { id, desc, project, status: 'idle', started: false, ready: false, maxed: false, canResume: !!opts.restored };
-    let pendingCommand = opts.runCommand && desc.command ? desc.command : null;
+    // opts.command: a one-time line prepared in main (context start); never stored in desc.
+    let pendingCommand = opts.runCommand ? (opts.command || desc.command || null) : null;
+    // Harness tile: the public launch goes to main, which builds the line exactly once.
+    let pendingLaunch = opts.runCommand && !opts.command && desc.launch ? desc.launch : null;
     let lastCols = 0, lastRows = 0, starting = false;
     let wv = null, wvReady = false;
     // Optional module (browser-view.js): without it the tile keeps the old behaviour.
@@ -363,8 +366,12 @@
       await restored;
       fitNow();
       const command = pendingCommand;
+      const launch = pendingLaunch;
       pendingCommand = null;
-      const r = await D.guard(() => api.terminals.create({ id, projectId: project.id, cols: term.cols, rows: term.rows, command: command || null, accountOverrides: desc.accounts || undefined, workspaceId: desc.workspaceId || undefined }));
+      pendingLaunch = null;
+      const request = { id, projectId: project.id, cols: term.cols, rows: term.rows, command: command || null, accountOverrides: desc.accounts || undefined, workspaceId: desc.workspaceId || undefined };
+      if (launch) request.launch = launch;
+      const r = await D.guard(() => api.terminals.create(request));
       starting = false;
       if (!r || !r.ok) {
         if (r && r.error) D.notify('Terminal konnte nicht gestartet werden: ' + r.error);
@@ -380,6 +387,7 @@
         if (changed) hooks.onChange();
         pane.refreshAccount();
       }
+      if (r.launchInfo) pane.setLaunchInfo(r.launchInfo);
       lastCols = term.cols; lastRows = term.rows;
       setStatus('running');
       pane.refreshBranch(true);
@@ -402,6 +410,9 @@
     pane.refreshBranch = (force) => branchChip.refresh(force === true);
     pane.setLaunchInfo = (info) => branchChip.setLaunchInfo(info);
     pane.refreshBranch(true);
+    // Harness chip for restored tiles: public labels only (catalog/endpoint names), never a line.
+    if (desc.launchInvalid) pane.setLaunchInfo({ harnessLabel: 'Harness-Start ungültig' });
+    else if (desc.launch && hooks.launchInfo) Promise.resolve(hooks.launchInfo(desc)).then((info) => { if (info) pane.setLaunchInfo(info); }).catch(() => {});
 
     /* Konto-Chip: nur für Schnellstarts claude/codex und nur, wenn der Anbieter mehrere Konten hat */
     pane.refreshAccount = function () {
@@ -448,6 +459,18 @@
       resumeInfo = Object.assign({ exact: false, command: null, reason: '' }, plan || {}, { provider });
     }
     function refreshResume() {
+      if (desc.launch || desc.launchInvalid) {
+        // Harness tile: rebuilt in main from desc.launch; an invalid start offers nothing.
+        const show = pane.canResume && !!desc.launch;
+        resumeBtn.hidden = !show;
+        if (show) {
+          const canContinue = !hooks.harnessCanResume || hooks.harnessCanResume(desc) !== false;
+          resumeBtn.textContent = canContinue ? 'Fortsetzen' : 'Neu starten: ' + (desc.title || desc.launch.harnessId);
+          resumeBtn.title = canContinue ? 'Harness erneut starten und das Gespräch fortsetzen (Startzeile wird neu aufgebaut)' : 'Dieses Harness kennt kein belegtes Fortsetzen: startet neu.';
+          resumeBtn.classList.remove('resume-loose');
+        }
+        return;
+      }
       const cmd = (resumeInfo.exact && resumeInfo.command) || desc.resumeCommand || desc.command;
       const show = pane.canResume && !!cmd;
       resumeBtn.hidden = !show;
@@ -468,6 +491,17 @@
       hooks.onChange();
     };
     async function resume() {
+      if (desc.launch) {
+        pane.canResume = false;
+        refreshResume();
+        if (pane.status !== 'running' && !(await start())) return;
+        if (api.terminals.runBuiltin && pane.status === 'running') {
+          api.terminals.runBuiltin(id, { launch: desc.launch, resume: true, nativeSession: desc.nativeSession || null });
+        }
+        term.focus();
+        return;
+      }
+      if (desc.launchInvalid) return;
       if (!(resumeInfo.exact && resumeInfo.command) && !desc.resumeCommand && !desc.command) return;
       pane.canResume = false;
       refreshResume();
@@ -519,7 +553,7 @@
        die Tastatureingabe, damit auch Diktat und Einfügen zählen (die schreibt der Hauptprozess).
        Eine Shell ohne Agent wird ignoriert, bis ein Agent-CLI gestartet wurde. */
     const AGENT_CLI = /^(claude|codex|kimi|gemini|opencode|aider)(\s|$)/i;
-    let agentSeen = !!desc.command;
+    let agentSeen = !!desc.command || !!desc.launch;
     function cursorLine() {
       const b = term.buffer.active;
       const l = b.getLine(b.baseY + b.cursorY);

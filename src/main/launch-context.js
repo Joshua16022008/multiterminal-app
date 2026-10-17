@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { execFile } = require('node:child_process');
+const { sanitizeLaunch } = require('./launch-spec');
 
 const CONTROL = /[\x00-\x08\x0b-\x1f\x7f]/;
 const DOCS = ['AGENTS.md', 'CLAUDE.md', 'README.md', 'PROJECT_STATUS.md', 'PLAN.md', 'PROGRESS.md'];
@@ -45,7 +46,10 @@ function readDocument(root, name, limit, warnings, optional = false) {
   } finally { if (fd !== undefined) fs.closeSync(fd); }
 }
 
-function createLaunchContextService({ dataDir, worktrees, decorateCommand = ({ command }) => command, readMemory } = {}) {
+// harnessCatalog/buildLaunch (optional): context starts for every catalog harness with a
+// documented prompt option. claude/codex without model or endpoint keep the original
+// command byte for byte; everything else goes through the harness start service.
+function createLaunchContextService({ dataDir, worktrees, decorateCommand = ({ command }) => command, readMemory, harnessCatalog, buildLaunch } = {}) {
   if (!field(dataDir, 10000, true) || !path.isAbsolute(dataDir)) throw new Error('Ungültiger Datenordner.');
 
   async function identity(project, workspaceId) {
@@ -136,13 +140,26 @@ function createLaunchContextService({ dataDir, worktrees, decorateCommand = ({ c
     } catch (err) { return { ok: false, error: err.message }; }
   }
 
-  async function prepare({ project, workspaceId = null, provider, text, expectedHead, expectedCwd, expectedBranch } = {}) {
+  // Catalog entries that can take a start prompt; Kimi stays excluded (interactive agent file).
+  function promptHarness(id) {
+    const entry = harnessCatalog && typeof harnessCatalog.get === 'function' ? harnessCatalog.get(id) : null;
+    return entry && entry.id !== 'kimi' && entry.evidence !== 'unconfirmed' && entry.prompt && Array.isArray(entry.prompt.args) ? entry : null;
+  }
+
+  async function prepare({ project, workspaceId = null, provider, model, endpointId, text, expectedHead, expectedCwd, expectedBranch } = {}) {
     let contextPath;
     let created = false;
     let fd;
     try {
       if (provider === 'kimi') throw new Error('Kontextstart für Kimi ist interaktiv noch nicht unterstützt.');
-      if (!['claude', 'codex'].includes(provider)) throw new Error('Anbieter ungültig.');
+      const hasExtras = (model !== undefined && model !== null && model !== '') || (endpointId !== undefined && endpointId !== null && endpointId !== '');
+      const legacy = ['claude', 'codex'].includes(provider) && !hasExtras;
+      let launch = null;
+      if (!legacy) {
+        if (typeof provider !== 'string' || !promptHarness(provider) || typeof buildLaunch !== 'function') throw new Error('Anbieter ungültig.');
+        launch = sanitizeLaunch({ harnessId: provider, ...(hasExtras && model ? { model } : {}), ...(hasExtras && endpointId ? { endpointId } : {}) });
+        if (!launch) throw new Error('Modell oder Endpunkt ungültig.');
+      }
       if (!field(text, 60000, true)) throw new Error('Kontext ungültig oder zu lang.');
       if (!field(expectedCwd, 10000, true) || !(expectedHead === null || field(expectedHead, 128, true))
           || !(expectedBranch === null || field(expectedBranch, 500, true))) throw new Error('Vorschau-Identität fehlt.');
@@ -151,9 +168,17 @@ function createLaunchContextService({ dataDir, worktrees, decorateCommand = ({ c
       const dir = path.join(dataDir, 'launch-contexts');
       contextPath = path.join(dir, `${Date.now()}-${crypto.randomBytes(12).toString('hex')}.md`);
       const prompt = `Lies zuerst die Auftragsdatei ${contextPath} vollständig und bearbeite den darin beschriebenen Auftrag im gewählten Arbeitsordner.`;
-      const decorated = await decorateCommand({ command: provider });
-      if (typeof decorated !== 'string') throw new Error('Startbefehl nicht verfügbar.');
-      const command = `${decorated} ${quote(prompt)}`;
+      let command, launchMeta = null;
+      if (legacy) {
+        const decorated = await decorateCommand({ command: provider });
+        if (typeof decorated !== 'string') throw new Error('Startbefehl nicht verfügbar.');
+        command = `${decorated} ${quote(prompt)}`;
+      } else {
+        // The file hint is the single prompt; Memory is joined to it by the start service.
+        launchMeta = await buildLaunch({ project, launch, prompt });
+        command = launchMeta && launchMeta.command;
+        if (typeof command !== 'string') throw new Error('Startbefehl nicht verfügbar.');
+      }
       if (command.length > 2000 || /[\r\n\x00]/.test(command)) throw new Error('Startbefehl zu lang oder ungültig.');
       fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
       if (fs.lstatSync(dir).isSymbolicLink() || !fs.statSync(dir).isDirectory()) throw new Error('Kontextordner unsicher.');
@@ -162,7 +187,9 @@ function createLaunchContextService({ dataDir, worktrees, decorateCommand = ({ c
       fs.writeFileSync(fd, text, { encoding: 'utf8' });
       fs.closeSync(fd);
       fd = undefined;
-      return { ok: true, command, contextPath, cwd: state.cwd, branch: state.branch, head: state.head, workspaceId: state.workspaceId, provider };
+      const result = { ok: true, command, contextPath, cwd: state.cwd, branch: state.branch, head: state.head, workspaceId: state.workspaceId, provider };
+      if (launch) Object.assign(result, { launch, launchMeta });
+      return result;
     } catch (err) {
       if (fd !== undefined) { try { fs.closeSync(fd); } catch (_) { /* already closed */ } }
       if (created) { try { fs.unlinkSync(contextPath); } catch (_) { /* best effort */ } }

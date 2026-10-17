@@ -6,6 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { sanitizeLaunch } = require('./launch-spec');
 
 const MAX_LABEL_LENGTH = 40;
 const MAX_COMMAND_LENGTH = 2000;
@@ -58,15 +59,29 @@ function checkCommand(value, fieldName) {
   return trimmed;
 }
 
+// Harness quick start: only the public launch fields, never a command line.
+function harnessFields(entry) {
+  if (!entry || entry.harnessId === undefined) return null;
+  return sanitizeLaunch({
+    harnessId: entry.harnessId,
+    ...(entry.model !== undefined ? { model: entry.model } : {}),
+    ...(entry.endpointId !== undefined ? { endpointId: entry.endpointId } : {}),
+  });
+}
+
 function isValidOwnPreset(entry) {
-  return (
+  const base = (
     entry !== null &&
     typeof entry === 'object' &&
     typeof entry.id === 'string' &&
     entry.id.length > 0 &&
     !BUILTIN_IDS.has(entry.id) &&
     typeof entry.label === 'string' &&
-    entry.label.trim().length > 0 &&
+    entry.label.trim().length > 0
+  );
+  if (!base) return false;
+  if (entry.harnessId !== undefined) return harnessFields(entry) !== null && entry.command == null && entry.resumeCommand == null;
+  return (
     typeof entry.command === 'string' &&
     entry.command.trim().length > 0 &&
     (entry.resumeCommand === null || typeof entry.resumeCommand === 'string')
@@ -95,13 +110,17 @@ function createPresetStore(filePath) {
       return [];
     }
 
-    return data.filter(isValidOwnPreset).map((p) => ({
-      id: p.id,
-      label: p.label,
-      command: p.command,
-      resumeCommand: p.resumeCommand,
-      builtin: false,
-    }));
+    return data.filter(isValidOwnPreset).map((p) => {
+      const launch = harnessFields(p);
+      if (launch) return { id: p.id, label: p.label, command: null, resumeCommand: null, builtin: false, ...launch };
+      return {
+        id: p.id,
+        label: p.label,
+        command: p.command,
+        resumeCommand: p.resumeCommand,
+        builtin: false,
+      };
+    });
   }
 
   // Copies a broken file aside so that the user's presets are not lost on the next write.
@@ -139,13 +158,26 @@ function createPresetStore(filePath) {
     return [...builtins, ...readOwn()];
   }
 
-  function add({ label, command, resumeCommand } = {}) {
+  function add({ label, command, resumeCommand, harnessId, model, endpointId } = {}) {
     if (typeof label !== 'string' || label.trim() === '') {
       throw new Error('Bezeichnung darf nicht leer sein.');
     }
     const trimmedLabel = label.trim();
     if (trimmedLabel.length > MAX_LABEL_LENGTH) {
       throw new Error(`Bezeichnung ist länger als ${MAX_LABEL_LENGTH} Zeichen.`);
+    }
+
+    if (harnessId !== undefined) {
+      if ((command !== undefined && command !== null) || (resumeCommand !== undefined && resumeCommand !== null)) {
+        throw new Error('Ein Harness-Schnellstart hat keinen eigenen Befehl.');
+      }
+      const launch = harnessFields({ harnessId, model, endpointId });
+      if (!launch) throw new Error('Harness, Modell oder Endpunkt ist ungültig.');
+      const preset = { id: crypto.randomUUID(), label: trimmedLabel, command: null, resumeCommand: null, builtin: false, ...launch };
+      const own = readOwn();
+      own.push(preset);
+      writeOwn(own);
+      return preset;
     }
 
     const trimmedCommand = checkCommand(command, 'Befehl');

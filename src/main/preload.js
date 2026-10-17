@@ -145,6 +145,23 @@ contextBridge.exposeInMainWorld('deck', {
     preview: input => ipcRenderer.invoke('launch:preview', input),
     prepare: input => ipcRenderer.invoke('launch:prepare', input),
   },
+  // Harnesses & Modelle (IPC §2): catalog, detection, model lists on request, install hint without Enter.
+  harness: {
+    list: () => ipcRenderer.invoke('harness:list'),
+    detect: (id) => ipcRenderer.invoke('harness:detect', id),
+    models: (id, endpointId) => ipcRenderer.invoke('harness:models', id, endpointId),
+    addOwn: (entry) => ipcRenderer.invoke('harness:addOwn', entry),
+    removeOwn: (id) => ipcRenderer.invoke('harness:removeOwn', id),
+    export: (id) => ipcRenderer.invoke('harness:export', id),
+    typeInstall: (id, terminalId) => ipcRenderer.invoke('harness:typeInstall', id, terminalId),
+  },
+  // Endpoint profiles: a key goes in once (save) and never comes back (hasSecret only).
+  endpoints: {
+    list: () => ipcRenderer.invoke('endpoints:list'),
+    save: (profile, secret) => ipcRenderer.invoke('endpoints:save', profile, secret),
+    remove: (id) => ipcRenderer.invoke('endpoints:remove', id),
+    templates: () => ipcRenderer.invoke('endpoints:templates'),
+  },
   git: {
     status: (projectId) => ipcRenderer.invoke('git:status', projectId),
     pull: (projectId) => ipcRenderer.invoke('git:pull', projectId),

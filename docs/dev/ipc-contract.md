@@ -159,9 +159,30 @@ Bestätigte Klarstellungen (Integrator, Etappe 3a, 17.10.2026):
 - **(b) Memory-Adapter:** Der Memory-Adapter ist projektgebunden und wird der `createHarnessLaunch`-Factory
   übergeben (Main erzeugt die Factory je Projekt bzw. reicht den projektgebundenen Adapter durch). Die
   IPC-Signatur bleibt unverändert: `terminals:create` mit `launch: { harnessId, model?, endpointId? }`.
-- **(c) Modellquellen (vorgeschlagen, von Codex noch nicht bestätigt):** `createModelSources({ catalog, run, fetch, endpoints? })` bekommt optional den
+- **(c) Modellquellen (von Codex umgesetzt, Etappe 3b verdrahtet):** `createModelSources({ catalog, run, fetch, endpoints? })` bekommt optional den
   Endpunkt-Speicher (`createEndpointStore`-Instanz), um `baseUrl`/Typ eines `endpointId` aufzulösen. Ohne
   `endpoints` liefert eine Abfrage mit `endpointId` `{ models: [], source, error }` statt einer Exception.
+
+Präzisierungen aus der Integration (Etappe 3b, 17.10.2026):
+- `launch` ist überall dieselbe öffentliche Whitelist `{ harnessId, model?, endpointId? }` (`src/main/launch-spec.js`,
+  `sanitizeLaunch`); unbekannte Felder machen den ganzen Wert ungültig. Ohne `launch` bleibt `terminals:create` bytegleich.
+- `terminals:create` liefert bei einem Harness-Start zusätzlich `launchInfo: { harnessLabel, model, endpointLabel }`
+  (nur öffentliche Namen) für `pane.setLaunchInfo`. Bei isoliertem Claude-Endpunkt fehlt Claude in `accounts`,
+  `CLAUDE_CONFIG_DIR` des Kontos wird nicht gesetzt und `meta.accountId` ist `null`.
+- `terminals:runBuiltin(id, { launch, resume: true, nativeSession })` (Objekt statt Zeile) baut eine Harness-Kachel
+  beim Fortsetzen in Main neu: belegte Gesprächs-ID → `resume.byId`, sonst `resume.last`, sonst Neustart. Fehler
+  erscheinen als Zeile im Terminal; kein stiller Anbieterwechsel. Zeichenketten verhalten sich wie bisher.
+- `launch:prepare` nimmt zusätzlich `model?`, `endpointId?`; `provider` darf jeder bestätigte Katalogeintrag mit
+  `prompt.args` sein (Kimi ausgeschlossen). Claude/Codex ohne Modell/Endpunkt liefern exakt den alten Befehl ohne
+  neue Felder. Sonst zusätzlich `launch` und `launchInfo`; Main merkt sich die gebaute Zeile einmalig (10 min), damit
+  `terminals:create` sie nicht erneut dekoriert und `meta.provider` korrekt setzt.
+- Presets: eigene Einträge dürfen statt `command` die Felder `harnessId`, `model?`, `endpointId?` tragen
+  (`command`/`resumeCommand` = `null`); `presets:add` prüft `harnessId` gegen den Katalog. Eingebaute Presets unverändert.
+- `session.json`: `launch` ersetzt `command`/`resumeCommand` (beide `null`); ein ungültiges `launch` wird als
+  `launchInvalid: true` gespeichert – Kachel öffnet ohne Agentstart, ohne Fortsetzen.
+- `harness:list` liefert genau `HarnessView` (ohne `version`); die Version kommt nur aus `harness:detect(id)`.
+- Menü „Funktionen → Harnesses & Modelle…“ (Aktion `harness-settings`, ohne Tastenkürzel), Befehlspalette
+  „Harnesses & Modelle“; Renderer: `D.settingsPanel.show('harness')` öffnet den Bereich direkt.
 
 ## 3. User Guide (Claude-Strang G)
 

@@ -78,23 +78,60 @@
     // Branch-Chip im Kachelkopf: Stammbaum an genau diesem Ast öffnen.
     onBranchClick: (pane) => { if (D.openTree) D.openTree(pane.project, pane.desc.workspaceId || null); },
     accountLabel: (desc) => accountLabel(desc),
-    presetLabel: (desc) => { const p = S.presets.find((x) => x.id === desc.presetId); return p ? p.label : desc.command || ''; },
+    presetLabel: (desc) => { const p = S.presets.find((x) => x.id === desc.presetId); return p ? p.label : desc.launch ? desc.title : desc.command || ''; },
+    // Harness tiles: public chip text and whether the catalog documents a resume.
+    launchInfo: (desc) => launchInfoFor(desc.launch),
+    harnessCanResume: (desc) => { const e = harnessSnapshot && harnessSnapshot.entries.find((x) => x.id === desc.launch.harnessId); return e ? e.canResume : undefined; },
   };
+
+  /* ---------- Harnesses: Katalog und Endpunkte (nur öffentliche Angaben), bei Bedarf geladen ---------- */
+  let harnessCache = null, harnessSnapshot = null;
+  function harnessData(force) {
+    if (!api.harness || !api.endpoints) return Promise.resolve({ entries: [], endpoints: [] });
+    if (!harnessCache || force) {
+      harnessCache = Promise.all([guard(() => api.harness.list(), []), guard(() => api.endpoints.list(), [])])
+        .then(([entries, endpoints]) => (harnessSnapshot = { entries: entries || [], endpoints: endpoints || [] }));
+    }
+    return harnessCache;
+  }
+  async function launchInfoFor(launch) {
+    if (!launch) return null;
+    const { entries, endpoints } = await harnessData();
+    const entry = entries.find((e) => e.id === launch.harnessId);
+    const ep = launch.endpointId ? endpoints.find((e) => e.id === launch.endpointId) : null;
+    return {
+      harnessLabel: entry ? entry.label : launch.harnessId + ' (unbekannt)',
+      model: launch.model || (ep && ep.defaultModel) || (entry && entry.defaultModel) || null,
+      endpointLabel: ep ? ep.label : launch.endpointId ? 'Endpunkt fehlt' : null,
+    };
+  }
+  // Public launch of a harness quick start: only the three whitelisted fields.
+  function presetLaunch(preset) {
+    if (!preset || !preset.harnessId) return null;
+    return { harnessId: preset.harnessId, ...(preset.model ? { model: preset.model } : {}), ...(preset.endpointId ? { endpointId: preset.endpointId } : {}) };
+  }
 
   /* ---------- Konten ---------- */
   const PRESET_PROVIDER = { claude: 'claude', codex: 'codex' };
+  // Harness starts: account choice from the catalog's `accounts`; none with an endpoint (own config).
+  function accountKey(presetId, launch) {
+    if (!launch) return PRESET_PROVIDER[presetId];
+    if (launch.endpointId) return undefined;
+    const entry = harnessSnapshot && harnessSnapshot.entries.find((e) => e.id === launch.harnessId);
+    return entry ? entry.accounts || undefined : PRESET_PROVIDER[launch.harnessId];
+  }
   const providerOf = (key) => S.accounts.find((p) => p.provider === key) || null;
   /* Zeigt sich nur, wenn der Anbieter mehr als das Standardkonto kennt. */
   const multi = (p) => !!p && (p.accounts.length > 1 || p.accounts.some((a) => !a.builtin));
   function accountLabel(desc) {
-    const p = providerOf(PRESET_PROVIDER[desc.presetId]);
+    const p = providerOf(accountKey(desc.presetId, desc.launch));
     if (!multi(p)) return null;
     const id = desc.accounts && desc.accounts[p.provider];
     const acc = id && p.accounts.find((a) => a.id === id);
     return acc ? acc.label : null;
   }
-  function activeAccount(presetId) {
-    const p = providerOf(PRESET_PROVIDER[presetId]);
+  function activeAccount(presetId, launch) {
+    const p = providerOf(accountKey(presetId, launch));
     return multi(p) ? p.accounts.find((a) => a.active) || null : null;
   }
   function onAccountsChanged(list) {
@@ -267,23 +304,26 @@
     for (let i = 1; ; i++) if (!used.has('Terminal ' + i)) return 'Terminal ' + i;
   }
 
-  function newTerminal(pid, preset, accounts, workspace) {
+  // extra.command: one-time line prepared in main (harness context start), never stored in desc.
+  function newTerminal(pid, preset, accounts, workspace, extra) {
     const project = S.projects.find((p) => p.id === pid);
     if (!project) { notify('Zuerst ein Projekt auswählen.'); return null; }
     if (panesOf(pid).length >= MAX) { notify(`Maximal ${MAX} Terminals pro Projekt.`); return null; }
+    const launch = presetLaunch(preset) || (preset && preset.launch) || null;
     const desc = {
       id: crypto.randomUUID(),
       title: preset ? preset.label : nextTitle(pid),
       presetId: preset ? preset.id : null,
-      command: preset ? preset.command : null,
-      resumeCommand: preset ? preset.resumeCommand || null : null,
+      command: preset && !launch ? preset.command : null,
+      resumeCommand: preset && !launch ? preset.resumeCommand || null : null,
       browserUrl: null, browserOpen: false,
       accounts: accounts || undefined,
       workspaceId: workspace ? workspace.workspaceId : undefined,
       // Anmelde-Terminals (Vorgabe ohne id) behalten ihren Namen
-      titleLocked: preset && !preset.id ? true : undefined,
+      titleLocked: preset && !preset.id && !launch ? true : undefined,
     };
-    const pane = addPane(project, desc, { restored: false, runCommand: !!preset });
+    if (launch) desc.launch = launch;
+    const pane = addPane(project, desc, extra && extra.command ? { restored: false, runCommand: true, command: extra.command } : { restored: false, runCommand: !!preset });
     setActive(pane, false);
     if (pid === S.activeId) requestAnimationFrame(() => { pane.ensureStarted(); pane.focus(); });
     scheduleSave();
@@ -578,10 +618,13 @@
     m.dataset.owner = 'btn-menu';
     m.replaceChildren();
     for (const pr of S.presets) {
-      const row = h('div', { class: 'menu-item', title: pr.command },
+      const launch = presetLaunch(pr);
+      const detail = launch ? ['Harness ' + launch.harnessId, launch.model].filter(Boolean).join(' · ') + (launch.endpointId ? ' · Endpunkt' : '') : pr.command;
+      const account = activeAccount(pr.id, launch);
+      const row = h('div', { class: 'menu-item', title: detail },
         h('span', { class: 'grow', text: pr.label }),
-        activeAccount(pr.id) ? h('span', { class: 'acct-chip', title: 'Aktives Konto', text: activeAccount(pr.id).label }) : null,
-        h('small', { text: pr.command }));
+        account ? h('span', { class: 'acct-chip', title: 'Aktives Konto', text: account.label }) : null,
+        h('small', { text: detail }));
       row.addEventListener('click', () => { closeMenu(); newTerminal(S.activeId, pr); });
       if (!pr.builtin) {
         row.append(h('button', {
@@ -674,6 +717,9 @@
       titleLocked: d.titleLocked === true ? true : undefined,
       nativeSession: d.nativeSession && typeof d.nativeSession === 'object' ? d.nativeSession : undefined, // F02
       secondBrainTodoId: typeof d.secondBrainTodoId === 'string' && d.secondBrainTodoId ? d.secondBrainTodoId : undefined, // F10
+      // Harness: public launch only (main validated it when loading session.json)
+      launch: d.launch && typeof d.launch === 'object' && typeof d.launch.harnessId === 'string' ? presetLaunch(d.launch) : undefined,
+      launchInvalid: d.launchInvalid === true ? true : undefined,
     };
   }
 
@@ -726,7 +772,7 @@
     }
     D.settingsPanel.init({
       projectId: () => S.activeId,
-      onClose: () => showSettings(false),
+      onClose: () => { harnessCache = null; showSettings(false); },
       onAccounts: () => {
         if (showSettings(false)) return;
         $('btn-accounts').classList.toggle('on', D.accountsPanel.toggle(true));
@@ -916,6 +962,17 @@
           // Keep a captured project/working copy: changing the sidebar cannot redirect this task.
           const current = S.projects.find(p => p.id === project.id && p.path === project.path);
           if (!current) throw new Error('Das Projekt wurde entfernt oder verschoben. Bitte erneut auswählen.');
+          if (prepared.launch) {
+            // Catalog harness: main built the line once and remembers it; the tile keeps only launch.
+            const info = prepared.launchInfo || {};
+            const label = [info.harnessLabel || provider, info.model].filter(Boolean).join(' · ').slice(0, 40);
+            const pane = newTerminal(current.id, { id: null, label, launch: prepared.launch }, undefined,
+              prepared.workspaceId ? { workspaceId: prepared.workspaceId } : undefined, { command: prepared.command });
+            if (!pane) throw new Error('Das Terminal konnte nicht angelegt werden.');
+            if (S.activeId !== current.id) selectProject(current.id);
+            if (prepared.workspaceId && D.refreshTreeButton) D.refreshTreeButton();
+            return pane;
+          }
           const original = S.presets.find(p => p.id === provider && p.builtin);
           if (!original) throw new Error('Dieser Agent ist nicht mehr verfügbar.');
           const pane = newTerminal(current.id, { ...original, command: prepared.command }, undefined,
@@ -1073,6 +1130,7 @@
       { id: 'next-attention', label: 'Nächste Rückmeldung', run: () => jumpToNextAttention() },
       { id: 'attention-panel', label: 'Rückmeldungen anzeigen', run: () => { showSettings(false); showAttention(true); } },
       { id: 'settings', label: 'Einstellungen öffnen', run: () => showSettings(true) },
+      { id: 'harness-settings', label: 'Harnesses & Modelle', run: () => runFeatureAction('harness-settings') },
       ...window.DeckHotkeys.actions
         .filter((a) => ['diff-panel', 'ports-panel', 'progress-panel', 'handoff', 'browser-pick', 'task-link', 'layout-start', 'layout-save', 'qol-panel', 'auto-sort', 'project-manager', 'worktree-tree', 'help'].includes(a.id))
         .map((a) => ({ id: a.id, label: a.label, run: () => (a.id === 'project-manager' ? openProjectManager(S.activeId) : runFeatureAction(a.id)) })),
@@ -1124,7 +1182,7 @@
       }
     });
     api.onMenu((action) => {
-      if (D.settingsPanel.isOpen() && action !== 'settings' && action !== 'help') return;
+      if (D.settingsPanel.isOpen() && action !== 'settings' && action !== 'help' && action !== 'harness-settings') return;
       if (action === 'settings') showSettings(true);
       else if (action === 'new-terminal') newTerminal(S.activeId, null);
       else if (action === 'close-terminal') { const a = activePane(); if (a) closePane(a); }
@@ -1177,9 +1235,38 @@
           else D.openTree(activeProject());
           return true;
         case 'help': closeMenu(); showHelp(); return true;
+        case 'harness-settings': closeMenu(); showSettings(true); D.settingsPanel.show('harness'); return true;
         default: return false;
       }
     }
+    /* Harness-Bereich der Einstellungen: Ereignisse laut harness-panel.js quittieren (preventDefault). */
+    document.addEventListener('harness:quickstart', (e) => {
+      const detail = e.detail || {};
+      const launch = presetLaunch(detail.launch);
+      if (!launch) return;
+      e.preventDefault();
+      const label = String(detail.label || launch.harnessId).trim().slice(0, 40);
+      guard(() => api.presets.add({ label, ...launch })).then((pr) => {
+        if (pr) { S.presets.push(pr); notify('Schnellstart „' + pr.label + '“ hinzugefügt.', 'ok'); }
+      });
+    });
+    document.addEventListener('harness:install-terminal', (e) => {
+      const detail = e.detail || {};
+      const project = activeProject();
+      if (!project || typeof detail.acceptTerminal !== 'function') return; // the panel then reports it
+      e.preventDefault();
+      // Always a fresh plain project terminal: never type into a running agent.
+      const pane = newTerminal(project.id, null);
+      if (!pane) return;
+      const until = Date.now() + 15000;
+      const wait = () => {
+        if (pane.status === 'running') { showSettings(false); jumpToPane(pane); detail.acceptTerminal(pane.id); return; }
+        if (pane.status === 'exited' || Date.now() > until) { notify('Das Terminal für den Installationsbefehl konnte nicht gestartet werden.'); return; }
+        setTimeout(wait, 100);
+      };
+      wait();
+    });
+
     // PM: Auftrag des Projektmanagers -> nur Promptvorschau, Einfügen erst nach Klick.
     $('btn-pm').onclick = () => { closeMenu(); openProjectManager(S.activeId); };
     const pmSend = window.DeckPmSend.createSendHandler({
@@ -1209,6 +1296,7 @@
       const terms = (saved[p.id] && Array.isArray(saved[p.id].terminals)) ? saved[p.id].terminals.slice(0, MAX) : [];
       for (const d of terms) if (d && typeof d === 'object') addPane(p, cleanDesc(d), { restored: true });
     }
+    if ([...S.panes.values()].flat().some((p) => p.desc.launch)) harnessData();
     const wanted = session && session.activeProjectId;
     const first = S.projects.some((p) => p.id === wanted) ? wanted : (S.projects[0] ? S.projects[0].id : null);
     selectProject(first);

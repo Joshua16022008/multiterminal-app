@@ -5,7 +5,19 @@
   const helpLink = (key, opts) => (typeof window !== 'undefined' && window.DeckHelp && window.DeckHelp.linkFor ? window.DeckHelp.linkFor(key, opts) : null);
   const D = (window.DeckApp = window.DeckApp || {}), h = D.h;
   const labels = { claude: 'Claude Code', codex: 'Codex', kimi: 'Kimi' };
-  const tabs = { profile: 'Profil', quota: 'Kontingente', skills: 'Skills', plugins: 'Plugins', mods: 'Mods', libraries: 'Bibliotheken', memory: 'Memory', hotkeys: 'Hotkeys' };
+  const tabs = { profile: 'Profil', quota: 'Kontingente', skills: 'Skills', plugins: 'Plugins', mods: 'Mods', libraries: 'Bibliotheken', memory: 'Memory', hotkeys: 'Hotkeys', harness: 'Harnesses & Modelle' };
+  // App-wide sections: no provider switch above the content.
+  const APP_WIDE = new Set(['hotkeys', 'memory', 'harness']);
+  // Harness-Bereich (harness-panel.js): one panel instance keeps its state while the settings stay open.
+  let harnessPanel = null;
+  function harnessView(body) {
+    if (!harnessPanel && window.DeckHarnessPanel && window.deck && window.deck.harness && window.deck.endpoints) {
+      harnessPanel = window.DeckHarnessPanel.create({ document, api: window.deck, h, notify: D.notify, guard: D.guard });
+    }
+    if (harnessPanel) body.append(harnessPanel.el);
+    else body.append(note('Der Bereich „Harnesses & Modelle“ ist in dieser Ansicht nicht verfügbar.'));
+  }
+  function loadHarness() { if (harnessPanel) harnessPanel.render(); }
   const SETTINGS_ANCHORS = { profile: 'profil', quota: 'kontingente', libraries: 'bibliotheken' }; // übrige Tabs: gleiche Namen wie Überschriften
   const HK = window.DeckHotkeys;
   let hotkeyDraft = null, hotkeyOriginal = null, hotkeyDefaults = null, hotkeyPlatform = 'darwin', recording = null, recordingGeneration = 0;
@@ -80,6 +92,7 @@
     if (tab === 'quota') loadQuota();
     if (tab === 'hotkeys') loadHotkeys();
     if (tab === 'memory') loadMemory();
+    if (tab === 'harness') loadHarness();
   }
   async function loadHotkeys() {
     if (hotkeyDraft) return;
@@ -463,8 +476,8 @@
       },
     }));
     const main = h('section', { class: 'settings-main' });
-    const appWide = tab === 'hotkeys' || tab === 'memory';
-    main.append(h('div', { class: 'settings-top' }, h('strong', { class: 'settings-top-title', text: tabs[tab] + (appWide ? ' · gesamte App' : '') }), helpLink('einstellungen#' + (SETTINGS_ANCHORS[tab] || tab)), appWide ? null : button('Übersicht aktualisieren', reloadOverview), button('Schließen', () => toggle(false), { 'aria-label': 'Einstellungen schließen' })));
+    const appWide = APP_WIDE.has(tab);
+    main.append(h('div', { class: 'settings-top' }, h('strong', { class: 'settings-top-title', text: tabs[tab] + (appWide ? ' · gesamte App' : '') }), tab === 'harness' ? helpLink('harnesses-modelle') : helpLink('einstellungen#' + (SETTINGS_ANCHORS[tab] || tab)), appWide ? null : button('Übersicht aktualisieren', reloadOverview), button('Schließen', () => toggle(false), { 'aria-label': 'Einstellungen schließen' })));
     if (!appWide) {
       const providerIds = Object.keys(labels);
       const tablist = h('div', { class: 'settings-tabs', role: 'tablist', 'aria-label': 'Anbieter' });
@@ -474,7 +487,7 @@
     const body = h('div', { id: 'settings-content', class: 'settings-content', role: 'tabpanel', 'aria-label': appWide ? tabs[tab] : tabs[tab] + ' · ' + labels[scope] });
     if (error) body.append(h('div', { class: 'settings-error', role: 'alert', text: error }));
     if (message) body.append(h('div', { class: 'settings-message', role: 'status', text: message }));
-    if (tab === 'profile') profileView(body); else if (tab === 'quota') quotaView(body); else if (tab === 'hotkeys') hotkeysView(body); else if (tab === 'memory') memoryView(body); else inventoryView(body);
+    if (tab === 'profile') profileView(body); else if (tab === 'quota') quotaView(body); else if (tab === 'hotkeys') hotkeysView(body); else if (tab === 'memory') memoryView(body); else if (tab === 'harness') harnessView(body); else inventoryView(body);
     body.append(h('section', { class: 'settings-preview', hidden: true, 'aria-label': 'Quellvorschau' })); main.append(body); root.replaceChildren(nav, main);
     if (focusKey) {
       const replacement = [...root.querySelectorAll('button,input,textarea')].find(el => el.tagName === focusKey.tag && el.getAttribute('aria-label') === focusKey.label && (focusKey.label || el.textContent === focusKey.text));
@@ -496,6 +509,14 @@
     if (tab === 'quota') loadQuota();
     if (tab === 'hotkeys') loadHotkeys();
     if (tab === 'memory') loadMemory();
+    if (tab === 'harness') loadHarness();
+    return open;
+  }
+  // Opens the settings directly at one section (menu/palette "Harnesses & Modelle").
+  function show(id) {
+    if (!tabs[id]) return false;
+    if (!open) { tab = id; return toggle(true); }
+    if (tab !== id) select(scope, id);
     return open;
   }
   function init(options = {}) {
@@ -525,5 +546,5 @@
     });
     window.addEventListener('blur', () => { if (recording) { stopRecording(); if (open) render(); } });
   }
-  D.settingsPanel = { init, toggle, isOpen: () => open };
+  D.settingsPanel = { init, toggle, show, isOpen: () => open };
 })();
