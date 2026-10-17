@@ -58,9 +58,9 @@ test('parsePorcelain tolerates bare entries, empty input and no trailing blank l
 });
 
 test('classifyOrigin recognises codex, agent-worktrees, app and other', () => {
-  const home = '/Users/j';
-  assert.strictEqual(classifyOrigin('/Users/j/.codex/worktrees/1580/repo', home), 'codex');
-  assert.strictEqual(classifyOrigin('/Users/j/.codex/worktrees-other/x', home), 'other');
+  const home = '/home/j';
+  assert.strictEqual(classifyOrigin('/home/j/.codex/worktrees/1580/repo', home), 'codex');
+  assert.strictEqual(classifyOrigin('/home/j/.codex/worktrees-other/x', home), 'other');
   assert.strictEqual(classifyOrigin('/x/repo/.agent-worktrees/a', home), 'agent-worktrees');
   assert.strictEqual(classifyOrigin('/data/worktrees/p1/f-1', home, '/data/worktrees'), 'app');
   assert.strictEqual(classifyOrigin('/data/worktrees-x/p1', home, '/data/worktrees'), 'other');

@@ -116,17 +116,22 @@ test('public hotkeys: the task action does not exist (menu, palette, help table,
   assert.doesNotThrow(() => pub.validate({ ...defaults, help: ['Cmd+Shift+L'] }));
 });
 
-test('developer and unknown edition keep the full hotkey model', () => {
-  for (const edition of [{ edition: 'dev', features: allOn }, null]) {
+test('developer edition keeps the full hotkey model; missing renderer handshake disables developer actions', () => {
+  for (const edition of [{ edition: 'dev', features: allOn }]) {
     const hk = hotkeysFor(edition);
     assert.equal(hk.actions.some((a) => a.id === 'task-link'), true);
     assert.deepEqual([...hk.disabled], []);
     assert.deepEqual([...hk.defaults('darwin')['task-link']], ['Cmd+Shift+L']);
   }
+  for (const answer of [null, {}, { edition: 'public' }]) {
+    const hk = hotkeysFor(answer);
+    assert.equal(hk.actions.some(a => a.id === 'task-link'), false);
+    assert.equal(hk.actions.some(a => a.id === 'help'), true);
+  }
 });
 
 test('setLabel renames an existing action only', () => {
-  const hk = hotkeysFor(null);
+  const hk = hotkeysFor({ edition: 'dev', features: allOn });
   hk.setLabel('task-link', 'Eigene Aufgabe');
   assert.equal(hk.actions.find((a) => a.id === 'task-link').label, 'Eigene Aufgabe');
   hk.setLabel('gibt-es-nicht', 'x');
@@ -154,10 +159,15 @@ test('preload: public edition gets neither dictation nor task API, the developer
   assert.equal(pub.edition.edition, 'public');
   assert.equal('dictation' in pub, false);
   assert.equal('secondBrain' in pub, false);
-  for (const answer of [{ edition: 'dev', appName: 'Multiterminal', features: allOn }, null, new Error('kein Hauptprozess')]) {
+  for (const answer of [{ edition: 'dev', appName: 'Multiterminal', features: allOn }]) {
     const dev = preloadDeck(answer);
     assert.equal(typeof dev.dictation.start, 'function');
     assert.equal(typeof dev.secondBrain.getTask, 'function');
+  }
+  for (const answer of [null, {}, new Error('kein Hauptprozess')]) {
+    const closed = preloadDeck(answer);
+    assert.equal('dictation' in closed, false);
+    assert.equal('secondBrain' in closed, false);
   }
 });
 

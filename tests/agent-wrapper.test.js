@@ -43,12 +43,12 @@ function runTty(sb, args) {
 }
 
 test('hook settings: one command hook per event, absolute quoted path with spaces, notification matcher', () => {
-  const s = w.hookSettings({ mtEventPath: "/Users/a b/it's/bin/mt-event" });
+  const s = w.hookSettings({ mtEventPath: "/home/a b/it's/bin/mt-event" });
   assert.deepEqual(Object.keys(s.hooks), w.HOOK_EVENTS);
   for (const name of w.HOOK_EVENTS) {
     const hook = s.hooks[name][0].hooks[0];
     assert.equal(hook.type, 'command');
-    assert.equal(hook.command, `'/Users/a b/it'\\''s/bin/mt-event' ${name}`);
+    assert.equal(hook.command, `'/home/a b/it'\\''s/bin/mt-event' ${name}`);
     assert.ok(hook.timeout <= 2);
   }
   assert.match(s.hooks.Notification[0].matcher, /permission_prompt/);

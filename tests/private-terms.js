@@ -2,6 +2,7 @@
 // NUR ENTWICKLERVERSION (wird nicht exportiert): persönliche Begriffe für die Release-Wächter.
 // Die öffentliche Fassung prüft ohne diese Liste nur die allgemeinen Regeln.
 module.exports = [
+  [/\/Users\//, 'absoluter Nutzerpfad'],
   [/Second_Brain/i, 'Second_Brain'],
   [/Second[ -]Brain/i, 'Second Brain'],
   [/Fl(?:ü|ue)sterflow/i, 'Flüsterflow'],

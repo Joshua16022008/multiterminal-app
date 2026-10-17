@@ -242,10 +242,10 @@ test('forAccounts isolates failures per account', () => {
 });
 
 test('statuslineSettings quotes paths with spaces and quotes', () => {
-  const s = statuslineSettings({ execPath: '/Applications/Multi Terminal.app/Contents/MacOS/Multiterminal', scriptPath: "/Users/j/My Projects/it's/usage-statusline.js" });
+  const s = statuslineSettings({ execPath: '/Applications/Multi Terminal.app/Contents/MacOS/Multiterminal', scriptPath: "/home/j/My Projects/it's/usage-statusline.js" });
   assert.strictEqual(s.statusLine.type, 'command');
   assert.strictEqual(
     s.statusLine.command,
-    `ELECTRON_RUN_AS_NODE=1 '/Applications/Multi Terminal.app/Contents/MacOS/Multiterminal' '/Users/j/My Projects/it'\\''s/usage-statusline.js'`
+    `ELECTRON_RUN_AS_NODE=1 '/Applications/Multi Terminal.app/Contents/MacOS/Multiterminal' '/home/j/My Projects/it'\\''s/usage-statusline.js'`
   );
 });

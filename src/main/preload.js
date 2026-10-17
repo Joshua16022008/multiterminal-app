@@ -9,9 +9,9 @@ function subscribe(channel, callback) {
 }
 
 // Edition (dev/public) once, synchronously: hotkeys, menus and tiles know it from the start.
-// Without an answer everything stays as in the developer version.
+// Without an answer nothing developer-only is exposed (fail-closed, like edition.js).
 const edition = (() => { try { return ipcRenderer.sendSync('edition:get') || null; } catch (_) { return null; } })();
-const featureOn = (name) => !edition || !edition.features || edition.features[name] !== false;
+const featureOn = (name) => Boolean(edition && edition.features && edition.features[name] === true);
 
 contextBridge.exposeInMainWorld('deck', {
   edition,

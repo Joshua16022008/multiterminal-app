@@ -185,7 +185,7 @@ test('Tastenkürzel-Tabelle entspricht hotkeys.defaults("darwin")', () => {
 
 /* Persönliche Begriffe stehen nur in der Entwicklerversion (tests/private-terms.js, nicht exportiert). */
 const PRIVATE = (() => { try { return require('./private-terms'); } catch (_) { return []; } })();
-const RELEASE = [[/\/Users\//, '/Users/-Pfad'], ...PRIVATE];
+const RELEASE = PRIVATE;
 const FORBIDDEN = [
   ...RELEASE,
   [/Diktat|Diktier/i, 'Diktat'],

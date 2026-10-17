@@ -5,7 +5,7 @@
   const ACTION_PREFIX = 'focus-terminal:';
   const SLOTS = 10;
   // Edition (dev/public): the page gets it from the preload, the main process from edition.js.
-  // Unknown edition (tests without either) means every action, as in the developer version.
+  // A page with a missing edition response must not expose unavailable developer actions.
   const node = typeof module !== 'undefined' && module.exports && typeof require === 'function';
   const edition = (function () {
     if (typeof window !== 'undefined' && window.deck && window.deck.edition) return window.deck.edition;
@@ -13,7 +13,7 @@
     return null;
   })();
   const features = edition && edition.features ? edition.features : null;
-  const enabled = (action) => !action.feature || !features || features[action.feature] !== false;
+  const enabled = (action) => !action.feature || (features ? features[action.feature] === true : !(typeof window !== 'undefined' && window.deck));
   const allActions = [
     { id: 'settings', label: 'Einstellungen öffnen' },
     { id: 'new-terminal', label: 'Neues Terminal' },

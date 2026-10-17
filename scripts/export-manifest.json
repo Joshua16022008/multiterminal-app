@@ -13,7 +13,10 @@
     "tests/second-brain-tasks.test.js",
     "tests/task-link.test.js",
     "tests/private-terms.js",
-    "tests/edition-dev.test.js"
+    "tests/edition-dev.test.js",
+    "scripts/export.js",
+    "tests/export.test.js",
+    "export/"
   ],
   "internal": [
     "AGENTEN_AUFTRAEGE.md",
@@ -31,5 +34,11 @@
   "stripLines": {
     "src/renderer/index.html": "dev-only"
   },
-  "publicEdition": { "edition": "public", "appName": "Multiterminal", "bundleId": "io.github.multiterminal" }
+  "publicEdition": {
+    "edition": "public",
+    "appName": "Multiterminal",
+    "bundleId": "io.github.multiterminal"
+  },
+  "overlay": "export/overlay",
+  "identityConfirmed": false
 }

@@ -71,5 +71,22 @@ Maschinenlesbar in `scripts/export-manifest.json` (selbst nur Entwicklerversion)
 
 - **Gemeinsame Daten:** Electron legt die Daten nach App-Namen ab. Mit gleichem `appName` teilen eine installierte öffentliche Version und die Entwicklerversion `~/Library/Application Support/Multiterminal`. Zum lokalen Testen der öffentlichen Version einen anderen `appName` wählen oder mit eigenem Datenordner starten.
 - **Weiterer App-Name:** `package.json` (`productName`) und Texte, die „Multiterminal“ nennen (CLI-Hilfen `mt-*`, Einstellungen, PM-Rolle, Update-Texte im Renderer, `index.html`-Titel), setzt der Export bei einem anderen Namen; die technische Identität kommt schon aus `edition.json`.
-- **R-2 (nicht Teil dieses Schritts):** `README.md` (Abschnitt Diktat), Lizenz, Projektdateien, `.gitignore`, CI und die `IGNORE`-Liste in `build.js`.
-- Das Exportskript selbst (Kopie ohne `devOnly`/`internal`, `stripLines`, `edition.json`, Ziel `../multiterminal-export`).
+- Native sichtbare Prüfung und DMG-Erstellung benötigen eine startfähige macOS-Sitzung. Tests allein belegen weder Screenshot noch gestartetes Paket.
+
+## Öffentlichen Export prüfen und erzeugen
+
+`scripts/export-manifest.json` enthält die gemeinsamen Edition-Ausschlüsse; `export/manifest.json` ergänzt Export-Ausschlüsse und die strikte Datenschutzliste. Es gibt keine Datenschutz-Ausnahmen. `export/overlay/` ersetzt README, Lizenz und Beitragsdateien und ergänzt CI, Issue-Vorlagen und eine bereinigte Katalogreferenz.
+
+```bash
+node scripts/export.js --dry-run
+node scripts/export.js --dry-run --ref <commit>
+node scripts/export.js --target '../multiterminal-export'
+```
+
+Der Standard-Zielordner liegt neben dem Hauptrepository, auch beim Aufruf aus einem Worktree. Ein explizites relatives `--target` wird relativ zum aktuellen Arbeitsordner aufgelöst; im verschachtelten Worktree einen absoluten Zielpfad verwenden.
+
+Ablauf: unveränderliches `git archive` → Edition-Ausschlüsse → Overlay → öffentliche Edition und Paket-/Lockdatei → Datenschutz-Wächter über alle Dateien → `npm test` mit vorübergehend verlinkten Entwickler-Abhängigkeiten → erneuter Wächter → Zielabgleich → lokaler Commit `Export aus Entwicklerversion <sha>`. Ohne `--ref` müssen Exportdateien committet sein; ein expliziter Commit exportiert genau diesen Stand. Symlinks und Submodule im Snapshot werden vor dem Entpacken abgewiesen.
+
+Ein Probe-Export lässt das Ziel unverändert und gibt einen erhaltenen temporären Prüfpfad aus. Dort für Electron-QA bei Bedarf `node_modules` zur Entwicklerkopie verlinken und `scripts/qa-edition.js` ausführen; die QA verwendet eigene App-Daten. Ein echter Export akzeptiert nur ein leeres Ziel oder ein sauberes öffentliches Export-Repository. `.git`, `node_modules` und `dist` im Ziel bleiben erhalten, veraltete Quelldateien werden entfernt. Fremde Repositories, Quellenüberlappungen und Ziel-Symlinks werden abgewiesen.
+
+Im Export erzeugt `npm run release` eine App und ein DMG plus `.dmg.sha256` unter `dist/release/`. App-Name und Bundle-ID kommen aus der Edition. Repository-URLs werden erst nach Namensentscheidung ergänzt. Merge nach `main`, echter Export und Veröffentlichung folgen der Freigabereihenfolge aus `HANDOFF-OSS.md`.
