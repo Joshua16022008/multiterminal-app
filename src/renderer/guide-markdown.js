@@ -96,10 +96,18 @@
     return splitRow(line).length === splitRow(next).length;
   }
 
+  /* Like CommonMark: only bullets or an ordered list starting at 1 may interrupt a paragraph
+     ("17. Oktober" at the start of a wrapped line stays text). */
+  function interruptingItem(line) {
+    const m = ITEM_RE.exec(line);
+    if (!m) return false;
+    return /^[-*+]$/.test(m[2]) || /^0*1[.)]$/.test(m[2]);
+  }
+
   function startsBlock(lines, i) {
     const line = lines[i];
     return FENCE_RE.test(line) || HEADING_RE.test(line) || HR_RE.test(line) || QUOTE_RE.test(line)
-      || ITEM_RE.test(line) || COMMENT_START_RE.test(line) || isTableStart(lines, i);
+      || interruptingItem(line) || COMMENT_START_RE.test(line) || isTableStart(lines, i);
   }
 
   function parseBlocks(lines, state) {
@@ -134,9 +142,10 @@
         continue;
       }
       if (COMMENT_START_RE.test(line)) { // übrige Kommentare sind unsichtbar, auch mehrzeilig
-        while (i < lines.length && !lines[i].includes('-->')) i++;
-        i++;
-        continue;
+        let end = i;
+        while (end < lines.length && !lines[end].includes('-->')) end++;
+        if (end < lines.length) { i = end + 1; continue; }
+        // unclosed comment: fall through and render the line as text instead of dropping the rest
       }
       m = HEADING_RE.exec(line);
       if (m) {

@@ -101,3 +101,14 @@ test('das mitgelieferte Gerüst docs/guide ist lesbar', () => {
   assert.ok(slugs.includes('erste-schritte'));
   assert.ok(svc.read('erste-schritte').markdown.includes('Erste Schritte'));
 });
+
+test('Symlinks im Guide-Ordner werden übersprungen', () => {
+  const dir = tmp();
+  const other = tmp();
+  fs.writeFileSync(path.join(other, 'geheim.md'), '# Geheim\n');
+  fs.writeFileSync(path.join(dir, 'echt.md'), '# Echt\n');
+  fs.symlinkSync(path.join(other, 'geheim.md'), path.join(dir, 'link.md'));
+  const svc = createGuideService({ dir });
+  assert.deepEqual(svc.index().pages.map((p) => p.slug), ['echt']);
+  assert.equal(svc.read('link'), null);
+});

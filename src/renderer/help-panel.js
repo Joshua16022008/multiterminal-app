@@ -153,11 +153,15 @@
       let page;
       try { page = await api.read(slug); } catch (e) {
         if (my !== token) return false;
+        current = null; // content no longer shows a page: the next go() must re-render
+        renderNav();
         content.replaceChildren(h('p', { class: 'help-error', role: 'alert', text: 'Seite konnte nicht geladen werden: ' + message(e) }));
         return false;
       }
       if (my !== token) return false;
       if (!page) {
+        current = null;
+        renderNav();
         content.replaceChildren(h('p', { class: 'help-error', role: 'alert', text: 'Diese Hilfeseite gibt es nicht.' }));
         return false;
       }
@@ -165,7 +169,7 @@
       const frag = md.render(page.markdown, {
         h, document, onLink,
         onHeading: (a, node) => headingEls.set(a, node),
-        onHook: (name, node) => { if (hooks && hooks[name]) hooks[name](node); },
+        onHook: (name, node) => { if (hooks && Object.prototype.hasOwnProperty.call(hooks, name) && typeof hooks[name] === 'function') hooks[name](node); },
       });
       content.replaceChildren(frag);
       current = { slug: page.slug, title: page.title };
@@ -201,12 +205,18 @@
         el.hidden = false;
         if (onToggle) onToggle(true);
       }
-      if (!index) {
-        try { index = await api.index(); } catch (e) {
-          content.replaceChildren(h('p', { class: 'help-error', role: 'alert', text: 'Hilfe konnte nicht geladen werden: ' + message(e) }));
+      /* The index is reloaded on every open (cheap; the service caches by mtime), so pages added
+         in dev mode show up without a reload. A failed refresh keeps the previous index. */
+      {
+        let fresh = null, failure = null;
+        try { fresh = await api.index(); } catch (e) { failure = e; }
+        if (fresh && Array.isArray(fresh.pages)) index = fresh;
+        else if (!index) {
+          if (!failure) { index = { pages: [] }; } else {
+          content.replaceChildren(h('p', { class: 'help-error', role: 'alert', text: 'Hilfe konnte nicht geladen werden: ' + message(failure) }));
           return;
+          }
         }
-        if (!index || !Array.isArray(index.pages)) index = { pages: [] };
       }
       if (!isOpen) return; // währenddessen geschlossen
       const has = (s) => index.pages.some((p) => p.slug === s);

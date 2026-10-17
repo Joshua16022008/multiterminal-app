@@ -166,3 +166,21 @@ test('kein innerHTML: Renderer benutzt nur h und Textknoten', () => {
   const src = require('node:fs').readFileSync(require.resolve('../src/renderer/guide-markdown.js'), 'utf8');
   assert.doesNotMatch(src.replace(/\/\*[\s\S]*?\*\//g, ''), /innerHTML|insertAdjacentHTML|outerHTML/);
 });
+
+test('Datum am Zeilenanfang unterbricht keinen Absatz, "1." und Aufzählungen schon', () => {
+  const r = renderMd('Am Freitag war es\n17. Oktober und kalt.');
+  assert.equal(r.tags('ol').length, 0);
+  assert.match(textOf(r.tags('p')[0]), /war es 17\. Oktober und kalt\./);
+  const r2 = renderMd('Text\n1. eins\n2. zwei');
+  assert.equal(r2.tags('ol').length, 1);
+  assert.equal(renderMd('Text\n- punkt').tags('ul').length, 1);
+});
+
+test('Unabgeschlossener HTML-Kommentar verschluckt den Rest nicht', () => {
+  const md = 'Text\n\n<!-- offen\n\n# Kapitel\n\nmehr';
+  const r = renderMd(md);
+  assert.equal(r.tags('h1').length, 1);
+  assert.match(textOf(r.frag), /mehr/);
+  assert.deepEqual(MD.parse(md).headings.map((x) => x.anchor), ['kapitel']);
+  assert.equal(renderMd('a\n\n<!-- zu -->\n\nb').tags('p').length, 2);
+});

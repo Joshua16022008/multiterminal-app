@@ -125,7 +125,7 @@ createGuideService({ dir /* docs/guide */ }) → { index() → GuideIndex, read(
 
 | Kanal | `deck.guide.*` | Rückgabe |
 |---|---|---|
-| `guide:index` | `guide.index()` | `{ pages: [{ slug, title, order, headings: [{ level, text, anchor }] }] }` |
+| `guide:index` | `guide.index()` | `{ pages: [{ slug, title, order, keywords?, headings: [{ level, text, anchor }] }] }` (`keywords`: optional Zusatzfeld aus dem Frontmatter, für die Hilfe-Suche) |
 | `guide:read` | `guide.read(slug)` | `{ slug, title, markdown } \| null` (Slug-Whitelist aus Index) |
 
 Renderer: `window.DeckGuideMarkdown = { render(markdown, { h, onLink }) → DocumentFragment, anchor(text) }`

@@ -52,8 +52,8 @@ function createGuideService({ dir }) {
       if (!SLUG_RE.test(slug)) continue; // README.md u. Ä. sind keine Seiten
       const file = path.join(dir, name);
       let stat;
-      try { stat = fs.statSync(file); } catch (_) { continue; }
-      if (!stat.isFile()) continue;
+      try { stat = fs.lstatSync(file); } catch (_) { continue; }
+      if (!stat.isFile()) continue; // lstat: symlinks are skipped
       seen.add(slug);
       const key = stat.mtimeMs + ':' + stat.size;
       let entry = cache.get(slug);

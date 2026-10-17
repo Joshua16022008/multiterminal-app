@@ -206,3 +206,94 @@ test('Roh-HTML in einer Seite wird als Text angezeigt', async () => {
   assert.equal(walk(env.help.el).filter((n) => n.tag === 'img').length, 0);
   assert.match(textOf(env.help.el), /<img src=x onerror=alert\(1\)>/);
 });
+
+test('fehlgeschlagene Seite: Klick auf die zuvor aktive Seite rendert sie wieder', async () => {
+  // 'ports' is listed in the index but cannot be read (like a broken link target)
+  const bad = makeEnv({ api: { async read(slug) { return slug === 'ports' ? null : { slug, title: slug, markdown: '# ' + slug + '\n\nInhalt ' + slug }; } } });
+  await bad.help.open('erste-schritte');
+  const pageBtn = (e, slug) => byProp(e.help.el, 'data-help-page', slug);
+  await pageBtn(bad, 'ports').props.onclick();
+  assert.match(textOf(bad.help.el), /gibt es nicht/);
+  assert.equal(pageBtn(bad, 'erste-schritte').props['aria-current'], null);
+  await pageBtn(bad, 'erste-schritte').props.onclick();
+  assert.match(textOf(bad.help.el), /Inhalt erste-schritte/);
+  assert.doesNotMatch(textOf(bad.help.el), /gibt es nicht/);
+});
+
+test('Hooks: geerbte Objekt-Eigenschaften werden nicht aufgerufen', async () => {
+  const env = makeEnv({
+    hooks: { hotkeys: () => {} },
+    api: { async read(slug) { return { slug, title: slug, markdown: '# x\n\n<!-- mt:constructor -->\n\n<!-- mt:hotkeys -->' }; } },
+  });
+  await env.help.open('ports'); // must not throw
+  assert.ok(env.help.el);
+});
+
+test('Index wird bei jedem Öffnen neu geladen', async () => {
+  const env = makeEnv();
+  await env.help.open('ports');
+  env.help.close();
+  await env.help.open('ports');
+  assert.equal(env.calls.index, 2);
+});
+
+test('Index-Fehler beim erneuten Öffnen behält den alten Index', async () => {
+  let fail = false;
+  const env = makeEnv({ api: { async index() { if (fail) throw new Error('weg'); return INDEX; } } });
+  await env.help.open('ports');
+  env.help.close();
+  fail = true;
+  await env.help.open('ports');
+  assert.doesNotMatch(textOf(env.help.el), /konnte nicht geladen/);
+  assert.match(textOf(env.help.el), /Ports/);
+});
+
+test('echte h-Semantik (k in el / setAttribute, null/false übersprungen)', async () => {
+  const mk = () => {
+    const attrs = {};
+    const el = {
+      nodeType: 1, children: [], attrs, className: '', hidden: false, disabled: false, href: '', scrollTop: 0, textContent: '',
+      append(...k) { this.children.push(...k); },
+      replaceChildren(...k) { this.children = k.flatMap((x) => (x && x.nodeType === 11 ? x.children : [x])); },
+      setAttribute(k, v) { attrs[k] = String(v); },
+      addEventListener(t, f) { (this.listeners = this.listeners || {})[t] = f; },
+      focus() {}, scrollIntoView() {},
+    };
+    return el;
+  };
+  const doc = {
+    activeElement: null,
+    createElement: () => mk(),
+    createTextNode: (value) => ({ nodeType: 3, text: value }),
+    createDocumentFragment: () => ({ nodeType: 11, children: [], append(...k) { this.children.push(...k); } }),
+  };
+  // same logic as DeckApp.h in terminal-pane.js
+  const h = (tag, props, ...kids) => {
+    const el = doc.createElement(tag);
+    for (const [k, v] of Object.entries(props || {})) {
+      if (v == null || v === false) continue;
+      if (k === 'class') el.className = v;
+      else if (k === 'text') el.textContent = v;
+      else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+      else if (k in el) el[k] = v;
+      else el.setAttribute(k, v);
+    }
+    for (const c of kids.flat()) if (c != null) el.append(c);
+    return el;
+  };
+  const store = new Map();
+  const api = {
+    async index() { return INDEX; },
+    async read(slug) { return { slug, title: slug, markdown: PAGES[slug] }; },
+  };
+  const help = Help.create({ document: doc, api, h, palette, storage: { getItem: (k) => store.get(k) || null, setItem: (k, v) => store.set(k, v) } });
+  assert.equal(help.el.hidden, true);
+  await help.open('worktrees');
+  assert.equal(help.el.hidden, false);
+  const all = (n) => [n, ...(n.children || []).flatMap(all)];
+  const active = all(help.el).filter((n) => n.attrs && n.attrs['aria-current'] === 'page');
+  assert.equal(active.length, 1);
+  assert.equal(active[0].attrs['data-help-page'], 'worktrees');
+  const inactive = all(help.el).filter((n) => n.attrs && n.attrs['data-help-page'] && n.attrs['aria-current'] === undefined);
+  assert.equal(inactive.length, 2);
+});
