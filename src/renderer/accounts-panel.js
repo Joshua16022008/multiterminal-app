@@ -173,6 +173,7 @@
       root.append(
         h('div', { class: 'pp-head' },
           h('strong', { text: 'Konten' }),
+          (D.help && D.help.link ? D.help.link('einstellungen') : null),
           h('span', { class: 'spacer' }),
           h('button', { class: 'ib', title: 'Neu laden und Verbrauch aktualisieren', text: '⟳', onclick: reload }),
           h('button', { class: 'ib', title: 'Schließen', text: '✕', onclick: () => opts.onClose() })),

@@ -60,7 +60,7 @@
     }
 
     const form = h('form', null,
-      h('h2', { text: 'Arbeitskopie für „' + project.name + '“' }),
+      h('h2', { text: 'Arbeitskopie für „' + project.name + '“' }, D.help && D.help.link ? D.help.link('worktrees') : null),
       list,
       h('h3', { text: 'Neue Arbeitskopie' }),
       h('label', { text: 'Branch (wird neu angelegt)' }, branch),

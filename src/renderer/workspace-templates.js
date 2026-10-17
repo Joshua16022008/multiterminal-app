@@ -176,7 +176,7 @@
     };
     render(templates);
     showModal(h('form', { class: 'tpl-form', onsubmit: (e) => e.preventDefault() },
-      h('h2', { text: 'Aufbau starten' }),
+      h('h2', { text: 'Aufbau starten' }, typeof window !== 'undefined' && window.DeckApp && window.DeckApp.help && window.DeckApp.help.link ? window.DeckApp.help.link('terminals-und-agenten') : null),
       h('p', { class: 'tpl-note', text: `Neue Terminals in „${project.name}“. Zuerst gibt es eine Vorschau – es wird nichts ausgeführt, bevor du „Starten“ wählst.` }),
       list,
       h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn-small', text: 'Schließen', onclick: closeModal }))));

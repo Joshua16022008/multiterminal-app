@@ -1,6 +1,8 @@
 'use strict';
 /* F09: editierbare Übergabe an eine bewusst gewählte andere Kachel. Eingefügt wird ausschließlich über die Promptvorschau (F06). */
 (function () {
+  // „?“-Link zur Hilfe; ohne Hilfe-Panel (Tests, Node) bleibt er weg.
+  const helpLink = (key) => (typeof window !== 'undefined' && window.DeckApp && window.DeckApp.help && window.DeckApp.help.link ? window.DeckApp.help.link(key) : null);
   const EXCERPT_LINES = 60;
   const EXCERPT_MAX = 4000;
   // Steuerzeichen außer Zeilenumbruch würde die Promptvorschau ablehnen; sie werden hier entfernt.
@@ -57,7 +59,7 @@
   function createHandoffDialog({ document: doc, h, getSource, getTargets, getProjectId, readProgress, promptDraft, notify }) {
     let source = null, targets = [], openToken = 0;
 
-    const title = h('h2', { id: 'handoff-title', text: 'Übergabe an anderes Terminal' });
+    const title = h('h2', { id: 'handoff-title', text: 'Übergabe an anderes Terminal' }, ...[helpLink('uebergaben-und-anhaenge')].filter(Boolean));
     const sourceEl = h('p', { class: 'handoff-source' });
     const select = h('select', { id: 'handoff-target' });
     const noTargets = h('p', { class: 'handoff-note', hidden: true, text: 'Keine andere laufende Kachel in diesem Projekt.' });

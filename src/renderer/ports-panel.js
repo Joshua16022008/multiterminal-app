@@ -2,6 +2,8 @@
 (function () {
   'use strict';
   const POLL_MS = 3000;
+  // „?“-Link zur Hilfe; ohne Hilfe-Panel (Tests, alte Seite) bleibt er weg.
+  const helpLink = (key) => (typeof window !== 'undefined' && window.DeckApp && window.DeckApp.help && window.DeckApp.help.link ? window.DeckApp.help.link(key) : null);
 
   function createPortsPanel({ root, h, api, getLabel, onJump, onBrowser, onClose,
     schedule = setTimeout, cancel = clearTimeout, pollMs = POLL_MS }) {
@@ -12,7 +14,7 @@
 
     function render() {
       root.replaceChildren(h('div', { class: 'ports-head' },
-        h('strong', { text: 'Devserver & Ports' }), h('span', { class: 'spacer' }),
+        h('strong', { text: 'Devserver & Ports' }), helpLink('ports'), h('span', { class: 'spacer' }),
         h('button', { class: 'ib', text: '⟳', title: 'Ports aktualisieren', disabled: loading, onclick: refresh }),
         h('button', { class: 'ib', text: '✕', title: 'Portübersicht schließen', onclick: onClose })));
       const body = h('div', { class: 'ports-body' });

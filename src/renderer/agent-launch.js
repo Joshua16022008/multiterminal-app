@@ -6,6 +6,9 @@
 (function () {
   'use strict';
 
+  // „?“-Link zur Hilfe; ohne Hilfe-Panel (Tests, Node) bleibt er weg.
+  const helpLink = (key) => (typeof window !== 'undefined' && window.DeckApp && window.DeckApp.help && window.DeckApp.help.link ? window.DeckApp.help.link(key) : null);
+
   function createController({ api, launch, onChange = () => {}, notify = () => {} }) {
     let generation = 0;
     let state = { opened: false, busy: false, loading: false };
@@ -203,8 +206,9 @@
     ]);
     const preview = el('div', { id: id('preview') }, [context.label]);
     const heading = el('h2', { id: id('title'), text: 'Agent mit Kontext starten' });
+    const headRow = el('div', { class: 'agent-launch-head', style: 'display:flex;align-items:center;gap:8px' }, [heading, helpLink('terminals-und-agenten')].filter(Boolean));
     const dialog = el('dialog', { id: id('dialog'), 'aria-labelledby': id('title'), 'aria-describedby': id('intro') }, [
-      heading, el('p', { id: id('intro'), class: 'agent-launch-note', text: 'Wähle den Arbeitsordner und beschreibe den Auftrag. Der Agent startet erst mit „Agent starten“.' }),
+      headRow, el('p', { id: id('intro'), class: 'agent-launch-note', text: 'Wähle den Arbeitsordner und beschreibe den Auftrag. Der Agent startet erst mit „Agent starten“.' }),
       edit, summary, warnings, preview, status, error,
       el('div', { class: 'agent-launch-actions' }, [cancel, back, prepare, start]),
     ]);

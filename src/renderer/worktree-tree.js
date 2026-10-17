@@ -305,6 +305,7 @@
         h('div', { class: 'wtv-head' },
           h('button', { class: 'btn-small', type: 'button', text: '← Zurück zu den Terminals', onclick: close }),
           h('strong', { class: 'wtv-title', text: 'Arbeitskopien' + (project && project.name ? ' · ' + project.name : '') }),
+          (typeof window !== 'undefined' && window.DeckApp && window.DeckApp.help && window.DeckApp.help.link ? window.DeckApp.help.link('worktrees') : null),
           h('span', { class: 'spacer' }),
           h('button', { class: 'btn-small', type: 'button', text: '⟳ Aktualisieren', disabled: loading, title: 'Stammbaum neu einlesen', onclick: load })),
         h('p', { class: 'wtv-note', text: BRANCH_HINT }),

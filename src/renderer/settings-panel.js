@@ -461,7 +461,7 @@
     }));
     const main = h('section', { class: 'settings-main' });
     const appWide = tab === 'hotkeys' || tab === 'memory';
-    main.append(h('div', { class: 'settings-top' }, h('strong', { class: 'settings-top-title', text: tabs[tab] + (appWide ? ' · gesamte App' : '') }), appWide ? null : button('Übersicht aktualisieren', reloadOverview), button('Schließen', () => toggle(false), { 'aria-label': 'Einstellungen schließen' })));
+    main.append(h('div', { class: 'settings-top' }, h('strong', { class: 'settings-top-title', text: tabs[tab] + (appWide ? ' · gesamte App' : '') }), D.help && D.help.link ? D.help.link('einstellungen') : null, appWide ? null :button('Übersicht aktualisieren', reloadOverview), button('Schließen', () => toggle(false), { 'aria-label': 'Einstellungen schließen' })));
     if (!appWide) {
       const providerIds = Object.keys(labels);
       const tablist = h('div', { class: 'settings-tabs', role: 'tablist', 'aria-label': 'Anbieter' });
