@@ -14,6 +14,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { execFile } = require('node:child_process');
+const { randomUUID } = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -31,14 +32,14 @@ function parseArgs(argv) {
   return opts;
 }
 
-const run = (file, args, cwd) => new Promise((resolve, reject) => {
-  execFile(file, args, { cwd, maxBuffer: 64 * 1024 * 1024, encoding: 'utf8' }, (err, stdout) => (err ? reject(err) : resolve(stdout)));
+const run = (file, args, cwd, options = {}) => new Promise((resolve, reject) => {
+  execFile(file, args, { cwd, maxBuffer: 64 * 1024 * 1024, encoding: 'utf8', ...options }, (err, stdout) => (err ? reject(err) : resolve(stdout)));
 });
 
 const posix = (p) => p.split(path.sep).join('/');
 const isInside = (child, parent) => {
   const rel = path.relative(parent, child);
-  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+  return rel === '' || (rel !== '..' && !rel.startsWith('..' + path.sep) && !path.isAbsolute(rel));
 };
 
 function lstatOrNull(p) {
@@ -110,8 +111,13 @@ function walkFiles(dir, base = dir, out = []) {
 
 function copyFile(from, to) {
   fs.mkdirSync(path.dirname(to), { recursive: true });
-  fs.copyFileSync(from, to);
-  fs.chmodSync(to, fs.statSync(from).mode & 0o777);
+  // Replacing the inode also protects hard links to files outside the target.
+  const temporary = path.join(path.dirname(to), '.export-copy-' + randomUUID());
+  try {
+    fs.copyFileSync(from, temporary, fs.constants.COPYFILE_EXCL);
+    fs.chmodSync(temporary, fs.statSync(from).mode & 0o777);
+    fs.renameSync(temporary, to);
+  } finally { fs.rmSync(temporary, { force: true }); }
 }
 
 function transformPackageJson(file, manifest) {
@@ -298,7 +304,7 @@ async function exportEdition(opts) {
         delete env.NODE_TEST_CONTEXT; delete env.NODE_TEST_REPORTER; delete env.NODE_TEST_REPORTER_DESTINATION;
         execFile('npm', ['test'], { cwd: staging, env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }, (err, stdout, stderr) => err ? reject(new Error(`Exporttests fehlgeschlagen:\n${stdout}\n${stderr}`)) : resolve(stdout));
       });
-      log(output.split('\n').filter(line => /^# (tests|pass|fail|skipped|todo|duration_ms) /.test(line)).join('\n'));
+      log(output.split('\n').filter(line => /^[#ℹ] (tests|pass|fail|skipped|todo|duration_ms) /.test(line)).join('\n'));
     } finally { fs.unlinkSync(path.join(staging, 'node_modules')); }
     const afterTests = walkFiles(staging).sort();
     if (JSON.stringify(afterTests) !== JSON.stringify(files)) throw new Error('Tests haben den Export-Dateibaum verändert.');
@@ -312,11 +318,23 @@ async function exportEdition(opts) {
     const plan = syncTarget({ staging, files, target, keep, apply: false });
     if (!opts.dryRun) {
       // Check author/committer identity before modifying the target.
-      for (const identity of ['GIT_AUTHOR_IDENT', 'GIT_COMMITTER_IDENT']) await run('git', ['var', identity], existingRepo ? target : source);
+      const commitEnv = { ...process.env };
+      for (const role of ['AUTHOR', 'COMMITTER']) {
+        let identity;
+        if (existingRepo) {
+          try { identity = (await run('git', ['var', `GIT_${role}_IDENT`], target)).trim(); } catch (_) { /* use the developer's local identity below */ }
+        }
+        if (!identity) identity = (await run('git', ['var', `GIT_${role}_IDENT`], source)).trim();
+        const match = /^(.*) <([^<>]+)> (\d+ [+-]\d{4})$/.exec(identity);
+        if (!match) throw new Error(`Ungültige Git-Identität: ${role}`);
+        commitEnv[`GIT_${role}_NAME`] = match[1];
+        commitEnv[`GIT_${role}_EMAIL`] = match[2];
+        commitEnv[`GIT_${role}_DATE`] = match[3];
+      }
       syncTarget({ staging, files, target, keep, apply: true });
       if (!existingRepo) await run('git', ['init', '-b', 'main'], target);
       await run('git', ['add', '-A'], target);
-      if ((await run('git', ['diff', '--cached', '--name-only'], target)).trim()) await run('git', ['commit', '-m', `Export aus Entwicklerversion ${sha.slice(0, 12)}`], target);
+      if ((await run('git', ['diff', '--cached', '--name-only'], target)).trim()) await run('git', ['commit', '-m', `Export aus Entwicklerversion ${sha.slice(0, 12)}`], target, { env: commitEnv });
     }
     success = true;
     log(`${opts.dryRun ? 'Probe-Export' : 'Export'} ${sha.slice(0, 12)}: ${files.length} Dateien, +${plan.add.length} neu, ~${plan.update.length} geändert, -${plan.remove.length} entfernt. Wächter und npm test bestanden.`);

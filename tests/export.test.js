@@ -76,12 +76,17 @@ test('sync preserves .git, removes stale files and never follows target symlinks
   assert.equal(fs.readFileSync(path.join(f.target, '.git/sentinel'), 'utf8'), 'history');
   assert.equal(fs.existsSync(path.join(f.target, 'stale.txt')), false);
   assert.equal(fs.readFileSync(path.join(f.target, 'nested/keep.txt'), 'utf8'), 'replacement');
+  fs.linkSync(path.join(outside, 'keep.txt'), path.join(f.target, 'hardlink.txt'));
+  write(staging, 'hardlink.txt', 'new content');
+  syncTarget({ ...opts, files: ['nested/keep.txt', 'hardlink.txt'], apply: true });
+  assert.equal(fs.readFileSync(path.join(outside, 'keep.txt'), 'utf8'), 'untouched');
+  assert.equal(fs.readFileSync(path.join(f.target, 'hardlink.txt'), 'utf8'), 'new content');
   assert.throws(() => syncTarget({ ...opts, files: ['../escape'] }), /Unsicher/);
 });
 
 test('target checks reject source ancestors, descendants, unrelated repositories and symlink aliases', t => {
   const f = fixture(t);
-  for (const target of [f.source, f.root, path.join(f.source, 'nested')]) assert.throws(() => checkTarget(target, f.source));
+  for (const target of [f.source, f.root, path.join(f.source, 'nested'), path.join(f.source, '..nested')]) assert.throws(() => checkTarget(target, f.source));
   fs.mkdirSync(f.target); write(f.target, '.git/marker', 'unrelated');
   assert.throws(() => checkTarget(f.target, f.source), /kein öffentliches/);
   const alias = path.join(f.root, 'alias'); fs.symlinkSync(f.target, alias);
@@ -135,4 +140,27 @@ test('real temporary exports create fresh history, preserve .git, remove old fil
   assert.equal(fs.existsSync(path.join(f.target, 'keep.txt')), false);
   assert.equal(fs.readFileSync(path.join(f.target, '.git/config')).equals(config), true);
   assert.equal(git(f.target, 'rev-list', '--count', 'HEAD'), '2');
+});
+
+test('fresh export commits with source-local identity when global and system Git config are absent', async t => {
+  const keys = ['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_AUTHOR_DATE', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL', 'GIT_COMMITTER_DATE'];
+  const original = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+  try {
+    for (const key of keys) delete process.env[key];
+    process.env.GIT_CONFIG_GLOBAL = '/dev/null'; process.env.GIT_CONFIG_NOSYSTEM = '1';
+    const f = fixture(t);
+    await exportEdition({ source: f.source, target: f.target });
+    assert.equal(git(f.target, 'log', '-1', '--format=%an <%ae>'), 'Export Test <export@example.invalid>');
+    assert.equal(git(f.target, 'status', '--porcelain'), '');
+    write(f.source, 'keep.txt', 'second export'); f.commit();
+    await exportEdition({ source: f.source, target: f.target });
+    assert.equal(git(f.target, 'rev-list', '--count', 'HEAD'), '2');
+    assert.equal(fs.readFileSync(path.join(f.target, 'keep.txt'), 'utf8'), 'second export');
+    git(f.target, 'config', 'user.name', 'Target Author'); git(f.target, 'config', 'user.email', 'target@example.invalid');
+    write(f.source, 'keep.txt', 'third export'); f.commit();
+    await exportEdition({ source: f.source, target: f.target });
+    assert.equal(git(f.target, 'log', '-1', '--format=%an <%ae>'), 'Target Author <target@example.invalid>');
+  } finally {
+    for (const key of keys) { if (original[key] === undefined) delete process.env[key]; else process.env[key] = original[key]; }
+  }
 });
