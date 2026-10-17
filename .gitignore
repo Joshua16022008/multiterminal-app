@@ -6,3 +6,4 @@ dist/
 .gstack/
 .multiterminal/
 .qa-*/
+.claude/worktrees/
