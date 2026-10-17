@@ -97,13 +97,14 @@ function createWorktreeTree({ run, worktrees, homeDir = os.homedir(), appDir = n
   // Callers get their own copy so nobody can mutate the cached tree.
   const copy = (v) => JSON.parse(JSON.stringify(v));
 
-  async function tree(project) {
+  async function tree(project, { force = false } = {}) {
     if (!project || typeof project.path !== 'string' || !project.path) {
       return { ok: true, isGit: false, projectPath: '', generatedAt: now(), trunk: null, nodes: [] };
     }
     const records = worktrees && typeof worktrees.list === 'function' ? worktrees.list(String(project.id)) : [];
     const signature = JSON.stringify(records.map((r) => [r.workspaceId, r.cwd, r.managed, r.branch]));
     const key = `${project.id}\u0000${project.path}`;
+    if (force) cache.delete(key);
     const hit = cache.get(key);
     if (hit && hit.signature === signature && now() - hit.at < cacheMs) return copy(hit.value);
     const flightKey = `${key}\u0000${signature}`;

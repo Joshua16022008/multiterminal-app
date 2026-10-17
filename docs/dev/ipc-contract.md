@@ -27,7 +27,7 @@ createWorktreeTree({ run = runGit, worktrees /* createWorktreeService-Instanz */
 ```
 
 `src/main/worktree-service.js` bekommt zusätzlich:
-- `adopt({ projectId, cwd, projectPath? })` → Datensatz `{ workspaceId, projectId, cwd, branch, managed:false, createdAt }`
+- `adopt({ projectId, cwd, projectPath? })` → Datensatz `{ workspaceId, projectId, cwd, branch, baseRef:'', managed:false, createdAt }`
   (nur wenn `cwd` in `git worktree list` des Projekts steht; idempotent per realpath).
   **Integriert (Etappe 3a):** Der Dienst kennt den Repo-Ordner nicht aus `projectId` allein. Main übergibt
   `createWorktreeService({ dataDir, getProjectPath: (id) => projects.get(id)?.path })`; ein optionales
@@ -44,7 +44,7 @@ createWorktreeTree({ run = runGit, worktrees /* createWorktreeService-Instanz */
 
 | Kanal | `deck.worktrees.*` | Rückgabe |
 |---|---|---|
-| `worktrees:tree` | `tree(projectId)` | `Tree` (unten) |
+| `worktrees:tree` | `tree(projectId, force?)` (`force:true` umgeht den 10-s-Cache) | `Tree` (unten) |
 | `worktrees:adopt` | `adopt(projectId, cwd)` | `{ ok:true, workspace }` \| `{ ok:false, error }` |
 | `worktrees:branchOf` | `branchOf(projectId, workspaceId?)` | `string \| null` (Branch der Arbeitskopie bzw. des Projektordners) |
 
@@ -159,7 +159,7 @@ Bestätigte Klarstellungen (Integrator, Etappe 3a, 17.10.2026):
 - **(b) Memory-Adapter:** Der Memory-Adapter ist projektgebunden und wird der `createHarnessLaunch`-Factory
   übergeben (Main erzeugt die Factory je Projekt bzw. reicht den projektgebundenen Adapter durch). Die
   IPC-Signatur bleibt unverändert: `terminals:create` mit `launch: { harnessId, model?, endpointId? }`.
-- **(c) Modellquellen:** `createModelSources({ catalog, run, fetch, endpoints? })` bekommt optional den
+- **(c) Modellquellen (vorgeschlagen, von Codex noch nicht bestätigt):** `createModelSources({ catalog, run, fetch, endpoints? })` bekommt optional den
   Endpunkt-Speicher (`createEndpointStore`-Instanz), um `baseUrl`/Typ eines `endpointId` aufzulösen. Ohne
   `endpoints` liefert eine Abfrage mit `endpointId` `{ models: [], source, error }` statt einer Exception.
 

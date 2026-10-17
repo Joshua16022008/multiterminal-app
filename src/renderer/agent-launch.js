@@ -35,6 +35,10 @@
         if (!current(token)) return false;
         if (!Array.isArray(items)) throw new Error('Arbeitskopien konnten nicht geladen werden.');
         state.workspaces = items;
+        if (state.folder === 'existing' && !items.some((ws) => ws.workspaceId === state.workspaceId)) {
+          state.folder = 'new'; state.workspaceId = '';
+          state.error = 'Die gewählte Arbeitskopie gibt es nicht mehr. Es wird eine neue angelegt.';
+        }
       } catch (error) {
         if (!current(token)) return false;
         state.error = errorText(error);

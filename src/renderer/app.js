@@ -922,6 +922,7 @@
             prepared.workspaceId ? { workspaceId: prepared.workspaceId } : undefined);
           if (!pane) throw new Error('Das Terminal konnte nicht angelegt werden.');
           if (S.activeId !== current.id) selectProject(current.id);
+          if (prepared.workspaceId && D.refreshTreeButton) D.refreshTreeButton();
           return pane;
         },
       });
@@ -947,8 +948,8 @@
     const treeApi = {
       worktrees: {
         ...api.worktrees,
-        tree: async (pid) => {
-          const t = await api.worktrees.tree(pid);
+        tree: async (pid, force) => {
+          const t = await api.worktrees.tree(pid, force);
           lastTree = { projectId: pid, tree: t };
           if (pid === S.activeId) applyTreeButton(t);
           return t;

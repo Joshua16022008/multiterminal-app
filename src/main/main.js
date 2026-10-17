@@ -550,9 +550,9 @@ function registerIpc() {
     return result;
   });
   // Stammbaum: read-only tree, adopting a foreign worktree as a linked record, branch for tile chips.
-  handle('worktrees:tree', (projectId) => {
+  handle('worktrees:tree', (projectId, force) => {
     const project = requireProject(projectId);
-    return worktreeTree.tree({ id: project.id, path: project.path });
+    return worktreeTree.tree({ id: project.id, path: project.path }, { force: force === true });
   });
   handle('worktrees:adopt', async (projectId, cwd) => {
     const project = requireProject(projectId);

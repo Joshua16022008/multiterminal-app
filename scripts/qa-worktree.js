@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 const { app } = require('electron');
 const phase = process.env.QA_PHASE === '2' ? 2 : 1;
-const root = process.env.QA_ROOT || fs.mkdtempSync(path.join(os.tmpdir(), 'mt-wt-qa-'));
+const root = process.env.QA_ROOT || fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'mt-wt-qa-'));
 const home = path.join(root, 'home'), data = path.join(root, 'data'), repo = path.join(root, 'repo');
 const git = (...a) => execFileSync('git', a, { cwd: repo, encoding: 'utf8' });
 if (phase === 1) {

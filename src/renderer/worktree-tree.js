@@ -85,7 +85,7 @@
       loading = true; error = '';
       render();
       try {
-        const t = await api.worktrees.tree(project.id);
+        const t = await api.worktrees.tree(project.id, true);
         if (my !== token || !isOpenFlag) return;
         tree = t;
         if (t && t.ok === false) error = t.error || 'Der Stammbaum konnte nicht gelesen werden.';

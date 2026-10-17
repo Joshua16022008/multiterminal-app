@@ -224,3 +224,14 @@ test('open from the Stammbaum preselects the working copy or the project folder'
   await f.controller.open({ project, workspaceId: '' });
   assert.equal(f.controller.getState().folder, 'new');
 });
+
+test('a stale preselected workspaceId falls back to a new working copy with a notice', async () => {
+  const f = fixture();
+  await f.controller.open({ project, workspaceId: 'gone' });
+  const s = f.controller.getState();
+  assert.strictEqual(s.folder, 'new');
+  assert.strictEqual(s.workspaceId, '');
+  assert.match(s.error, /nicht mehr/);
+  await f.controller.open({ project, workspaceId: 'w1' });
+  assert.strictEqual(f.controller.getState().folder, 'existing');
+});

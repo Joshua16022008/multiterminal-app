@@ -162,7 +162,7 @@ app.on('browser-window-created', (_e, win) => {
 
       // Removal: dirty refused (button and IPC), clean removed, its branch stays.
       await run("document.getElementById('btn-tree').click()");
-      await until(async () => (await cards()).length === 7, 'reopen for removal');
+      await until(async () => (await cards()).length === 7 && /kind-linked/.test((await card('codex/extern')).cls), 'reopen for removal (fresh data)');
       assert.match((await card('codex/extern')).cls, /kind-linked/);
       const dirtyBtn = (await card('feature/dirty')).buttons.find((b) => b.text === 'Entfernen');
       assert.equal(dirtyBtn.disabled, true); assert.match(dirtyBtn.title, /ungesicherte/);

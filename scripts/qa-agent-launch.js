@@ -8,7 +8,7 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 const { app } = require('electron');
-const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mt-agent-launch-qa-'));
+const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'mt-agent-launch-qa-'));
 const home = path.join(root, 'home'), data = path.join(root, 'data'), repo = path.join(root, 'project');
 const bin = path.join(home, '.local/bin'), recordsFile = path.join(root, 'records.jsonl');
 const quote = text => "'" + text.replace(/'/g, "'\\''") + "'";

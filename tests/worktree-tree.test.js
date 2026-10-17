@@ -424,3 +424,14 @@ test('concurrent identical requests share one run and get independent copies', a
   assert.notStrictEqual(c.nodes[0].branch, 'mutated');
   assert.ok(f.maxActive() <= 4);
 });
+
+test('force bypasses the cache so freshly changed counts show up', async () => {
+  const f = fakeRun();
+  const t = createWorktreeTree({ run: f.run, worktrees: noRecords, homeDir: '/nohome' });
+  await t.tree({ id: 'p1', path: os.tmpdir() });
+  const before = f.calls.length;
+  await t.tree({ id: 'p1', path: os.tmpdir() });
+  assert.strictEqual(f.calls.length, before, 'second call is served from cache');
+  await t.tree({ id: 'p1', path: os.tmpdir() }, { force: true });
+  assert.ok(f.calls.length > before, 'force reads git again');
+});

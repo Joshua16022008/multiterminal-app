@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const { app } = require('electron');
-const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mt-topbar-qa-'));
+const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'mt-topbar-qa-'));
 const home = path.join(root, 'home'), data = path.join(root, 'data'), project = path.join(root, 'project');
 for (const dir of [home, data, project, path.join(data, 'session')]) fs.mkdirSync(dir, { recursive: true });
 const quote = value => "'" + value.replace(/'/g, "'\"'\"'") + "'";
