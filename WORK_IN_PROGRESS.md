@@ -7,11 +7,13 @@ Vor Arbeitsbeginn zusammen mit `AGENTS.md`, `PROJECT_STATUS.md` und `PROGRESS.md
 ### UPDATE-PUSH-CODEX-20261018-01 – Alle fertigen Features integrieren und Update pushen
 
 - Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Folgeauftrag 18.10.2026: Push zum Update mit allen neuen Features fertigstellen. Damit sind lokale Integration/Merge, Commit, Update-Build und Push dieses fertigen Umfangs freigegeben; keine Installation, kein Neustart und keine Veröffentlichung des separaten OSS-Export-Repositories.
-- Status: in Arbeit; Ausgang `main`/`b7c86c1` plus fünf bekannte Dokumentänderungen; fertiger Edition/Export-Branch `6d30dc6`. Native GUI-/DMG-Grenzen aus Vorgängerauftrag bleiben ausdrücklich offen.
+- Status: Integration und Update-Paket geprüft, Git-Push als letzte Auslieferungsaktion freigegeben; Ausgang `main`/`b7c86c1` plus fünf bekannte Dokumentänderungen vollständig erhalten. Native GUI-/DMG-Grenzen bleiben ausdrücklich offen.
 - Bereiche Hauptagent: gemeinsame Integration von Edition/Export, Release-/Paketmetadaten, `scripts/build.js`, `scripts/install-update.sh`, Build-/Update-Paket `dist/**`, gezielte gemeinsame Status-/Übergabedokumente, Commit/Push nach Prüfung.
 - Getrennte Unterarbeit: Agentenaufgaben ausschließlich in neuem isolierten Update-Worktree auf `6d30dc6` aus dem ausdrücklich zur Übernahme angebotenen 18-Dateien-Patch; ursprünglichen Agentenaufgaben-Worktree unverändert erhalten. Lesender Unteragent prüft übrige fertige Features/Update-Paketierung.
 - Abgrenzung: `codex/worktree-context-start` bleibt gemäß bestehender offener Klärung unangetastet; keine unfertigen/verwaisten Zweige blind mergen. Ziel ist das bestehende Entwickler-Repository, nicht ein neues öffentliches Repo.
-- Nächste Aktion: fertige Agentenaufgaben parallel auf aktuellem Stand abgleichen und Edition/Export mit main integrieren.
+- Teilstand: Edition/Export und Agentenaufgaben in main; Produktstand `e15b946`, Version/Lockdatei 0.3.1. Entwickler-Build ohne `export/`. Quellabgleich findet keine weiteren fertigen unintegrierten Zweige. Voller `/ship`-PR-/Globalhook-/Vierstellenablauf bewusst nicht angewendet, bestehender Releasevertrag beibehalten.
+- Prüfstand: eigener Gesamtlauf 963/963; Aufgaben-Unterauftrag zusätzlich 64/64; unabhängiger Review ohne offenen Befund. Build Exit 0; Paket 932 Dateien, strikter Validator + Installer --check grün, 158 Quelldateien bytegleich. Öffentliche Probe 298 Dateien/930 Tests und Datenschutz grün. Originalpatch/-worktree erhalten.
+- Nächste Aktion: geprüften main-Stand auf vorhandenes origin pushen und Remote-Commit abgleichen.
 
 ### OSS-RESUME-CODEX-20261018-01 – Edition und Export fertigstellen
 

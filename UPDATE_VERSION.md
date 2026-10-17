@@ -1,4 +1,30 @@
-# Update-Version 0.3.0 – 17.10.2026 (Entwicklerversion)
+# Update-Version 0.3.1 – 18.10.2026 (Entwicklerversion)
+
+**Gemeinsam integriert, gebaut und paketbezogen geprüft; noch nicht installiert.** Auftrag `UPDATE-PUSH-CODEX-20261018-01`: alle fertigen neuen Features bündeln und auf das bestehende `origin/main` pushen. Der Git-Push folgt auf diesen Prüf-/Dokumentationsstand; er installiert die App nicht.
+
+Enthalten sind Worktree-Stammbaum, User Guide und Hilfe-Links, Harness-/Modellkatalog mit Endpunkt-Profilen, Kontoumbenennung, Update-Helfer, gemeinsames Memory, Sidebar-Popups, Edition-Schalter und OSS-Export-Pipeline sowie jetzt auch **Agentenaufgaben**: Aufgaben/Teilaufgaben/Ergebnisse zwischen Claude-/Codex-Terminals und begrenzte neue Arbeitsagenten nach sichtbarer Quellfreigabe. Entwickler-Diktat und Second-Brain-Aufgaben bleiben in der Entwicklerversion erhalten. Nicht freigegebene/unfertige Zusatzvorhaben wurden nicht übernommen.
+
+Nachweise vom aktuellen Produktstand `e15b946` (Agentenaufgaben in main `1e02ac9`): eigener Gesamtlauf **963/963**, Unterauftrag zusätzlich **64/64** lokale Aufgaben-/Main-/IPC-/Socket-/CLI-/Kontextprüfungen; unabhängiger Review ohne offenen Codebefund. Build Exit 0. Öffentlicher Probe-Export aus demselben Stand **298 Dateien, 930/930 Tests, Datenschutz-Wächter grün**; kein echtes Export-Repository angelegt.
+
+- Paket: `dist/updates/Multiterminal-0.3.1/Multiterminal.app`.
+- **932 reguläre Dateien**, vollständige `CHECKSUMS.sha256`; strikter Update-Service-Validator und `bash scripts/install-update.sh --check` bestanden.
+- **158 Quell-/Guide-/Asset-Dateien bytegleich**, Paketidentität, Version, Einstiegspunkt und Laufzeitabhängigkeiten geprüft. Packager entfernt erwartungsgemäß Entwickler-Skripte/-Abhängigkeiten aus der Paketmetadatei. `export/`, Tests und lokale Arbeitsdaten sind nicht im App-Paket.
+- Prüfsummenlisten-SHA256: `6e09d49b4d7c1c22d2c14fb9c12d209f1699c1af09ab0fd3a0f89c93af41938a`.
+- Logs: `/private/tmp/mt-update-031-source-tests.log`, `/private/tmp/mt-update-031-build.log`, `/private/tmp/mt-update-031-package-check.log`, `/private/tmp/mt-update-031-public-probe.log`.
+
+**Offen:** Native sichtbare Abnahme und echte Anbieter-/Kontenabläufe sind nicht belegt; erneuter `qa-env-check` scheitert mit SIGABRT vor Bootstrap. Die vorherige native DMG-Probe war durch `Device not configured` blockiert. Dies ist das lokale Entwickler-Update-Paket, kein veröffentlichtes oder gestartetes DMG. Die installierte App wurde lediglich lesend als **0.2.0** identifiziert, nicht verändert oder beendet.
+
+Installation später durch Joshua: Multiterminal mit **⌘Q schließen**, danach im macOS-Terminal:
+
+```bash
+bash '/Volumes/M4MegaDiva/Projekte/Lokale-Projekte/Desktop/Second_Brain/Arbeit/Ai Builds and projekts/Claude_code_tasks/Projekte/multiterminal-app/scripts/install-update.sh'
+```
+
+Der Installer verweigert den Austausch einer laufenden App, prüft das Paket, sichert die alte App und installiert/startet erst bei diesem ausdrücklichen manuellen Aufruf. Nutzer-/Sitzungsdaten liegen außerhalb des App-Bundles.
+
+---
+
+# Historisch: Update-Version 0.3.0 – 17.10.2026 (Entwicklerversion)
 
 **Fertig gebaut und geprüft, noch nicht installiert** (OSS-E0-OPUS-20261017-01). Paket `dist/updates/Multiterminal-0.3.0/Multiterminal.app`, 920 Dateien mit SHA-256 in `CHECKSUMS.sha256`, `bash scripts/install-update.sh --check` Exit 0. Installer liest die Version jetzt aus `package.json`.
 

@@ -5,7 +5,13 @@
 > Aufgaben-ID der Gesamtarbeit: **OSS-E0-OPUS-20261017-01** (Integrator). Weitermachende Sitzung trägt sich
 > in `WORK_IN_PROGRESS.md` als Nachfolger dieser ID ein (eigene neue ID, Verweis auf diese).
 
-## Aktuelle Fortsetzung: OSS-RESUME-CODEX-20261018-01
+## Nachfolgender Update-Auftrag: UPDATE-PUSH-CODEX-20261018-01
+
+Joshua hat danach ausdrücklich den Push zum Update mit allen neuen Features beauftragt. Damit ist die frühere Wartepflicht für den Merge in die Entwicklerversion aufgehoben. Edition/Export und die zuvor separat fertigen Agentenaufgaben sind jetzt zusammen in main; Produktstand `e15b946`, Version **0.3.1**. Eigener Gesamtlauf **963/963**, unabhängiger Review ohne Codebefund, Update-Paket **932 Dateien** mit streng validierter Prüfsummenliste und 158 bytegleichen Quelldateien. Vollständige aktuelle Installations-/Paketnachweise: `UPDATE_VERSION.md`.
+
+Neue öffentliche Probe aus diesem Produktstand: `/private/var/folders/dz/mbg87p4x3pbf1v207rr8f1t80000gp/T/mt-export-public-el7RD9`, **298 Dateien, 930/930 Tests, Wächter grün**. Keine Veröffentlichung des separaten Export-Repositories, keine Änderung der Nutzer-App. Sichtbare öffentliche QA/Screenshot und native DMG-Abnahme bleiben offen. Die folgenden OSS-RESUME-Abschnitte beschreiben den vorherigen Stand; nicht erneut implementieren oder alte Merge-Wartezustände wieder öffnen. Der freigegebene Git-Push in das bestehende Entwickler-Repository folgt auf diesen Dokumentationsstand.
+
+## Vorherige Fortsetzung: OSS-RESUME-CODEX-20261018-01
 
 **Quellteil fertig und geprüft; sichtbare öffentliche QA noch blockiert.** Vorherige Etappen unten sind der historische Stand vom 17.10.2026.
 

@@ -2,7 +2,7 @@
 schemaVersion: 1
 projectId: multiterminal-app
 state: active
-updatedAt: 2026-10-18T00:17:00+02:00
+updatedAt: 2026-10-18T00:56:00+02:00
 updatedBy: codex
 ---
 
@@ -12,6 +12,8 @@ updatedBy: codex
 Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt bis zu 30 echte Terminals mit eigenem Mini-Browser für parallel laufende Terminal-Agenten bereitstellt.
 
 ## Aktueller Stand
+
+UPDATE-PUSH-CODEX-20261018-01: Alle fertigen neuen Features einschließlich Edition/Export und Agentenaufgaben gemeinsam in main; Produktstand `e15b946`, Update **0.3.1**. Eigener Gesamtlauf **963/963**, Aufgaben-Unterauftrag **64/64**, unabhängiger Review ohne Befund. Build und getrenntes Update-Paket grün: **932 Dateien**, 158 Quelldateien bytegleich, strikter Validator/Installer --check bestanden. Öffentliche Probe **298 Dateien/930 Tests**, Datenschutz grün. Hinweise/Installationsbefehl in `UPDATE_VERSION.md`. Kein App-Ende/Installation; native GUI-/DMG-Abnahme offen. Genau nächste Auftragsaktion: freigegebenen main-Stand pushen und Remote-Commit bestätigen.
 
 OSS-RESUME-CODEX-20261018-01: Edition/Export auf Branch `claude/oss-edition-export` in `10c59f0` + `6d30dc6` fertiggestellt und quellenbezogen geprüft. Final **921/921**; Probe-Export **287 Dateien, 888/888 Tests, Datenschutz-Wächter grün**, unabhängiger Begriffscan ohne Treffer; Abschlussreview ohne offene Codebefunde. Erhaltene Probe und Startbefehl in `docs/dev/HANDOFF-OSS.md`. Native Abnahme offen: direktes Electron SIGABRT, LaunchServices -10827/kLSNoExecutableErr, kleine DMG-Probe `Device not configured`. Kein Screenshot, DMG, Merge/Push/Installation oder echtes Exportziel. Eigene Quelldateireservierungen frei. Genau nächste Auftragsaktion: öffentliche QA im Probeordner aus startfähiger nativer macOS-Sitzung ausführen und Screenshot ansehen.
 
@@ -93,7 +95,7 @@ Agentenkommunikation als Projektdokumentation eingerichtet: `WORK_IN_PROGRESS.md
 Version 0.1.0: Terminal-Raster, Diktat, Kontenverwaltung, Verbrauchsanzeige, Terminal-Namen und Farben sind im Quellstand vorhanden. Tastenkürzel, Drag-and-drop, Mini-Browser-Steuerung und Settings liegen als lokale Änderungen vor. Bisherige Prüfungen stehen unter Nachweise; Alltagstests und Joshuas Abnahme bleiben offen. Der installierte Build wurde in COMMIT-CHECK-20261014-01 lesend mit den aktuellen Produktdateien abgeglichen; keine neue App-Bedienung in dieser Prüfrunde. Entwicklungsentwurf: `ENTWICKLUNGSPLAN.md`.
 
 ## Nächster Schritt
-Die öffentliche Edition im erhaltenen Probeordner aus einer startfähigen nativen macOS-Sitzung prüfen und den Screenshot ansehen (`docs/dev/HANDOFF-OSS.md`); vor einem Merge bleibt Joshuas ausdrückliche Freigabe erforderlich.
+Den freigegebenen, geprüften Update-Stand 0.3.1 auf das bestehende `origin/main` pushen und den Remote-Commit bestätigen.
 
 ## Aktive Aufgaben
 - F11-Build/Installation abgeschlossen; Joshuas manuelle Abnahme offen. RELEASE-20261015-01 meldet Joshuas Aufhebung der verwaisten F06-/CLAUDE-PROFILE-Reservierungen; deren historische Einträge erhalten. Unabhängige Claude-Profil-Abnahme bleibt fachlich unvollständig. Kein Ausbau für andere Nutzer. Flüsterflow ruht weiterhin.
@@ -117,6 +119,7 @@ Die öffentliche Edition im erhaltenen Probeordner aus einer startfähigen nativ
 - Umsetzung verteilt: Kern Opus, UI und Persistenz Sonnet, Kleinteile und Doku Haiku.
 
 ## Nachweise
+- UPDATE-PUSH-CODEX-20261018-01: Produktstand `e15b946`, eigener Gesamtlauf 963/963; Aufgaben-QA Unterauftrag 64/64; Review ohne Codebefund. Update 932 Dateien, 158 Source/Guide/Assets bytegleich, Validator + Installer --check grün; SHA256 der Prüfsummenliste `6e09d49b4d7c1c22d2c14fb9c12d209f1699c1af09ab0fd3a0f89c93af41938a`. Probe-Export 298 Dateien/930 Tests. Logs/Installationsbefehl in `UPDATE_VERSION.md`, kein Nutzer-App-Eingriff.
 - OSS-RESUME-CODEX-20261018-01 (18.10.2026): Branch `6d30dc66ffba`, eigener finaler Gesamtlauf 921/921, Exporttest 10/10; Release-Unteragent 6/6. Probe 287 Dateien/888 Tests, Wächter und unabhängiger Begriffscan grün; Schlussreview ohne Codebefund. Logs `/private/tmp/mt-oss-source-final.log`, `/private/tmp/mt-oss-export-tests.log`, `/private/tmp/mt-oss-probe.log`; Probe und native Fehler in `docs/dev/HANDOFF-OSS.md`, ausführlicher Eintrag `PROGRESS.md`.
 - TOPMENU-CODEX-20261016-01 (16.10.2026): eigener `npm test` Exit 0, 463/463; `npm run build` Exit 0; `scripts/qa-topbar.js` gegen Quelle und gepackten Main jeweils Exit 0/`passed`, native Electron-Maus-/Escape-Ereignisse, alle neun Optionen plus Plusknopf geprüft. Schmale Ansicht, Fokus, Außenklick und Optionen ohne Projekt geprüft. 71 Quelldateien bytegleich im Paket; Syntax- und Diffprüfung sauber. Screenshots `/var/folders/dz/mbg87p4x3pbf1v207rr8f1t80000gp/T/mt-topbar-qa-IbzACG/`; Details in `PROGRESS.md`. Kein Installieren/Beenden der Nutzer-App.
 - F11-BUILD-CODEX-B-20261014-02 (15.10.2026): eigener Build Exit 0, 350/350 Tests grün, Quellmanifest SHA-256 `9a0327f7e40b297fc18dd61f968a00d04cf5a3fbbbb0d5cba5aa5703f260ccd9` vor/nach unverändert, 53 Produktdateien in Build UND installierter App bytegleich, alle Featuremodule vorhanden. Echter F11-Electron-Test gegen gepackte Module bestanden, Screenshot visuell geprüft; Bundle-Binärdatei lädt natives node-pty. GitHub direkt abgefragt: `f6b0f8197806c94e19eb0b4faa4713ef7c5ffab5`, entspricht lokalem HEAD. Installation/Commit/Push durch parallele RELEASE-Sitzung, selbst lesend bestätigt. Kein Beenden/Ersetzen der laufenden App durch CODEX-B; vollständiger Eintrag in `PROGRESS.md`.
