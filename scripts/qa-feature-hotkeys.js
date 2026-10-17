@@ -50,6 +50,7 @@ app.on('browser-window-created', (_e, win) => {
       const mac = process.platform === 'darwin';
       assert.deepEqual(accel, mac ? {
         'Änderungen': 'Cmd+Shift+D', 'Ports': 'Cmd+Shift+P', 'Rückmeldungen': 'Cmd+Shift+J', 'Fortschritt': 'Cmd+Shift+G',
+        'Arbeitskopien-Stammbaum…': 'Cmd+Shift+Y',
         'Übergabe an anderes Terminal…': 'Cmd+Shift+U', 'Element im Browser kommentieren': 'Cmd+Shift+E', 'Second-Brain-Aufgabe der Kachel…': 'Cmd+Shift+L',
         'Aufbau starten…': 'Cmd+Shift+B', 'Aufbau speichern…': 'Cmd+Alt+B', 'Komfort…': 'Cmd+Shift+K', 'Automatisch sortieren an/aus': 'Cmd+Shift+S',
         'Lagebild im Projektmanager ein/aus': 'Cmd+\\',

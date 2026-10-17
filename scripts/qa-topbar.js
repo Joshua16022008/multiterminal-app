@@ -48,7 +48,7 @@ app.on('browser-window-created', (_event, win) => {
     try {
       await wait(() => run('window.DeckApp?.state.activeId === "qa" && !!window.DeckApp.state.panes.get("qa")?.length'), 'app ready');
       const actions = ['btn-settings', 'btn-attention', 'btn-diff', 'btn-ports', 'btn-live', 'btn-accounts', 'btn-progress', 'btn-handoff'];
-      assert.deepEqual(await run('[...document.querySelectorAll("#topbar button")].filter(b=>b.getClientRects().length).map(b=>b.id)'), ['btn-plus', 'btn-menu', 'btn-toolbar']);
+      assert.deepEqual(await run('[...document.querySelectorAll("#topbar button")].filter(b=>b.getClientRects().length).map(b=>b.id)'), ['btn-plus', 'btn-menu', 'btn-help', 'btn-toolbar']); // ⑂ fehlt: kein Git-Projekt
       assert.equal(await run('document.getElementById("btn-menu").parentElement === document.getElementById("btn-plus").parentElement'), true);
       assert.equal(await hidden('btn-settings'), false);
       assert.equal(await run('(() => { const s=document.getElementById("btn-settings"),p=document.getElementById("add-project"),r=s.getBoundingClientRect(),b=p.getBoundingClientRect(); return !!s.closest("#sidebar") && !s.closest("#toolbar-options") && r.bottom<=b.top && Math.abs(r.right-b.right)<=1; })()'), true);
