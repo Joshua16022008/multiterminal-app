@@ -1,9 +1,32 @@
-# Übergabe: Open-Source-Vorbereitung Multiterminal (Stand 17.10.2026)
+# Übergabe: Open-Source-Vorbereitung Multiterminal (Stand 18.10.2026)
 
 > Für jede neue Sitzung (Claude mit anderem Konto, Codex, …): **diese Datei zuerst lesen**, danach
 > `AGENTS.md`, `WORK_IN_PROGRESS.md` (Abschnitt OSS-E0-OPUS-20261017-01 + Nachrichten), `PROGRESS.md` (oberste Einträge).
 > Aufgaben-ID der Gesamtarbeit: **OSS-E0-OPUS-20261017-01** (Integrator). Weitermachende Sitzung trägt sich
 > in `WORK_IN_PROGRESS.md` als Nachfolger dieser ID ein (eigene neue ID, Verweis auf diese).
+
+## Aktuelle Fortsetzung: OSS-RESUME-CODEX-20261018-01
+
+**Quellteil fertig und geprüft; sichtbare öffentliche QA noch blockiert.** Vorherige Etappen unten sind der historische Stand vom 17.10.2026.
+
+- Zuerst abgeglichen: gemeinsamer Checkout `main`/`b7c86c1`, vier fremde Änderungen an Status-/Update-Dateien erhalten; Branch `claude/oss-edition-export` im Worktree `.claude/worktrees/wf_61e64bfb-e03-1` bei `9deeb6f`. Edition war committet, Export nur teilweise uncommittet. Kein laufender Export-Worker gefunden.
+- Aktueller Branch: **`6d30dc66ffba`**. Neue lokale Commits `10c59f0` (Export/Overlay/Release und fehlende Tests) und `6d30dc6` (Hardlink-Schutz, Git-Identität für Erst-/Folgeexport). Kein Merge nach `main`, kein Push, kein GitHub-Repo, keine Installation oder Beendigung der Nutzer-App. Worktree enthält als einzigen unversionierten Eintrag den vorhandenen `node_modules`-Symlink.
+- Export: `git archive` aus exaktem Commit; gemeinsame Edition-Ausschlüsse in `scripts/export-manifest.json`, zusätzliche Ausschlüsse/strikte Datenschutzliste in `export/manifest.json`, öffentliche Dateien in `export/overlay/`. Kein Datenschutz-Allowlisting, keine Größen-/Binärausnahme. Paket- und Lockdatei passen zusammen. Tests und erneuter Wächter laufen vor Zielschreiben; Ziel muss leer oder ein sauberes öffentliches Export-Repository sein. `.git` bleibt erhalten; Symlinks, externe Hardlinks und Quellüberlappungen sind abgesichert. Autoridentität aus gültiger Zielkonfiguration, sonst aus Entwicklerkonfiguration; neue Historie im Ziel.
+- Edition-Review: fehlende Editionsantwort im Preload und Hotkey-Modell blendet Entwickler-APIs/-Aktionen aus; Testannahmen angeglichen. Dev-only-Module werden im öffentlichen Export entfernt. Eigene Tests verwenden neutrale Fixture-Pfade. README Englisch plus Deutsch, MIT, CONTRIBUTING, SECURITY, Verhaltenskodex, CI und beide Issue-Vorlagen vorhanden; öffentliche Katalogreferenz bereinigt.
+- **Eigene finale Prüfungen:** `npm test` auf `6d30dc6` → **921/921**, Exit 0; `node --test tests/export.test.js` → **10/10** inklusive echter temporärer Exporthistorie, Folgeexport, externem Hardlink, schmutzigem Ziel und Git ohne globale/systemweite Identität. Release-Unteragent: **6/6** Release-Tests. Abschließender lesender Review nach Korrekturen ohne offenen Codebefund. `git diff --check` sauber.
+- **Vollständiger Probe-Export:** `node scripts/export.js --dry-run --target /private/tmp/mt-oss-probe-target-20261018` → **287 Dateien, 888/888 Tests, Wächter grün, Exit 0**. Unabhängiges `rg --hidden -a -n -i` nach allen persönlichen Begriffen (ohne `node_modules`) ohne Treffer, Exit 1. Probe-Ziel blieb nicht vorhanden; finales Ziel `../multiterminal-export` wurde nicht angelegt.
+- Erhaltener geprüfter Probeordner: `/private/var/folders/dz/mbg87p4x3pbf1v207rr8f1t80000gp/T/mt-export-public-ueLnnj`. Für QA wurde danach `node_modules` zur Entwicklerkopie verlinkt. README dort: `README.md`; es ist noch kein veröffentlichtes Produkt.
+- Logs: `/private/tmp/mt-oss-source-final.log`, `/private/tmp/mt-oss-export-tests.log`, `/private/tmp/mt-oss-probe.log`.
+- **Native Grenzen:** `node scripts/qa-env-check.js` und direkter Electron-Aufruf `scripts/qa-edition.js` → Exit 1, **SIGABRT vor Bootstrap**. Isolierter Start der Probe-QA über `open -n -W` → Exit 1, **NSOSStatusErrorDomain -10827 / kLSNoExecutableErr**. Kein Screenshot erzeugt oder angesehen. Echte kleine `hdiutil`-Probe des Release-Unteragenten unter Worktree-`dist/` → **`hdiutil: create failed - Device not configured`**; kein DMG, kein Bundle-Start und keine DMG-Abnahme behauptet. Temporäre DMG-Fixture entfernt.
+
+**Genau nächster Schritt:** öffentliche QA aus einer startfähigen nativen macOS-Terminalsitzung ausführen und den erzeugten Screenshot ansehen:
+
+```bash
+cd '/private/var/folders/dz/mbg87p4x3pbf1v207rr8f1t80000gp/T/mt-export-public-ueLnnj'
+./node_modules/.bin/electron scripts/qa-edition.js
+```
+
+Die QA verwendet eigene App-Daten und beendet nur ihren eigenen Prozess. Erst nach bestandenem sichtbarem Nachweis folgt Joshuas ausdrückliche Merge-Freigabe. Bei verschwundenem temporärem Ordner im Branch-Worktree erneut den Probe-Export ausführen (kein echtes Exportziel nötig).
 
 ## Ziel (Joshua)
 
@@ -70,9 +93,9 @@ Teile:
 
 ## Nächste Schritte (in dieser Reihenfolge)
 
-1. Ergebnis von `claude/oss-edition-export` prüfen bzw. fertigstellen, siehe oben. `npm test` muss grün sein, der Probe-Export grün, und die QA der public-Edition braucht einen angesehenen Screenshot.
+1. Quellcode und Probe-Export sind auf `6d30dc6` grün (921/921 bzw. 888/888). Noch offen: QA der public-Edition in startfähiger nativer macOS-Sitzung und angesehener Screenshot, siehe aktueller Fortsetzungsabschnitt oben.
 2. Joshua Ergebnis zeigen → **mit Freigabe** nach `main` mergen (vorher `WORK_IN_PROGRESS.md` lesen; AGENT-TASKS-Codex-Sitzung will ebenfalls `main.js`/`app.js` integrieren – wer zweiter ist, rebased).
-3. Ersten echten Export: `node scripts/export.js --target '../multiterminal-export'`. Danach im Export: `npm install`, `npm test`, `npm run release` → DMG; DMG öffnen und App in einem Test-Ordner starten (nicht `/Applications` überschreiben).
+3. Nach Merge im Hauptcheckout erster echter Export: `node scripts/export.js --target '../multiterminal-export'`. Im verschachtelten Worktree stattdessen einen absoluten Zielpfad verwenden. Danach im Export: `npm install`, `npm test`, `npm run release` → DMG; DMG öffnen und App in einem Test-Ordner starten (nicht `/Applications` überschreiben). Native DMG-Erstellung ist in dieser Agentenumgebung blockiert, siehe oben.
 4. Joshua zeigen: README, DMG, App-Name. Offen für Joshua: endgültiger App-Name, GitHub-Repo anlegen (privat → öffentlich), Code-Signing/Notarisierung (Apple-Developer-Konto) optional, Screenshots fürs README.
 5. Danach Dokumentation: `PROGRESS.md`-Eintrag, `PROJECT_STATUS.md`, Reservierung in `WORK_IN_PROGRESS.md` freigeben.
 

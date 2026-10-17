@@ -1,3 +1,21 @@
+# Update-Version 0.3.0 – 17.10.2026 (Entwicklerversion)
+
+**Fertig gebaut und geprüft, noch nicht installiert** (OSS-E0-OPUS-20261017-01). Paket `dist/updates/Multiterminal-0.3.0/Multiterminal.app`, 920 Dateien mit SHA-256 in `CHECKSUMS.sha256`, `bash scripts/install-update.sh --check` Exit 0. Installer liest die Version jetzt aus `package.json`.
+
+Neu gegenüber 0.2.0: Worktree-Stammbaum (⑂-Knopf, ⌘⇧Y, Branch-Chip), User Guide + Hilfe-Panel (⌘⇧H, „?“-Links), Harness-/Modellkatalog mit Endpunkt-Profilen (Einstellungen → Harnesses & Modelle), Kontoumbenennung, Update-Helfer „App aktualisieren…“ im Projektmanager, gemeinsames Memory, Sidebar-Popups. Agentenaufgaben (AGENT-TASKS) sind **nicht** enthalten.
+
+Prüfung: `npm test` 885/885 (+1 skip, 1 todo) auf dem Quellstand des Pakets; `src/` und `docs/guide/` bytegleich im Paket; Electron-QA aus der Quelle (qa-harness, qa-agent-launch, qa-worktree-tree, qa-help, qa-settings) Exit 0. Kein Start des gepackten Bundles, weil die laufende Nutzer-App nicht gestört werden soll.
+
+Installation (Joshua): Multiterminal mit **⌘Q schließen**, dann im macOS-Terminal:
+
+```bash
+bash '/Volumes/M4MegaDiva/Projekte/Lokale-Projekte/Desktop/Second_Brain/Arbeit/Ai Builds and projekts/Claude_code_tasks/Projekte/multiterminal-app/scripts/install-update.sh'
+```
+
+Ab 0.3.0 geht jedes weitere Update auch über Projektmanager → „App aktualisieren…“.
+
+---
+
 # Gemeinsame Update-Version 0.2.0 – 16.10.2026
 
 Auftrag: Alle bereits bearbeiteten Features zu einer gemeinsamen macOS-arm64-Version bündeln. Joshua arbeitet weiter in der installierten App. **Jetzt weder installieren noch Nutzer-App beenden oder neu starten.** Installation und Start erfolgen später ausschließlich durch Joshuas Terminal-Befehl.
@@ -22,6 +40,8 @@ RELEASE-COMMIT-CODEX-20261016-06 (16.10.2026): Quellstand einschließlich freige
 Vorhandene Produktgrenzen bleiben dokumentiert: kein neuer Nachweis mit echten Modellanbietern, physische Nutzerabnahme offen; bekannte Grenzen bei Pluginverwaltung und Kimi-Verbrauchsdaten werden durch Paketierung nicht behoben.
 
 ## Ergänzungen für dieselbe Update-Version
+
+ACCOUNT-RENAME-CODEX-20261017-01 (17.10.2026): Umbenennen aller Konten einschließlich eingebauter Claude-/Codex-Standardkonten für **dieselbe Version 0.2.0** vormerken. `src/main/account-store.js`, `src/renderer/accounts-panel.js`, `tests/account-store.test.js`, neuer `tests/accounts-panel.test.js`. Eigene Prüfung: 16/16 Konten-/DOM-Tests und Gesamtlauf **655/655 grün**, Syntax/Diff sauber. Namen dauerhaft gespeichert, bisherige Kontodateien kompatibel. **Noch nicht paketiert oder installiert**; sichtbare Prüfung im Sammelbuild offen, da Electron schon bei `--version` mit SIGABRT abbricht.
 
 UPDATE-HELPER-CODEX-20261017-01 (17.10.2026): unabhängigen lokalen Update-Helfer für **dieselbe Version 0.2.0** vormerken. PM-Aktion „App aktualisieren…“ mit Paketwahl/Versionsvorschau und nativer Bestätigung; kopierter Bash-Helfer arbeitet nach App-Ende weiter, sichert/ersetzt/startet bzw. rollt zurück. Neue `src/main/update-{service.js,helper.sh}`, `src/renderer/pm-update.js`, Update-Anbindung in `pm-main.js`/`pm-preload.js`/`pm.html`/`pm.css`, fünf Update-Testdateien und `scripts/qa-update-helper.js`. Finaler eigener Gesamtlauf **650/650 grün**, unabhängiger Review ohne wesentlichen Befund; vorhandenes Paket read-only mit 855 Dateien validiert. **Noch nicht im Paket oder installiert.** Sichtbare Prüfung vor Aufnahme offen: Electron vor Bootstrap SIGABRT. Die erste Version mit diesem Knopf muss einmal mit dem bisherigen externen Installer installiert werden; danach können vorbereitete lokale Pakete im PM gewählt werden. Keine Download-/automatische Buildfunktion, keine aktuelle Installation oder App-Beendigung.
 
