@@ -16,6 +16,10 @@ const { createHotkeyStore } = require('./hotkey-store');
 const hotkeyModel = require('../renderer/hotkeys');
 const { createWorkspaceTemplateStore } = require('./workspace-template-store'); // F08
 const { createAgentProfile } = require('./agent-profile');
+const { createMemoryService, validateCheckpointInput } = require('./memory-service');
+const { createMemoryCapture } = require('./memory-capture');
+const { createMemoryLaunch, builtinProvider } = require('./memory-launch');
+const mtMemoryCli = require('./mt-memory-cli');
 const progressFiles = require('./progress-files');
 const { createGitService } = require('./git-service');
 const { createWorktreeService } = require('./worktree-service');
@@ -53,6 +57,10 @@ let settings;
 let hotkeys;
 let workspaceTemplates; // F08
 let agentProfile;
+let memory;
+let memoryLaunch;
+let memoryCapture;
+let captureSettings = { enabled: false, autoCapture: false };
 let sessions;
 let ptys;
 let git;
@@ -181,7 +189,24 @@ function agentEventHandler(terminalId, args) {
   }
 }
 
+function reportMemoryError(err, terminalId) {
+  console.error('Memory:', err.message);
+  const ids = terminalId === undefined ? [...terminalMeta.keys()] : [String(terminalId)];
+  for (const id of ids) sendToWindow('terminals:data', id, '\r\n[Memory konnte nicht geladen/gesichert werden: ' + err.message + ']\r\n');
+}
+
+function handleAgentMemory(terminalId, operation, input) {
+  const meta = terminalMeta.get(String(terminalId));
+  if (!meta || meta.manager) throw new Error('Memory-Terminal unbekannt oder kein gewöhnliches Terminal.');
+  const project = requireProject(meta.projectId);
+  if (operation === 'read') return memory.context(project.id);
+  if (operation !== 'save') throw new Error('Unbekannte Memory-Aktion.');
+  const fields = validateCheckpointInput(input, { allowProvenance: false });
+  return memory.checkpoint(project.id, { ...fields, source: 'agent', terminalId: String(terminalId), provider: meta.provider, cwd: meta.cwd, ...(meta.workspaceId ? { workspaceId: meta.workspaceId } : {}) });
+}
+
 function forgetTerminal(id) {
+  if (memoryCapture) memoryCapture.detach(String(id));
   terminalMeta.delete(String(id));
   agentSessions.forget(id); // F02
   agentStore.terminalClosed(String(id));
@@ -293,11 +318,17 @@ function registerIpc() {
       if (!wt.ok) return { ok: false, error: wt.error };
       cwd = wt.cwd;
     }
+    // Resolve Memory before registering a token: a damaged store fails visibly, without leaking registration.
+    let launchCommand;
+    try { launchCommand = memoryLaunch.decorateCommand({ command, projectId: project.id }); }
+    catch (err) { return { ok: false, error: 'Memory konnte nicht geladen werden: ' + err.message }; }
+    if (terminalMeta.has(String(id))) return { ok: false, error: 'Terminal bereits vorhanden.' };
     // The working directory always comes from the stored project, never from the page.
     const { env, accounts: applied } = accounts.envFor(accountOverrides);
     // Claude Code writes its quota state to a per-account file through the status line script.
     const claude = applied.find((a) => a.provider === 'claude');
     let extraEnv = claude ? { ...env, MULTITERMINAL_USAGE_FILE: usage.usageFileFor(claude.id) } : env;
+    extraEnv = { ...extraEnv, MULTITERMINAL_MEMORY_PROJECT_ID: project.id, MULTITERMINAL_MEMORY_CLI: path.join(browserBinDir || path.join(app.getPath('userData'), 'bin'), 'mt-memory') };
     // mt-browser: a token for exactly this terminal, the socket, and the command on its PATH.
     if (browserBridge && browserBinDir && typeof id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(id)) {
       browserBridge.register(id);
@@ -313,9 +344,15 @@ function registerIpc() {
         extraEnv = { ...extraEnv, ZDOTDIR: zdotdirPath, MULTITERMINAL_ORIG_ZDOTDIR: process.env.ZDOTDIR || '' };
       }
     }
-    const result = ptys.create({ id, projectId: project.id, cwd, cols, rows, command: agentProfile.decorateCommand({ command }), extraEnv, workspaceId: workspaceId ? String(workspaceId) : undefined });
+    let result;
+    try { result = ptys.create({ id, projectId: project.id, cwd, cols, rows, command: launchCommand, extraEnv, workspaceId: workspaceId ? String(workspaceId) : undefined }); }
+    catch (err) { if (browserBridge) browserBridge.unregister(String(id)); return { ok: false, error: err.message }; }
     if (!result.ok && browserBridge) browserBridge.unregister(String(id));
-    if (result.ok) terminalMeta.set(String(id), { projectId: project.id, accountId: claude ? claude.id : null });
+    if (result.ok) {
+      const meta = { projectId: project.id, accountId: claude ? claude.id : null, provider: builtinProvider(command) || 'custom', cwd, ...(workspaceId ? { workspaceId: String(workspaceId) } : {}) };
+      terminalMeta.set(String(id), meta);
+      try { memoryCapture.attach({ terminalId: String(id), ...meta }); } catch (err) { reportMemoryError(err, id); }
+    }
     return result.ok ? { ...result, accounts: applied } : result;
   });
   handle('accounts:list', () => accounts.list());
@@ -358,6 +395,23 @@ function registerIpc() {
     return true;
   });
 
+  const memoryScope = id => id === null ? null : requireProject(id).id;
+  handle('memory:read', id => memory.read(memoryScope(id)));
+  handle('memory:saveNotes', (id, text, revision) => memory.saveNotes(memoryScope(id), text, revision));
+  handle('memory:clear', (id, revision) => {
+    const scope = memoryScope(id);
+    const result = memory.clear(scope, revision);
+    memoryCapture.clear(scope);
+    return result;
+  });
+  handle('memory:getSettings', () => { captureSettings = memory.getSettings(); return { ...captureSettings }; });
+  handle('memory:setSettings', patch => {
+    captureSettings = memory.setSettings(patch);
+    if (!captureSettings.enabled || !captureSettings.autoCapture) for (const id of new Set([...terminalMeta.values()].map(meta => meta.projectId))) memoryCapture.clear(id);
+    return { ...captureSettings };
+  });
+  handle('memory:context', id => memory.context(memoryScope(id)));
+
   handle('settings:overview', (projectId) => settings.overview({
     projectPath: projectId ? requireProject(projectId).path : undefined,
     accounts: accounts.list(),
@@ -384,13 +438,22 @@ function registerIpc() {
   handle('terminals:kill', (id) => {
     dictation.cancelFor(String(id));
     forgetTerminal(id);
+    if (browserBridge) browserBridge.unregister(String(id));
     ptys.kill(id);
   });
   listen('terminals:write', (id, data) => ptys.write(id, data));
   // The app's own commands ("Fortsetzen"): decorated here, never on the raw input channel above.
   listen('terminals:runBuiltin', (id, command) => {
-    const line = agentProfile.builtinLine(command);
-    if (line !== null) ptys.write(id, line);
+    const meta = terminalMeta.get(String(id));
+    if (!meta || meta.manager) return;
+    try {
+      const line = memoryLaunch.builtinLine(command, requireProject(meta.projectId).id);
+      if (line !== null) {
+        const provider = builtinProvider(command);
+        if (provider) { meta.provider = provider; memoryCapture.detach(String(id)); memoryCapture.attach({ terminalId: String(id), ...meta }); }
+        ptys.write(id, line);
+      }
+    } catch (err) { reportMemoryError(err, id); }
   });
   listen('terminals:resize', (id, cols, rows) => ptys.resize(id, cols, rows));
 
@@ -498,6 +561,7 @@ function finishQuit() {
   if (quitting) return;
   quitting = true;
   dictation.shutdown();
+  if (memoryCapture) memoryCapture.dispose();
   ptys.killAll();
   if (browserBridge) browserBridge.stop().catch(() => {});
   if (pm) pm.shutdown().catch(() => {}); // PM
@@ -636,6 +700,11 @@ async function startBrowserBridge(dataDir) {
   fs.writeFileSync(path.join(binDir, 'mt-browser'), mtBrowserCli.wrapperScript({ execPath: process.execPath, scriptPath: cliPath }), { mode: 0o755 });
   fs.chmodSync(path.join(binDir, 'mt-browser'), 0o755);
 
+  const memoryCliPath = path.join(dataDir, 'mt-memory-cli.js');
+  fs.copyFileSync(path.join(__dirname, 'mt-memory-cli.js'), memoryCliPath);
+  fs.writeFileSync(path.join(binDir, 'mt-memory'), mtMemoryCli.wrapperScript({ execPath: process.execPath, scriptPath: memoryCliPath }), { mode: 0o755 });
+  fs.chmodSync(path.join(binDir, 'mt-memory'), 0o755);
+
   // Agent status: `mt-event` for the hooks and a `claude` wrapper for hand-typed starts.
   // Both are rewritten at every start; the wrapper only changes anything while the status is switched on.
   const eventCli = path.join(dataDir, 'mt-event-cli.js');
@@ -664,7 +733,7 @@ async function startBrowserBridge(dataDir) {
       mainWindow.moveTop();
     },
   });
-  const bridge = createBrowserBridge({ socketPath, handler: control, eventHandler: agentEventHandler, isAllowedUrl: isWebUrl });
+  const bridge = createBrowserBridge({ socketPath, handler: control, eventHandler: agentEventHandler, memoryHandler: handleAgentMemory, isAllowedUrl: isWebUrl });
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   removeStaleSockets(dir);
   await bridge.start();
@@ -775,7 +844,11 @@ if (!app.requestSingleInstanceLock()) {
       },
     });
     agentProfile = createAgentProfile({ dataDir, readProfile: (scope) => settings.readProfile(scope) });
-    launchContext = createLaunchContextService({ dataDir, worktrees, decorateCommand: options => agentProfile.decorateCommand(options) });
+    memory = createMemoryService({ dataDir });
+    try { captureSettings = memory.getSettings(); } catch (err) { console.error('Memory nicht verfügbar:', err.message); }
+    memoryLaunch = createMemoryLaunch({ dataDir, memory, agentProfile, readProfile: scope => settings.readProfile(scope) });
+    memoryCapture = createMemoryCapture({ memory: { getSettings: () => captureSettings, checkpoint: (...args) => memory.checkpoint(...args) }, onError: reportMemoryError });
+    launchContext = createLaunchContextService({ dataDir, worktrees, decorateCommand: options => agentProfile.decorateCommand(options), readMemory: id => memoryLaunch.context(id) });
     settings = createSettingsService({ dataDir, loadsAtStart: (scope) => agentProfile.isEnabled(scope) });
     hotkeys = createHotkeyStore({ filePath: path.join(dataDir, 'hotkeys.json') });
     workspaceTemplates = createWorkspaceTemplateStore({ filePath: path.join(dataDir, 'workspace-templates.json') }); // F08
@@ -802,6 +875,7 @@ if (!app.requestSingleInstanceLock()) {
     ptys = createPtyManager({
       onData: (id, data) => {
         if (pm.onPtyData(id, data)) return; // PM: Ausgabe des Managers geht ins Manager-Fenster
+        memoryCapture.feed(String(id), data);
         sendToWindow('terminals:data', id, data);
       },
       onExit: (id, exitCode) => {

@@ -67,6 +67,9 @@ app.on('browser-window-created', (_event, win) => {
     let failed = false;
     try {
       await wait(() => run('!!window.DeckApp?.agentLaunch && window.DeckApp.state.activeId === "qa-launch"'), 'app ready');
+      // This regression isolates the original context-start flow. Shared Memory
+      // delivery and its enabled-by-default behavior have their own qa-memory.
+      await run('window.deck.memory ? window.deck.memory.setSettings({ enabled: false }) : null');
       stage = 'ordinary starts';
       const count = await run('window.DeckApp.state.panes.get("qa-launch").length');
       await click('btn-plus');

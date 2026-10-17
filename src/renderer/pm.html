@@ -13,12 +13,31 @@
     <header id="pm-head" class="drag">
       <h1 id="pm-title">Projektmanager</h1>
       <span class="spacer"></span>
+      <button id="pm-update-open" class="pm-btn" aria-controls="pm-update" aria-expanded="false">App aktualisieren…</button>
       <button id="pm-toggle-situation" class="pm-btn" aria-controls="pm-situation" aria-expanded="true" title="Lagebild ein- oder ausblenden (⌘\)">Lagebild ⟩</button>
       <button id="pm-refresh" class="pm-btn" title="Lagebild jetzt neu laden">Lagebild aktualisieren</button>
       <button id="pm-fresh" class="pm-btn" title="Manager-Agent mit einem neuen Gespräch starten (gespeicherte Gesprächs-ID wird verworfen)">Neues Gespräch</button>
       <button id="pm-restart" class="pm-btn" title="Manager-Agent beenden und neu starten">Neu starten</button>
     </header>
     <p id="pm-hint" class="pm-hint">Aufträge des Managers erscheinen als Vorschau in der Zielkachel – nichts wird ohne deine Bestätigung eingefügt.</p>
+    <section id="pm-update" aria-labelledby="pm-update-title" hidden>
+      <h2 id="pm-update-title">Multiterminal aktualisieren</h2>
+      <p>Das Update gilt für die gesamte App und alle Projekte. Bei der Installation werden alle laufenden Terminals und Manager-Agenten beendet.</p>
+      <p>Wähle ein vorbereitetes lokales Update-Paket. Erst nach „Installieren…“ und deiner Bestätigung im Systemdialog wird die App beendet.</p>
+      <dl id="pm-update-preview" hidden>
+        <dt>Installierte Version</dt><dd id="pm-update-current"></dd>
+        <dt>Neue Version</dt><dd id="pm-update-version"></dd>
+        <dt>Update-Paket</dt><dd id="pm-update-package"></dd>
+        <dt>App</dt><dd id="pm-update-target"></dd>
+      </dl>
+      <p id="pm-update-feedback" role="status" aria-live="polite" aria-atomic="true"></p>
+      <p id="pm-update-last" role="status" aria-live="polite" hidden></p>
+      <div class="pm-update-actions">
+        <button id="pm-update-select" class="pm-btn">Paket auswählen…</button>
+        <button id="pm-update-install" class="pm-btn pm-btn-primary" disabled>Installieren…</button>
+        <button id="pm-update-close" class="pm-btn">Schließen</button>
+      </div>
+    </section>
     <div id="pm-body">
       <section id="pm-term-wrap" aria-label="Manager-Agent">
         <div id="pm-term"></div>
@@ -35,5 +54,6 @@
   <script src="../../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
   <script src="pm-view.js"></script>
   <script src="pm.js"></script>
+  <script src="pm-update.js"></script>
 </body>
 </html>

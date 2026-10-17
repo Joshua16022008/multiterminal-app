@@ -147,7 +147,7 @@ function createAgentProfile({ dataDir, readProfile }) {
   }
 
   function decorateCommand(options) {
-    const decorated = decorate(options).command;
+    const decorated = options?.skipProfile ? options.command : decorate(options).command;
     const command = options?.command;
     if (typeof command !== 'string' || (options.provider && options.provider !== 'codex')) return decorated;
     const trimmed = command.trim();

@@ -33,6 +33,18 @@ function createPmMain(ctx) {
   let manager = null;
   let sessionsStore = null;
   let diffs = null;
+  let updates = ctx.updateService || null;
+
+  // Lazy loading keeps the updater separate from manager-agent startup and from
+  // ordinary Node tests. Only authenticated PM window handlers reach this service.
+  function updateService() {
+    if (!updates) {
+      const { app, dialog } = require('electron');
+      const { createUpdateService } = require('./update-service');
+      updates = createUpdateService({ app, dialog, shell, dataDir: ctx.getDataDir() });
+    }
+    return updates;
+  }
 
   function mainWin() {
     const w = ctx.getMainWindow();
@@ -233,6 +245,9 @@ function createPmMain(ctx) {
     pmListen('pm:resize', (projectId, cols, rows) => manager.resize(projectId, Number(cols), Number(rows)));
     pmHandle('pm:restart', (projectId, fresh) => manager.restart(projectId, { fresh: fresh === true }));
     pmHandle('pm:state', (projectId) => service.state(projectId));
+    pmHandle('pm:updateSelect', projectId => updateService().select(windows.get(projectId)));
+    pmHandle('pm:updateInstall', (projectId, token) => updateService().install(token, windows.get(projectId)));
+    pmHandle('pm:updateStatus', () => updateService().status());
   }
 
   // Socket-Server und `mt-pm` im bin-Ordner der App. Ein Fehler schaltet nur den Manager ab.

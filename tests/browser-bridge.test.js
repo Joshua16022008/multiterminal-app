@@ -261,3 +261,37 @@ test('event command refuses unknown events, bad tokens and a bridge without even
     assert.deepStrictEqual(plain.calls, []);
   } finally { await cleanup(plain); }
 });
+
+test('memory routing authenticates terminal identity, never invokes browser, and rejects scope/provenance overrides', async () => {
+  const memoryCalls = [];
+  const ctx = await setup(undefined, { memoryHandler: async (id, operation, input) => { memoryCalls.push({ id, operation, input }); return operation === 'read' ? '# Memory' : { saved: true }; } });
+  try {
+    const token = ctx.bridge.register('t-memory');
+    assert.deepStrictEqual(await ask(ctx.sock, { token, cmd: 'memory-read' }), { ok: true, result: '# Memory' });
+    assert.deepStrictEqual(await ask(ctx.sock, { token, cmd: 'memory-save', args: { summary: 'done', nextStep: 'review' } }), { ok: true, result: { saved: true } });
+    assert.deepStrictEqual(memoryCalls, [{ id: 't-memory', operation: 'read', input: {} }, { id: 't-memory', operation: 'save', input: { summary: 'done', nextStep: 'review' } }]);
+    for (const args of [{ projectId: 'another' }, { notes: 'bad' }, { source: 'manual', summary: 'x' }, { cwd: '/other', summary: 'x' }, { terminalId: 'other', summary: 'x' }, { summary: 'x'.repeat(8001) }, { summary: 4 }, []]) {
+      assert.strictEqual((await ask(ctx.sock, { token, cmd: 'memory-save', args })).ok, false);
+    }
+    assert.strictEqual((await ask(ctx.sock, { token, cmd: 'memory-read', args: { projectId: 'other' } })).ok, false);
+    assert.strictEqual((await ask(ctx.sock, { token: 'bad', cmd: 'memory-read' })).error, 'Nicht berechtigt.');
+    assert.strictEqual(memoryCalls.length, 2);
+    assert.deepStrictEqual(ctx.calls, []);
+  } finally { await cleanup(ctx); }
+  const plain = await setup();
+  try {
+    const token = plain.bridge.register('t');
+    assert.strictEqual((await ask(plain.sock, { token, cmd: 'memory-read' })).ok, false);
+    assert.deepStrictEqual(plain.calls, []);
+  } finally { await cleanup(plain); }
+});
+
+test('memory handlers share the finite execution deadline', async () => {
+  const ctx = await setup(undefined, { memoryHandler: () => new Promise(() => {}), handlerTimeoutMs: 25 });
+  try {
+    const token = ctx.bridge.register('t');
+    const result = await ask(ctx.sock, { token, cmd: 'memory-read' });
+    assert.strictEqual(result.ok, false);
+    assert.match(result.error, /Zeitüberschreitung/);
+  } finally { await cleanup(ctx); }
+});

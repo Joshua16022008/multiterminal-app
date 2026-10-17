@@ -163,6 +163,8 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .notice.ok { border-left-color: var(--ok); }
 
 /* Git-Status in der Sidebar */
+#sidebar-tooltip { position: fixed; z-index: 80; pointer-events: none; max-width: min(300px, calc(100vw - 16px)); box-sizing: border-box; padding: 7px 10px; background: var(--bg-3); color: var(--text); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.4); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+#project-list [data-tooltip]:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 .proj-git { flex: 1 0 100%; display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 11px; line-height: 16px; color: var(--dim); }
 .git-branch { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .git-ind { flex: none; font-variant-numeric: tabular-nums; }

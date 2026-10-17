@@ -82,18 +82,20 @@
   }
 
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  // Empty title prevents the native activity tooltip inherited from the project row.
+  const tip = text => ({ 'data-tooltip': text, 'aria-label': text, tabindex: '0', title: '' });
 
   /* Zweite Zeile unter dem Projektnamen; null, wenn kein Repository. */
   function gitLine(project) {
     const st = states.get(project.id);
     if (!st || !st.isRepo) return null;
-    const kids = [h('span', { class: 'git-branch', text: '⎇ ' + (st.branch || 'kein Branch'), title: st.branch ? `Branch: ${st.branch}` : 'Kein Branch ausgewählt (detached HEAD)' })];
-    if (st.changes) kids.push(h('span', { class: 'git-ind changes', text: '●' + st.changes, title: plural(st.changes, 'nicht committete Änderung', 'nicht committete Änderungen') }));
-    if (st.ahead) kids.push(h('span', { class: 'git-ind ahead', text: '↑' + st.ahead, title: plural(st.ahead, 'Commit', 'Commits') + ' noch nicht auf GitHub (zum Pushen)' }));
-    if (st.behind) kids.push(h('span', { class: 'git-ind behind', text: '↓' + st.behind, title: plural(st.behind, 'Commit', 'Commits') + ' auf GitHub, die hier fehlen (zum Pullen)' }));
+    const kids = [h('span', { class: 'git-branch', text: '⎇ ' + (st.branch || 'kein Branch'), ...tip(st.branch ? `Branch: ${st.branch}` : 'Kein Branch ausgewählt (detached HEAD)') })];
+    if (st.changes) kids.push(h('span', { class: 'git-ind changes', text: '●' + st.changes, ...tip(plural(st.changes, 'nicht committete Änderung', 'nicht committete Änderungen') + ' – lokal noch nicht als Commit gespeichert') }));
+    if (st.ahead) kids.push(h('span', { class: 'git-ind ahead', text: '↑' + st.ahead, ...tip(plural(st.ahead, 'Commit', 'Commits') + ' noch nicht auf GitHub (zum Pushen)') }));
+    if (st.behind) kids.push(h('span', { class: 'git-ind behind', text: '↓' + st.behind, ...tip(plural(st.behind, 'Commit', 'Commits') + ' auf GitHub, die hier fehlen (zum Pullen)') }));
     kids.push(h('button', {
       class: 'proj-sync' + (st.busy ? ' busy' : ''), text: '⟳',
-      title: st.busy ? 'Synchronisiert …' : 'Mit GitHub synchronisieren (pullen, dann pushen)',
+      ...tip(st.busy ? 'Synchronisiert …' : 'Mit GitHub synchronisieren (pullen, dann pushen)'),
       onclick: (e) => { e.stopPropagation(); sync(project); },
     }));
     return h('div', { class: 'proj-git' }, kids);

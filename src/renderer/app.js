@@ -502,8 +502,8 @@
       nameEl.addEventListener('dblclick', (e) => { e.stopPropagation(); startRename(p, nameEl); });
       const li = h('li', { class: 'proj' + (p.id === S.activeId ? ' active' : ''), 'data-activity': act.state, title: act.text || null, onclick: () => p.id !== S.activeId && selectProject(p.id) },
         nameEl,
-        h('span', { class: 'proj-count' + (running ? ' live' : ''), text: String(running), title: `${running} laufende Terminals` }),
-        h('button', { class: 'proj-pm', text: '◆', title: 'Projektmanager öffnen', 'aria-label': 'Projektmanager öffnen', onclick: (e) => { e.stopPropagation(); openProjectManager(p.id); } }), // PM
+        h('span', { class: 'proj-count' + (running ? ' live' : ''), text: String(running), 'data-tooltip': `${running} ${running === 1 ? 'laufendes Terminal' : 'laufende Terminals'}`, tabindex: '0', title: '', 'aria-label': `${running} ${running === 1 ? 'laufendes Terminal' : 'laufende Terminals'}` }),
+        h('button', { class: 'proj-pm', text: '◆', title: '', 'data-tooltip': 'Projektmanager öffnen – Überblick, Planung und Aufgabenverteilung für dieses Projekt', 'aria-label': 'Projektmanager öffnen', onclick: (e) => { e.stopPropagation(); openProjectManager(p.id); } }), // PM
         h('button', { class: 'proj-x', text: '✕', title: 'Projekt entfernen', onclick: (e) => { e.stopPropagation(); removeProject(p); } }));
       const gitLine = D.git.line(p);
       if (gitLine) li.append(gitLine);

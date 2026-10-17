@@ -2,7 +2,7 @@
 schemaVersion: 1
 projectId: multiterminal-app
 state: active
-updatedAt: 2026-10-16T18:00:00+02:00
+updatedAt: 2026-10-17T01:08:05+02:00
 updatedBy: codex
 ---
 
@@ -12,6 +12,14 @@ updatedBy: codex
 Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt bis zu 30 echte Terminals mit eigenem Mini-Browser für parallel laufende Terminal-Agenten bereitstellt.
 
 ## Aktueller Stand
+UPDATE-HELPER-CODEX-20261017-01: unabhängiger Bash-Updater im Quellstand über „App aktualisieren…“ im PM integriert. Lokale Paketwahl, vollständige Prüfung, native Bestätigung, Staging vor Quit, eigenständiger Austausch/Neustart mit Sicherung/Rollback und letztes Ergebnis. Eigener finaler Gesamtlauf **650/650 grün**, native temporäre Helfertests und UI→Preload→IPC→Service-Flow geprüft, unabhängiger Review ohne wesentlichen offenen Befund. Echtes bestehendes Paket mit 855 Dateien validiert. Sichtbare Abnahme offen: Electron SIGABRT schon bei `--version`. Noch nicht paketiert/installiert; erste Freischaltung braucht einmal den bisherigen externen Installationsweg. Alle eigenen Bereiche frei; nächste Auftragsaktion: in nächsten Sammelbuild aufnehmen und sichtbar prüfen, bestehender nächster Projektschritt bleibt erhalten.
+
+MEMORY-CODEX-20261017-01: allgemeines Memory im gemeinsamen Quellstand eingebaut: anbieterunabhängige Notizen/Übergaben, lokale automatische Auszüge, mt-memory-CLI und app-weiter Settings-Tab. Eigener Gesamtlauf 608/608 bestanden, danach fünf DOM-Tests erneut grün; unabhängige Reviews ohne Critical/Important-Befund. Native Oberfläche/Zwei-Prozess-Neustartprüfung bleibt offen: Electron vor Produktcode SIGABRT. Noch nicht im Paket/installiert, für 0.2.0 vorgemerkt; alle eigenen Bereiche frei. Ab jetzt sammeln, Alt-Erinnerungen später auswählen. Minor: Start-Kontextdateien bleiben erhalten, Löschbestätigung erklärt dies. Nachweis: `PROGRESS.md`, `/private/tmp/multiterminal-memory-final-review.md`. Nächste Auftragsaktion: sichtbare Prüfung im nächsten Sammelbuild; fremde Update-Helfer-Aufgabe bleibt erhalten.
+
+SIDEBAR-TIPS-CODEX-20261017-01: einheitliches Popup für Git-Anzeigen, Terminalanzahl und Projektmanager im Quellstand ergänzt; folgt der Maus auch nach Sidebar-Neuaufbau, mit Tastatur/Escape und Fensterbegrenzung. Sechs gezielte Tests und final **572/572 Tests bestanden**, Syntax/Diff sauber. Sichtbare Abnahme weiterhin offen: Electron SIGABRT und gstack Chromium `sandbox_parameters_mac.mm:67` vor Bootstrap, auch nach Full Access. Keine Paketierung/Installation; für dasselbe Update 0.2.0 vorgemerkt, sämtliche eigenen Bereiche frei. Nächste Auftragsaktion: sichtbare Prüfung beim nächsten Sammelbuild; bestehender nächster Projektschritt erhalten.
+
+SETTINGS-FIND-CODEX-20261017-01 (17.10.2026): Einstellungsnotiz lesend abgeglichen. Die Rückfrage in `ENTWICKLUNGSPLAN.md:7–9` wurde laut späterem PROGRESS-Eintrag SETTINGS-LAYOUT-OPUS-20261016-01 bereits beantwortet (Bereiche links, Anbieter oben). Keine gespeicherte Fragenliste; offen sind gegebenenfalls zusätzliche Änderungswünsche und die dokumentierte Bedienabnahme. Nachweis: Plan-/Fortschrittsabgleich, keine neue Produktprüfung. Eigene Bereiche frei; nächste Aktion dieser Recherche: zusätzliche Wünsche bei Joshua erfragen. Bestehender nächster Projektschritt und andere Aufgaben bleiben erhalten.
+
 CODEX-FULLACCESS-20261016-01: eingebaute Codex-Starts, Kontextstart und Fortsetzen erhalten automatisch Full Access, unabhängig vom persönlichen Profil. Quellstand mit 566/566 Tests geprüft; Startargumente durch lokale Attrappen bestätigt. Sichtbare Permissions-Anzeige offen: Electron-QA vor Bootstrap mit SIGABRT abgebrochen. Noch nicht im vorhandenen Update-Paket oder installiert; Ergänzung in `UPDATE_VERSION.md` vorgemerkt.
 
 RELEASE-COMMIT-CODEX-20261016-06: Quellstand für Version **0.2.0** einschließlich freigegebener Full-Access-Ergänzung lokal in `7f944ad` gesichert (23 Dateien). Eigener abschließender Gesamtlauf 566/566 bestanden. Bestehendes Update-Paket erneut auf Prüfsummen geprüft; es enthält Full Access noch nicht und braucht dafür später einen Neubuild mit GUI-Prüfung. Kein Push, keine Installation oder Beendigung der Nutzer-App; eigene Reservierung frei. Abschlussdokumentation separat gesichert.
@@ -73,7 +81,7 @@ Agentenkommunikation als Projektdokumentation eingerichtet: `WORK_IN_PROGRESS.md
 Version 0.1.0: Terminal-Raster, Diktat, Kontenverwaltung, Verbrauchsanzeige, Terminal-Namen und Farben sind im Quellstand vorhanden. Tastenkürzel, Drag-and-drop, Mini-Browser-Steuerung und Settings liegen als lokale Änderungen vor. Bisherige Prüfungen stehen unter Nachweise; Alltagstests und Joshuas Abnahme bleiben offen. Der installierte Build wurde in COMMIT-CHECK-20261014-01 lesend mit den aktuellen Produktdateien abgeglichen; keine neue App-Bedienung in dieser Prüfrunde. Entwicklungsentwurf: `ENTWICKLUNGSPLAN.md`.
 
 ## Nächster Schritt
-Full-Access-Ergänzung in das Sammelupdate 0.2.0 aufnehmen, neu bauen und vor Joshuas späterer manueller Installation prüfen.
+Den nächsten Sammelbuild 0.2.0 mit den fertiggestellten Ergänzungen in einer startfähigen Electron-Umgebung prüfen.
 
 ## Aktive Aufgaben
 - F11-Build/Installation abgeschlossen; Joshuas manuelle Abnahme offen. RELEASE-20261015-01 meldet Joshuas Aufhebung der verwaisten F06-/CLAUDE-PROFILE-Reservierungen; deren historische Einträge erhalten. Unabhängige Claude-Profil-Abnahme bleibt fachlich unvollständig. Kein Ausbau für andere Nutzer. Flüsterflow ruht weiterhin.
@@ -83,6 +91,7 @@ Full-Access-Ergänzung in das Sammelupdate 0.2.0 aufnehmen, neu bauen und vor Jo
 - CODEXLABEL-CLAUDE-20261015-01 abgeschlossen (15.10.2026): Codex-Nutzungsbeschriftung ehrlich korrigiert, 350/350 Tests; Sichtprüfung nach nächstem Build offen. Details in `PROGRESS.md`.
 
 ## Blocker
+- MEMORY-CODEX-20261017-01: native GUI-/Zwei-Prozess-/Screenshot-Abnahme durch Electron-SIGABRT vor Bootstrap blockiert; Node-Main-/Socket-/CLI-/DOM-Nachweise vorhanden. Memory noch nicht im Paket oder installiert; keine echte Modellantwort geprüft.
 - Keine Build-/Installationsblockade mehr: gemeinsamer Produktstand `f6b0f81` liegt auf GitHub und installiert vor. Offene Produktgrenzen bleiben separat: Plugins, Kimi-Quellen, echte CLI-Nachweise und eine grobe Codex-Nutzungsnäherung (Beschriftung am 15.10.2026 korrigiert, CODEXLABEL-CLAUDE-20261015-01). Nachfolgende Prüf-/Statusnotizen sind noch lokal geändert.
 
 ## Entscheidungen

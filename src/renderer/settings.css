@@ -58,3 +58,12 @@
 #settings-panel .hotkey-recording { border-color: var(--accent); color: var(--accent); }
 .hotkey-save { flex-wrap: wrap; position: sticky; bottom: -40px; padding: 16px 0; background: var(--bg); }
 .settings-sort { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 8px; color: var(--dim); cursor: pointer; }
+
+/* Shared Memory is app-wide; notes and checkpoints remain selectable text. */
+.memory-editor { min-height: 150px; height: 23vh; margin-top: 10px; }
+.memory-actions { flex-wrap: wrap; gap: 8px; }
+.memory-checkpoint { border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin: 10px 0; }
+.memory-checkpoint summary { cursor: pointer; overflow-wrap: anywhere; font-size: 12px; }
+.memory-checkpoint h4 { margin: 14px 0 4px; font-size: 12px; }
+.memory-context { padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-side); }
+.memory-checkpoint summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }

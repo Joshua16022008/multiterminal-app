@@ -10,5 +10,5 @@ test('terminals:write passes raw input through untouched; only terminals:runBuil
   assert.match(main, /listen\('terminals:write', \(id, data\) => ptys\.write\(id, data\)\);/);
   const write = main.match(/listen\('terminals:write'[^\n]*\n/)[0];
   assert.doesNotMatch(write, /agentProfile|decorate/);
-  assert.match(main, /listen\('terminals:runBuiltin'[\s\S]*?agentProfile\.builtinLine\(command\)/);
+  assert.match(main, /listen\('terminals:runBuiltin'[\s\S]*?memoryLaunch\.builtinLine\(command, requireProject\(meta\.projectId\)\.id\)/);
 });

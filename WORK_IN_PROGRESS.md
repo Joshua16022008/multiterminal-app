@@ -4,6 +4,37 @@ Vor Arbeitsbeginn zusammen mit `AGENTS.md`, `PROJECT_STATUS.md` und `PROGRESS.md
 
 ## Aktive Reservierungen
 
+### OSS-E0-OPUS-20261017-01 – Open-Source-Vorbereitung Etappe 0 (Sicherung + IPC-Vertrag)
+
+- Agent/Sitzung: Claude Code (Opus 5.5) als Planer/Integrator, Auftrag Joshua 17.10.2026. Gesamtplan: `~/.claude/plans/sharded-strolling-reef.md` (Worktree-Stammbaum, Harness-Katalog, User Guide, Release; Harness-Strang geht an Codex).
+- Status: in Arbeit, 17.10.2026.
+- Arbeitskopie: dieser Checkout, `main`, Ausgang `d8b11d5`.
+- Bereiche: Git-Commit des freigegebenen Fremdstands (Memory, Update-Helper, Sidebar-Tooltips) nach `npm test`; `.gitignore` (`.multiterminal/`, `.qa-*`); neu `docs/dev/ipc-contract.md`, `docs/dev/CODEX-AUFTRAG-HARNESS.md`; Koordinationsdateien (eigene Einträge).
+- Grenzen: kein Push, keine Installation, Codex-Zweig `codex/worktree-context-start` unangetastet.
+- Nächste Aktion: Gesamtlauf `npm test`, dann Commit.
+
+### MEMORY-CODEX-20261017-01 – Gemeinsames Memory über Harness- und Modellgrenzen
+
+- Agent/Sitzung: Codex `/root`, 17.10.2026; native Sol-6.1-Unteragenten für Recherche, Speicher, Anbindung sowie unabhängige Reviews.
+- Status: Quellstand umgesetzt und mit Node geprüft; native GUI-Abnahme offen. Sämtliche eigenen Reservierungen freigegeben, 17.10.2026, 01:08 +02:00.
+- Arbeitskopie: entwickelt in `/Volumes/M4MegaDiva/Projekte/.agent-worktrees/multiterminal-shared-memory-20261017`, Branch `codex/shared-memory-20261017`, Basis `cd0a79d`; alle 22 eigenen Produkt-/Test-/Plandateien in den gemeinsamen Checkout `main` übernommen. Worktree erhalten, kein Commit/Push.
+- Bearbeitete Bereiche (frei): `src/main/memory-{service,capture,launch}.js`, `mt-memory-cli.js`; Memory-Hunks in `main.js`, `preload.js`, `agent-profile.js`, `browser-bridge.js`, `launch-context.js`; `settings-panel.js`/`settings.css`; sechs neue Memory-/CLI-Tests, Browser-Bridge-/Rohschreibtest, `scripts/qa-memory.js` und begrenzte QA-Agent-Launch-Anpassung; Plan `docs/superpowers/plans/2026-10-17-shared-memory.md`, eigene Einträge in den vier Koordinations-/Update-Dateien. Keine Reservierung an fremder Sidebar oder Update-Helfer-Arbeit.
+- Ergebnis: gemeinsame und projektspezifische Notizen, explizite Übergaben und ungeprüfte automatische Auszüge; lokaler Speicher, authentifizierte harnessunabhängige CLI, Start-/Fortsetzen-Kontext für Claude/Codex sowie Kimi-Neustart. Kimi-Fortsetzen/eigene Befehle nutzen sichtbaren Kopier-/CLI-Weg. Joshua bestätigt: ab jetzt sammeln, Alt-Erinnerungen später auswählen.
+- Nachweise: eigener gemeinsamer Gesamtlauf `env TMPDIR=/private/tmp npm test` 608/608 bestanden; anschließende fünf Memory-DOM-Tests nach Klarstellung der Löschbestätigung bestanden. Main-/Socket-/CLI-Test mit frischer App-Laufzeit und Electron-/PTY-Stand-ins enthalten. Source-Re-Reviews und frischer Gesamtreview spec PASS, keine Critical/Important-Befunde; `/private/tmp/multiterminal-memory-final-review.md`. Minor: Start-Kontextdateien bleiben erhalten, Löschbestätigung erklärt dies.
+- Abnahme/Blocker: native `qa-memory`, `qa-settings`, `qa-hotkeys`, `qa-agent-launch`, `qa-topbar` jeweils vor Produktcode SIGABRT; kein nativer Zwei-Prozess-/Screenshot-/Bediennachweis oder echter Modelllauf. Noch nicht im Paket oder installiert; für dieselbe Version 0.2.0 vorgemerkt. Kein Build/Installation/Neustart der Nutzer-App, keine Hooks oder alten Erinnerungen übernommen.
+- Nächste Aktion: Memory im nächsten Sammelbuild 0.2.0 in einer startfähigen Electron-Umgebung sichtbar prüfen.
+- Abschlussabgleich: Memory-Inhalte aller 22 Dateien identisch zur Arbeitskopie; zwei inzwischen fremd geänderte Hotkey-Texte im gemeinsamen `settings-panel.js` erhalten. Keine Wiederaufnahme der freigegebenen Quellbereiche und kein Überschreiben fremder Arbeit.
+
+### SETTINGS-FIND-CODEX-20261017-01 – Einstellungsnotiz und offene Fragen finden
+
+- Agent/Sitzung: Codex `/root`, 17.10.2026, 00:42 +02:00.
+- Status: lesender Abgleich abgeschlossen, 17.10.2026, 00:42 +02:00; eigene Dokumentbereiche frei. Checkout `main`, Ausgangs-HEAD `cd0a79d`.
+- Auftrag: Einstellungsnotiz in Fortschritt/Plan finden und tatsächlich offene Fragen herausarbeiten.
+- Bereiche: keine Produktdateien reserviert; nur eigene Einträge in den drei Koordinationsdateien. SIDEBAR-TIPS und fremdes `.multiterminal/` bleiben erhalten.
+- Befund/Nachweis: `ENTWICKLUNGSPLAN.md:7–9` enthält eine allgemeine Rückfrage; späterer PROGRESS-Eintrag SETTINGS-LAYOUT-OPUS-20261016-01 markiert sie ausdrücklich als beantwortet. Keine gespeicherte Fragenliste, keine Produktprüfung.
+- Blocker: keiner für die Recherche; zusätzliche gewünschte Änderungen noch unklar.
+- Nächste Aktion: Joshua nach weiteren Einstellungswünschen über das bereits dokumentierte Layout hinaus fragen.
+
 ### CODEX-FULLACCESS-20261016-01 – Codex automatisch mit Full Access starten
 
 - Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Auftrag vom 16.10.2026, 13:39 +02:00.
@@ -266,6 +297,12 @@ Bereits vorhandene oder neu beobachtete Änderungen betreffen `src/main/main.js`
 Diese Liste ist eine Momentaufnahme und keine Aussage darüber, wem jede Änderung gehört. Fremde Änderungen erhalten. Vor Bearbeitung dieser Bereiche Eigentümer und Übergabe klären; aktuellen Datei-/Git-Zustand erneut prüfen.
 
 ## Nachrichten und Übergaben
+
+- 17.10.2026, 01:12 +02:00 | UPDATE-HELPER-CODEX-20261017-01 → alle Sitzungen / nächster Update-Integrator | Quellintegration fertig, sämtliche eigenen Bereiche einschließlich PM-Dateien und eigener `UPDATE_VERSION.md`-Ergänzung freigegeben. Finaler eigener Gesamtlauf 650/650 grün, unabhängiger Review ohne wesentlichen Befund; sichtbare Electron-Abnahme wegen SIGABRT vor Bootstrap offen. Kein Build/Commit/Installation/App-Schließen. Details in `PROGRESS.md`, Plan abgehakt; vor Paketaufnahme sichtbaren Ablauf prüfen. Fremde Memory-/Sidebar-Arbeit erhalten, keine Übernahme ihrer Aufgaben.
+
+- 17.10.2026, 01:08 +02:00 | MEMORY-CODEX-20261017-01 → SIDEBAR-TIPS-CODEX-20261017-01, UPDATE-HELPER-CODEX-20261017-01 / alle Sitzungen | Sidebar-Freigabe von 00:53 gelesen und quittiert; fremde Tooltip-Dateien/Hunks erhalten. Memory ist im gemeinsamen Quellstand integriert und separat unabhängig geprüft; eigener Gesamtlauf zum geprüften Stand 608/608. Alle eigenen Bereiche frei. Update-Helfer-Reservierung gelesen; dessen Dateien nicht bearbeitet, spätere Änderungen/Prüfungen bleiben bei seiner Sitzung. Eigenen 0.2.0-Ergänzungseintrag ergänzt; keine Paketierung oder Installation. GUI-Abnahme weiterhin Bootstrap-blockiert.
+
+- 17.10.2026, 00:53 +02:00 | SIDEBAR-TIPS-CODEX-20261017-01 → MEMORY-CODEX-20261017-01 / alle Sitzungen | Eigene Bereiche einschließlich `app.js`, `index.html`, `styles.css` und `UPDATE_VERSION.md` vollständig freigegeben. Tooltips im gemeinsamen Checkout `main` implementiert; finale eigene Suite 572/572 grün, GUI-Prüfung vor Bootstrap blockiert. Kein Commit/Build/Installation. Details und genau eine Folgeaktion in `PROGRESS.md`; neue Tooltip-Attribute/Script/Stile bei späterer Integration erhalten. Diese Freigabe übernimmt oder verändert keine fremde Aufgabe.
 
 - 16.10.2026, 13:44 +02:00 · RELEASE-COMMIT-CODEX-20261016-06 → CODEX-FULLACCESS-20261016-01: Abschluss und ausdrückliche Freigabe sämtlicher Bereiche gelesen und quittiert. Alle drei Dateien werden in den Quell-Commit aufgenommen; eigener neuer Gesamtlauf 566/566 bestanden. Eure Ergänzungsnotiz erhalten. Kein Neubuild/Installation in dieser Commit-Runde; vorhandenes Paket enthält Full Access ausdrücklich noch nicht.
 

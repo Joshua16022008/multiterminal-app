@@ -3,7 +3,7 @@
   'use strict';
   const D = (window.DeckApp = window.DeckApp || {}), h = D.h;
   const labels = { claude: 'Claude Code', codex: 'Codex', kimi: 'Kimi' };
-  const tabs = { profile: 'Profil', quota: 'Kontingente', skills: 'Skills', plugins: 'Plugins', mods: 'Mods', libraries: 'Bibliotheken', hotkeys: 'Hotkeys' };
+  const tabs = { profile: 'Profil', quota: 'Kontingente', skills: 'Skills', plugins: 'Plugins', mods: 'Mods', libraries: 'Bibliotheken', memory: 'Memory', hotkeys: 'Hotkeys' };
   const HK = window.DeckHotkeys;
   let hotkeyDraft = null, hotkeyOriginal = null, hotkeyDefaults = null, hotkeyPlatform = 'darwin', recording = null, recordingGeneration = 0;
   const copyBindings = value => Object.fromEntries(Object.entries(value).map(([id, bindings]) => [id, [...bindings]]));
@@ -15,7 +15,7 @@
   function button(text, action, props = {}) { return h('button', { class: 'btn-small', text, onclick: action, type: 'button', ...props }); }
   function note(text) { return h('p', { class: 'settings-note', text }); }
   function fail(e) { error = D.errText(e); }
-  function dirty() { if (tab === 'hotkeys') return hotkeyDirty(); const d = drafts.get(scope); return d && d.text !== d.original; }
+  function dirty() { if (tab === 'memory') return memoryDirty(); if (tab === 'hotkeys') return hotkeyDirty(); const d = drafts.get(scope); return d && d.text !== d.original; }
   function mayLeave() { return !dirty() || window.confirm('Deine Änderungen sind noch nicht gespeichert. Ansicht wechseln? Der Entwurf bleibt bis zum Schließen der App erhalten.'); }
   function provider() { return overview.find(p => p.id === scope || p.provider === scope); }
   async function reloadOverview() {
@@ -70,11 +70,13 @@
     if (!mayLeave()) return;
     stopRecording();
     scope = nextScope; tab = nextTab;
+    memoryGeneration++;
     generation++; previewGeneration++; search = ''; page = 0; error = ''; message = '';
     render(); syncTimer();
     if (tab === 'profile') loadProfile();
     if (tab === 'quota') loadQuota();
     if (tab === 'hotkeys') loadHotkeys();
+    if (tab === 'memory') loadMemory();
   }
   async function loadHotkeys() {
     if (hotkeyDraft) return;
@@ -316,6 +318,130 @@
       body.append(h('details', { class: 'settings-roots' }, h('summary', { text: 'Geprüfte Quellen (' + (p.roots || []).length + ')' }), ...(p.roots || []).map(r => note(`${r.label}: ${r.path} (${r.exists ? 'vorhanden' : 'nicht gefunden'})`))), ...(p.notes || []).map(n => note(typeof n === 'string' ? n : n.text || n.message || '')));
     }
   }
+  const memoryDrafts = new Map();
+  let memorySettings = null, memoryProject = null, memoryProjectName = '', memoryContext = '', memoryGeneration = 0, memoryLoading = false;
+  const currentProjectId = () => (typeof opts.projectId === 'function' ? opts.projectId() : opts.projectId) ?? null;
+  const memoryDraftDirty = d => !!d && d.text !== d.original;
+  function memoryDirty() { return memoryDraftDirty(memoryDrafts.get(null)) || (memoryProject !== null && memoryDraftDirty(memoryDrafts.get(memoryProject))); }
+  function keepMemory(result, replace = false) {
+    const existing = memoryDrafts.get(result.projectId);
+    if (existing && !replace && memoryDraftDirty(existing)) { existing.checkpoints = result.checkpoints; return; }
+    memoryDrafts.set(result.projectId, { ...result, text: result.notes, original: result.notes });
+  }
+  function memoryCurrent(my, projectId) { return open && tab === 'memory' && my === memoryGeneration && currentProjectId() === projectId; }
+  async function loadMemory() {
+    const selected = currentProjectId(), my = ++memoryGeneration;
+    memoryProject = selected; memoryProjectName = selected || ''; memoryContext = ''; memoryLoading = true; render();
+    try {
+      const [global, project, switches, context, projects] = await Promise.all([
+        window.deck.memory.read(null), selected === null ? null : window.deck.memory.read(selected),
+        window.deck.memory.getSettings(), window.deck.memory.context(selected), window.deck.projects.list(),
+      ]);
+      if (!memoryCurrent(my, selected)) return;
+      keepMemory(global); if (project) keepMemory(project);
+      memorySettings = switches; memoryContext = context;
+      memoryProjectName = selected === null ? '' : projects.find(p => p.id === selected)?.name || selected;
+      error = '';
+    } catch (e) { if (memoryCurrent(my, selected)) fail(e); }
+    if (memoryCurrent(my, selected)) { memoryLoading = false; render(); }
+  }
+  async function memoryAction(id, action) {
+    const d = memoryDrafts.get(id);
+    if (!d || busy) return;
+    const label = id === null ? 'gemeinsame Memory' : 'Projekt-Memory';
+    if (action === 'reload' && memoryDraftDirty(d) && !window.confirm('Gespeichertes ' + label + ' neu laden und diesen ungespeicherten Entwurf verwerfen?')) return;
+    if (action === 'clear' && !window.confirm((id === null ? 'Gemeinsames Memory für alle Anbieter leeren? Die gemeinsamen Notizen und dieser Entwurf werden gelöscht.' : 'Projekt-Memory für „' + memoryProjectName + '“ leeren? Notizen, alle Checkpoints, automatische Auszüge und dieser Entwurf werden gelöscht.') + ' Bereits erzeugte Start-Kontextdateien und Inhalte laufender Sitzungen bleiben erhalten.')) return;
+    const selected = memoryProject, my = memoryGeneration, text = d.text;
+    busy = true; error = ''; message = ''; render();
+    try {
+      const result = action === 'save' ? await window.deck.memory.saveNotes(id, text, d.revision) : action === 'clear' ? await window.deck.memory.clear(id, d.revision) : await window.deck.memory.read(id);
+      // A successful save updates its scope even if the user navigated away.
+      // Preserve any edits entered since the save was requested.
+      const current = memoryDrafts.get(id);
+      keepMemory(result, true);
+      if (action === 'save' && current && current.text !== text) memoryDrafts.get(id).text = current.text;
+      if (memoryCurrent(my, selected)) {
+        const context = await window.deck.memory.context(selected);
+        if (memoryCurrent(my, selected)) {
+          memoryContext = context;
+          message = action === 'save' ? 'Memory gespeichert.' : action === 'clear' ? 'Memory geleert.' : 'Gespeichertes Memory neu geladen.';
+        }
+      }
+    } catch (e) { if (memoryCurrent(my, selected)) { fail(e); if (/geändert|konflikt|revision/i.test(error)) error += ' Dein Entwurf bleibt erhalten. „Kontext aktualisieren“ lädt den gespeicherten Stand zum Vergleichen in die Vorschau; „neu laden“ verwirft den Entwurf erst nach Bestätigung.'; } }
+    busy = false; if (open) render();
+  }
+  async function setMemorySwitch(key, value) {
+    if (busy) return;
+    const selected = memoryProject, my = memoryGeneration;
+    busy = true; error = ''; message = ''; render();
+    try {
+      const result = await window.deck.memory.setSettings({ [key]: value });
+      if (memoryCurrent(my, selected)) {
+        const context = await window.deck.memory.context(selected);
+        if (memoryCurrent(my, selected)) {
+          memorySettings = result; memoryContext = context;
+          message = 'Memory-Einstellung gespeichert.';
+        }
+      }
+    } catch (e) { if (memoryCurrent(my, selected)) fail(e); }
+    busy = false; if (open) render();
+  }
+  async function copyMemoryContext() {
+    const selected = memoryProject, my = memoryGeneration;
+    try {
+      const text = await window.deck.memory.context(selected);
+      if (!memoryCurrent(my, selected)) return;
+      memoryContext = text;
+      await navigator.clipboard.writeText(text);
+      if (memoryCurrent(my, selected)) { error = ''; message = 'Kontext kopiert.'; render(); }
+    } catch (e) { if (memoryCurrent(my, selected)) { fail(e); render(); } }
+  }
+  function memoryEditor(body, id, label, editorId) {
+    const d = memoryDrafts.get(id);
+    body.append(h('h3', { text: label }));
+    if (!d) { body.append(note('Notizen noch nicht geladen.')); return; }
+    const saveBtn = button(label + ' speichern', () => memoryAction(id, 'save'), { class: 'btn-primary', disabled: busy || !memoryDraftDirty(d) });
+    const state = note(memoryDraftDirty(d) ? 'Ungespeicherter Entwurf' : 'Gespeicherter Stand · Revision ' + d.revision);
+    const editor = h('textarea', { id: editorId, class: 'settings-editor memory-editor', value: d.text, maxlength: 20000, spellcheck: false, disabled: busy, 'aria-label': label + ' – Notizen' });
+    editor.addEventListener('input', () => { d.text = editor.value; saveBtn.disabled = busy || !memoryDraftDirty(d); state.textContent = memoryDraftDirty(d) ? 'Ungespeicherter Entwurf' : 'Gespeicherter Stand · Revision ' + d.revision; });
+    editor.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); memoryAction(id, 'save'); } });
+    body.append(editor, h('div', { class: 'settings-save memory-actions' }, saveBtn,
+      button(label + ' neu laden', () => memoryAction(id, 'reload'), { disabled: busy }),
+      button(label + ' leeren', () => memoryAction(id, 'clear'), { disabled: busy })), state);
+  }
+  function memoryView(body) {
+    body.append(h('h2', { text: 'Gemeinsames Memory' }), note('Lokale Hinweise und Projektstand für Claude Code, Codex, Kimi und eigene Agenten. Worktrees desselben Projekts teilen dieses Memory. Es wird keine native Unterhaltung zwischen Anbietern fortgesetzt.'),
+      note('Automatische Terminalauszüge sind ungeprüft und unvollständig. Häufige Zugangsdatenmuster werden geschwärzt; sensible Inhalte können trotzdem enthalten sein. Keine Tastatureingaben werden gezielt gespeichert. Maximal 8 Checkpoints pro Projekt (bis zu 4 automatische), 8000 Zeichen pro Auszug und 20000 Zeichen pro Notiz.'));
+    if (memoryLoading) { body.append(note('Memory wird geladen …')); return; }
+    if (!memorySettings) { body.append(button('Memory erneut laden', loadMemory)); return; }
+    for (const [key, id, label] of [['enabled', 'memory-enabled', 'Memory bei Agentenstarts laden'], ['autoCapture', 'memory-auto-capture', 'Terminalauszüge automatisch sichern']]) {
+      const box = h('input', { type: 'checkbox', id, checked: memorySettings[key], disabled: busy });
+      box.addEventListener('change', () => setMemorySwitch(key, box.checked));
+      body.append(h('div', { class: 'settings-load' }, h('label', { for: id }, box, h('span', { text: label }))));
+    }
+    body.append(note('Ausgeschaltetes Memory wird weder automatisch geladen noch automatisch ergänzt. Vorhandene Daten bleiben zum Bearbeiten erhalten. Explizites mt-memory save benötigt eingeschaltetes Memory; es funktioniert auch bei ausgeschalteten automatischen Auszügen.'));
+    memoryEditor(body, null, 'Gemeinsames Memory', 'memory-global-notes');
+    if (memoryProject === null) body.append(h('h3', { text: 'Kein Projekt ausgewählt' }), note('Wähle ein Projekt für Projektnotizen und Checkpoints. Die gemeinsamen Notizen gelten für alle Anbieter.'));
+    else {
+      body.append(note('Aktuelles Projekt: ' + memoryProjectName));
+      memoryEditor(body, memoryProject, 'Projekt-Memory', 'memory-project-notes');
+      body.append(h('h3', { text: 'Checkpoints' }));
+      const checkpoints = memoryDrafts.get(memoryProject)?.checkpoints || [];
+      if (!checkpoints.length) body.append(note('Noch keine Checkpoints gespeichert.'));
+      for (const checkpoint of [...checkpoints].reverse()) {
+        const detail = h('details', { class: 'memory-checkpoint' }, h('summary', { text: (checkpoint.source === 'terminal' ? 'Automatischer Terminalauszug · ungeprüft, unvollständig' : 'Expliziter Checkpoint · ungeprüfte Angabe') + ' · ' + checkpoint.createdAt }),
+          note('Quelle: ' + ({ agent: 'Agentenangabe', manual: 'Manueller Eintrag', terminal: 'Terminalausgabe' }[checkpoint.source] || 'unbekannt') + ' · Startanbieter: ' + (labels[checkpoint.provider] || (checkpoint.provider === 'custom' ? 'Eigener Befehl / Shell' : 'unbekannt')) + ' · Startordner: ' + (checkpoint.cwd || 'unbekannt') + ' · Arbeitskopie: ' + (checkpoint.workspaceId || 'Projektordner')));
+        for (const [field, title] of [['goal', 'Ziel'], ['summary', 'Zusammenfassung'], ['decisions', 'Entscheidungen'], ['openQuestions', 'Offene Fragen'], ['nextStep', 'Nächster Schritt'], ['files', 'Dateien']]) if (checkpoint[field]) detail.append(h('h4', { text: title }), h('pre', { class: 'settings-source', text: checkpoint[field] }));
+        body.append(detail);
+      }
+    }
+    body.append(h('h3', { text: 'Gespeicherter Kontext für dieses Projekt' }), note('Diese Vorschau enthält exakt die gemeinsamen und gewählten Projektdaten aus dem Speicher, ohne ungespeicherte Entwürfe. Beim Agentenstart kommt ein kurzer Hinweis zur Verwendung und zum Sichern von Checkpoints hinzu.'),
+      h('pre', { class: 'settings-source memory-context', text: memoryContext || (memorySettings.enabled ? 'Noch kein gespeicherter Kontext.' : 'Memory-Laden ist ausgeschaltet.') }),
+      h('div', { class: 'settings-save memory-actions' }, button('Kontext kopieren', copyMemoryContext, { disabled: busy }), button('Kontext aktualisieren', loadMemory, { disabled: busy })),
+      note('Kimi behält beim Fortsetzen seine ursprünglichen Agent-Anweisungen. Für Kimi-Fortsetzen und eigene Harnesses: Kontext kopieren und bewusst als Prompt übergeben oder mt-memory read aufrufen. Bestehende Chats werden nicht automatisch importiert.'),
+      h('pre', { class: 'settings-source', text: "mt-memory read\nmt-memory save --summary 'Stand' --decisions 'Entscheidungen' --questions 'Offene Fragen' --next 'Nächster Schritt' --files 'Dateien'" }));
+  }
+
   function render() {
     if (!root) return;
     root.hidden = !open; if (!open) return;
@@ -334,7 +460,7 @@
       },
     }));
     const main = h('section', { class: 'settings-main' });
-    const appWide = tab === 'hotkeys';
+    const appWide = tab === 'hotkeys' || tab === 'memory';
     main.append(h('div', { class: 'settings-top' }, h('strong', { class: 'settings-top-title', text: tabs[tab] + (appWide ? ' · gesamte App' : '') }), appWide ? null : button('Übersicht aktualisieren', reloadOverview), button('Schließen', () => toggle(false), { 'aria-label': 'Einstellungen schließen' })));
     if (!appWide) {
       const providerIds = Object.keys(labels);
@@ -345,7 +471,7 @@
     const body = h('div', { id: 'settings-content', class: 'settings-content', role: 'tabpanel', 'aria-label': appWide ? tabs[tab] : tabs[tab] + ' · ' + labels[scope] });
     if (error) body.append(h('div', { class: 'settings-error', role: 'alert', text: error }));
     if (message) body.append(h('div', { class: 'settings-message', role: 'status', text: message }));
-    if (tab === 'profile') profileView(body); else if (tab === 'quota') quotaView(body); else if (tab === 'hotkeys') hotkeysView(body); else inventoryView(body);
+    if (tab === 'profile') profileView(body); else if (tab === 'quota') quotaView(body); else if (tab === 'hotkeys') hotkeysView(body); else if (tab === 'memory') memoryView(body); else inventoryView(body);
     body.append(h('section', { class: 'settings-preview', hidden: true, 'aria-label': 'Quellvorschau' })); main.append(body); root.replaceChildren(nav, main);
     if (focusKey) {
       const replacement = [...root.querySelectorAll('button,input,textarea')].find(el => el.tagName === focusKey.tag && el.getAttribute('aria-label') === focusKey.label && (focusKey.label || el.textContent === focusKey.text));
@@ -357,14 +483,16 @@
     if (next === open) return open;
     if (!next && !mayLeave()) return open;
     stopRecording();
+    memoryGeneration++;
     open = next; generation++; overviewGeneration++; previewGeneration++; quotaGeneration++;
     if (!open) { syncTimer(); render(); if (opts.onClose) opts.onClose(); if (previousFocus && previousFocus.isConnected) previousFocus.focus(); return false; }
     previousFocus = document.activeElement; error = ''; render(); syncTimer();
-    root.querySelector('.settings-provider.active').focus();
+    (root.querySelector('.settings-provider.active') || root.querySelector('.settings-nav .settings-tab.active'))?.focus();
     reloadOverview();
     if (tab === 'profile') loadProfile();
     if (tab === 'quota') loadQuota();
     if (tab === 'hotkeys') loadHotkeys();
+    if (tab === 'memory') loadMemory();
     return open;
   }
   function init(options = {}) {

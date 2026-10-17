@@ -18,6 +18,7 @@ const REQUEST_TIMEOUT_MS = 5000;
 const HANDLER_TIMEOUT_MS = 30000;
 const MAX_LIMIT = 10000;
 const { validateSelector, validateTypeText } = require('./browser-feedback'); // F05
+const { validateCheckpointInput } = require('./memory-service');
 
 const COMMANDS = Object.freeze(['open', 'reload', 'back', 'forward', 'url', 'screenshot', 'console', 'text', 'show', 'hide', 'click', 'type']); // F05: click, type
 
@@ -107,7 +108,7 @@ function validateEvent(args) {
   return clean;
 }
 
-function createBrowserBridge({ socketPath, handler, eventHandler, isAllowedUrl, requestTimeoutMs, handlerTimeoutMs } = {}) {
+function createBrowserBridge({ socketPath, handler, eventHandler, memoryHandler, isAllowedUrl, requestTimeoutMs, handlerTimeoutMs } = {}) {
   if (typeof socketPath !== 'string' || !path.isAbsolute(socketPath)) throw new Error('socketPath muss ein absoluter Pfad sein.');
   if (typeof handler !== 'function') throw new Error('handler fehlt.');
   const allowed = typeof isAllowedUrl === 'function' ? isAllowedUrl : defaultIsAllowedUrl;
@@ -156,13 +157,27 @@ function createBrowserBridge({ socketPath, handler, eventHandler, isAllowedUrl, 
       await eventHandler(terminalId, validateEvent(request.args));
       return null;
     }
-    const args = validateCommand(request.cmd, request.args, allowed);
+    let args, run;
+    if (request.cmd === 'memory-read' || request.cmd === 'memory-save') {
+      if (typeof memoryHandler !== 'function') throw new Error('Memory-Handler nicht verfügbar.');
+      if (request.cmd === 'memory-read') {
+        const input = request.args === undefined ? {} : request.args;
+        if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length) throw new Error('memory-read akzeptiert keine Projekt- oder Scope-Overrides.');
+        args = {};
+      } else {
+        args = validateCheckpointInput(request.args, { allowProvenance: false });
+      }
+      run = () => memoryHandler(terminalId, request.cmd === 'memory-read' ? 'read' : 'save', args);
+    } else {
+      args = validateCommand(request.cmd, request.args, allowed);
+      run = () => handler(terminalId, request.cmd, args);
+    }
     let timer;
     const timeout = new Promise((_, reject) => {
       timer = setTimeout(() => reject(new Error('Zeitüberschreitung beim Ausführen des Befehls.')), runTimeout);
     });
     try {
-      return await Promise.race([Promise.resolve(handler(terminalId, request.cmd, args)), timeout]);
+      return await Promise.race([Promise.resolve(run()), timeout]);
     } finally {
       clearTimeout(timer);
     }
