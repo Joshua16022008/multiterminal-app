@@ -199,7 +199,8 @@
       if (color) el.style.setProperty('--wt-color', color);
       el.style.left = (pos.x + 20) + 'px';
       el.style.top = (pos.y - 14) + 'px';
-      el.append(
+      // Native append() would print null as the text "null"; only h() skips empty children.
+      el.append(...[
         h('header', { class: 'wtv-card-head' },
           h('strong', { class: 'wtv-branch', text: '⑂ ' + branchName(n), title: n.branch || '' }),
           badge(kindLabel(n), 'kind'),
@@ -208,7 +209,7 @@
         isOrphan(n) ? null : statsLine(n),
         isOrphan(n) ? null : lastLine(n),
         panes.length ? h('div', { class: 'wtv-panes' }, ...panes.map(paneRow)) : null,
-        actionBar(n, panes));
+        actionBar(n, panes)].filter(Boolean));
       return el;
     }
 
@@ -218,10 +219,11 @@
       return e;
     }
 
-    function stage() {
+    // heights (optional): measured card heights per node id from a first render pass.
+    function stage(heights) {
       const L = getLayout();
       let lay;
-      try { lay = L && typeof L.layout === 'function' ? L.layout(tree) : null; } catch (_) { lay = null; }
+      try { lay = L && typeof L.layout === 'function' ? L.layout(tree, heights ? { heights, gap: CARD_GAP } : undefined) : null; } catch (_) { lay = null; }
       if (!lay || !Array.isArray(lay.nodes)) lay = fallbackLayout(tree);
       const byId = new Map(lay.nodes.map((p) => [p.id, p]));
       const width = Math.max(320, lay.width || 0), height = Math.max(120, lay.height || 0);
@@ -252,6 +254,17 @@
         box.append(c);
       }
       return { box, cards, height };
+    }
+
+    // Card heights after layout (browser only); null when nothing is measurable (tests, hidden).
+    function measure(s) {
+      const out = {};
+      for (const c of s.cards) {
+        const hgt = c.el.offsetHeight;
+        if (!(hgt > 0)) return null;
+        out[c.id] = hgt;
+      }
+      return s.cards.length ? out : null;
     }
 
     // Cards are taller than a layout row may assume: push overlapping ones down (browser only).
@@ -296,7 +309,17 @@
           h('button', { class: 'btn-small', type: 'button', text: '⟳ Aktualisieren', disabled: loading, title: 'Stammbaum neu einlesen', onclick: load })),
         h('p', { class: 'wtv-note', text: BRANCH_HINT }),
         ...content);
-      if (b && b.stage) relax(b.stage);
+      if (b && b.stage) {
+        // Second pass: rows sized to the real cards, so curves and dots meet their cards.
+        const heights = measure(b.stage);
+        const L = getLayout();
+        if (heights && L && typeof L.layout === 'function' && b.stage.box.parentNode) {
+          const s2 = stage(heights);
+          b.stage.box.parentNode.replaceChild(s2.box, b.stage.box);
+          lastCards = s2.cards;
+          relax(s2);
+        } else relax(b.stage);
+      }
     }
 
     function scrollToFocus() {

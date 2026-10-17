@@ -8,8 +8,9 @@ function h(tag, props = {}, ...children) {
   const el = {
     tag, ...props, hidden: !!props.hidden, children: children.flat().filter(Boolean), style: { setProperty() {} },
     attrs: {},
-    append(...items) { this.children.push(...items.filter(Boolean)); },
-    replaceChildren(...items) { this.children = items.filter(Boolean); },
+    // Like the real DOM, native append/replaceChildren would print null as text: refuse it here.
+    append(...items) { if (items.some((i) => i == null)) throw new Error('append(null) prints "null"'); this.children.push(...items); },
+    replaceChildren(...items) { if (items.some((i) => i == null)) throw new Error('replaceChildren(null) prints "null"'); this.children = items; },
     setAttribute(k, v) { this.attrs[k] = v; },
   };
   return el;

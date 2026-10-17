@@ -101,3 +101,17 @@ test('branches with the same fork point leave the trunk at the same height', () 
   const y = (id) => l.nodes.find((n) => n.id === id).y;
   assert.ok(y('a') < y('c') && y('b') < y('c'));
 });
+
+test('measured card heights grow the rows so every curve ends at its card', () => {
+  const plain = layout(mk(2));
+  assert.deepStrictEqual(layout(mk(2), {}), plain, 'no heights: unchanged layout');
+  const heights = { proj: 170, n1: 60, n0: 140 };
+  const l = layout(mk(2), { heights, gap: 10 });
+  const y = (id) => l.nodes.find((n) => n.id === id).y;
+  // newest activity first: n1 then n0
+  assert.strictEqual(y('n1') - y('proj'), 180, 'row below the stem fits its 170 px card plus gap');
+  assert.strictEqual(y('n0') - y('n1'), 96, 'a short card keeps the minimum row');
+  for (const e of l.edges) assert.ok(e.d.endsWith(' ' + y(e.to)), 'curve ends at the card row');
+  assert.ok(l.height >= y('n0') + 140, 'stage is tall enough for the last card');
+  assert.deepStrictEqual(layout(mk(2), { heights: { proj: 'x' } }), plain, 'invalid heights are ignored');
+});
