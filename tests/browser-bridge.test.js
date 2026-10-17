@@ -295,3 +295,19 @@ test('memory handlers share the finite execution deadline', async () => {
     assert.match(result.error, /Zeitüberschreitung/);
   } finally { await cleanup(ctx); }
 });
+
+test('strict task route authenticates and preserves task-only handler boundary', async () => {
+  const calls=[];
+  const ctx=await setup(undefined,{taskHandler:(id,operation,input)=>{calls.push({id,operation,input});return {id:'result'};}});
+  try {
+    const token=ctx.bridge.register('task-source');
+    const valid=[['peers',{}],['list',{box:'inbox'}],['get',{id:'a'}],['send',{to:'target',title:'t',text:'x',requestId:'r'}],['send',{provider:'claude',title:'t',text:'x',parentId:'a',dependsOn:['b'],requestId:'s'}],['accept',{id:'a'}],['reply',{id:'a',status:'completed',text:'done'}],['cancel',{id:'a'}]];
+    for(const [op,args] of valid) assert.strictEqual((await ask(ctx.sock,{token,cmd:'task-'+op,args})).ok,true);
+    assert.strictEqual(calls.length,8);assert.strictEqual(calls[0].id,'task-source');assert.deepStrictEqual(ctx.calls,[]);
+    const bad=[['peers',{projectId:'x'}],['get',{id:'a',sourceTerminalId:'other'}],['send',{to:'x',provider:'codex',title:'x',text:'x',requestId:'a'}],['send',{provider:'kimi',title:'x',text:'x',requestId:'a'}],['send',{to:'x',title:'x',text:'x'.repeat(3001),requestId:'a'}],['reply',{id:'a',status:'running',text:'x'}],['reply',{id:'a',status:'failed',text:'x'.repeat(16001)}],['list',{box:'foreign'}],['wat',{}],['cancel',[]]];
+    for(const [op,args] of bad) assert.strictEqual((await ask(ctx.sock,{token,cmd:'task-'+op,args})).ok,false);
+    assert.strictEqual((await ask(ctx.sock,{token,cmd:'task-peers',projectId:'spoof'})).ok,false);
+    assert.strictEqual(calls.length,8);
+  } finally { await cleanup(ctx); }
+  const plain=await setup();try {const token=plain.bridge.register('t'); assert.strictEqual((await ask(plain.sock,{token,cmd:'task-peers'})).ok,false);} finally {await cleanup(plain);}
+});

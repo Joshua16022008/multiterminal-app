@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="search.css"><!-- F03 -->
   <link rel="stylesheet" href="workspace-templates.css"><!-- F08 -->
   <link rel="stylesheet" href="browser-feedback.css">
+  <link rel="stylesheet" href="agent-tasks.css">
   <link rel="stylesheet" href="task-link.css"><!-- F10 dev-only -->
 </head>
 <body>
@@ -59,6 +60,7 @@
         <button id="btn-attention" class="btn-small" aria-expanded="false" aria-controls="attention-panel" title="Rückmeldungen der Agenten: wartet auf dich, Antwort fertig, Fehler (⌘J springt zur nächsten)">Rückmeldungen <span id="attention-count" class="attn-badge" hidden></span></button>
         <button id="btn-diff" class="btn-small" aria-expanded="false" aria-controls="diff-panel" title="Lokale Git-Änderungen ansehen und kommentieren">Änderungen</button><!-- F04 -->
         <button id="btn-pm" class="btn-small" title="Projektmanager für dieses Projekt in eigenem Fenster öffnen">◆ Projektmanager</button><!-- PM -->
+        <button id="btn-agent-tasks" class="btn-small" aria-expanded="false" aria-controls="agent-tasks-panel">Agentenaufgaben</button>
         <button id="btn-ports" class="btn-small" aria-expanded="false" aria-controls="ports-panel" title="Lokale Devserver und lauschende Ports">Ports</button>
         <div id="project-options" class="toolbar-group">
           <button id="btn-accounts" class="btn-small" title="Konten der KI-Anbieter verwalten">Konten</button>
@@ -75,6 +77,7 @@
         <aside id="attention-panel" hidden aria-label="Rückmeldungen der Agenten"></aside>
         <aside id="diff-panel" hidden aria-label="Projektänderungen"></aside><!-- F04 -->
         <aside id="ports-panel" hidden aria-label="Devserver und Ports"></aside>
+        <aside id="agent-tasks-panel" hidden aria-label="Aufgaben zwischen Agenten"></aside>
         <section id="settings-panel" hidden aria-label="Einstellungen"></section>
         <section id="worktree-view" hidden aria-label="Arbeitskopien-Stammbaum"></section>
         <div id="empty-main" hidden>
@@ -126,6 +129,7 @@
   <script src="workspace-templates.js"></script><!-- F08 -->
   <script src="browser-feedback.js"></script>
   <script src="pm-send.js"></script><!-- PM -->
+  <script src="agent-tasks.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -409,6 +409,7 @@
     renderSidebar();
     reportVisible();
     D.progressPanel.refresh();
+    if (D.agentTasks && D.agentTasks.isOpen()) D.agentTasks.refresh();
     scheduleSave();
     if (project) D.git.onSelect(project);
     if (D.refreshTreeButton) D.refreshTreeButton();
@@ -1281,6 +1282,26 @@
       getPane: byId, getDraft: () => D.promptDraft.get(), openDraft: (opts) => D.promptDraft.open(opts),
     });
     api.pm.onSendRequest((req) => { const result = pmSend(req || {}); api.pm.sendResult(req && req.requestId, result); });
+    if (api.agentTasks && window.DeckAgentTasks) {
+      D.agentTasks = window.DeckAgentTasks.create({ button: $('btn-agent-tasks'), root: $('agent-tasks-panel'),
+        api: api.agentTasks, getProject: activeProject, h: D.h, notify });
+      api.agentTasks.onLaunch((request) => {
+        const result = { taskId: request.taskId, terminalId: request.terminalId, ok: false };
+        try {
+          const project = S.projects.find(item => item.id === request.projectId);
+          const preset = S.presets.find(item => item.id === request.provider && item.builtin);
+          if (!project || !preset) throw new Error('Projekt oder Anbieter nicht mehr verfügbar.');
+          if (byId(request.terminalId) || panesOf(project.id).length >= MAX) throw new Error('Keine freie Kachel für den Arbeitsagenten.');
+          const desc = { id: request.terminalId, title: request.title, titleLocked: true, presetId: preset.id,
+            command: request.prepared.command, resumeCommand: preset.resumeCommand || null,
+            workspaceId: request.prepared.workspaceId, browserUrl: null, browserOpen: false };
+          const pane = addPane(project, desc, { restored: false, runCommand: true });
+          pane.ensureStarted(); // Also starts in background projects, without stealing focus.
+          scheduleSave(); result.ok = true;
+        } catch (error) { result.error = error.message || String(error); notify(result.error); }
+        api.agentTasks.launchResult(result).catch(error => notify(error.message));
+      });
+    }
     api.hotkeys.onChange(applyHotkeys);
     api.onBeforeQuit(async () => {
       D.portsPanel.dispose();

@@ -39,6 +39,8 @@ const { createAgentSessionService, resumePlan: planResume } = require('./agent-s
 const { claudeWrapperScript, eventWrapperScript, zdotdirZshenv } = require('./agent-wrapper');
 const attentionLabels = require('../renderer/attention-panel');
 const { createPmMain } = require('./pm-main'); // PM: Projektmanager
+const { createAgentTaskMain } = require('./agent-task-main');
+const mtAgentCli = require('./mt-agent-cli');
 // Harness-Katalog und Endpunkte (Etappe 3b)
 const { createHarnessCatalog } = require('./harness-catalog');
 const { createHarnessDetect } = require('./harness-detect');
@@ -78,6 +80,7 @@ let worktrees;
 let worktreeTree; // Stammbaum: read-only picture of a project's working copies
 let guide; // User Guide from docs/guide
 let launchContext;
+let agentTasks = null;
 let attachments;
 let dictation;
 let ports;
@@ -228,6 +231,7 @@ function handleAgentMemory(terminalId, operation, input) {
 }
 
 function forgetTerminal(id) {
+  if (agentTasks) agentTasks.terminalEnded(String(id));
   if (memoryCapture) memoryCapture.detach(String(id));
   terminalMeta.delete(String(id));
   agentSessions.forget(id); // F02
@@ -306,6 +310,10 @@ async function runHarnessLine(id, meta, request) {
 }
 
 function registerIpc() {
+  handle('agentTasks:snapshot', pid => agentTasks.snapshot(requireProject(pid).id));
+  handle('agentTasks:grant', (pid, terminalId, patch) => agentTasks.grant(requireProject(pid).id, terminalId, patch));
+  handle('agentTasks:cancel', (pid, taskId) => agentTasks.cancel(requireProject(pid).id, taskId));
+  handle('agentTasks:launchResult', result => agentTasks.launchResult(result));
   handle('agents:list', () => pm.withoutManagers(agentStore.list())); // PM
   // F02: how a tile is resumed; the command is built here from the validated ID only.
   handle('agents:resumePlan', (req) => planResume({
@@ -408,17 +416,22 @@ function registerIpc() {
     const { id, projectId, cols, rows, command, accountOverrides, workspaceId, launch } = options || {};
     const project = projects.get(String(projectId));
     if (!project) return { ok: false, error: 'Projekt nicht gefunden.' };
+    let taskStart;
+    try { taskStart = agentTasks && agentTasks.validateStart({ id, projectId: project.id, command, workspaceId, launch }); }
+    catch (err) { return { ok: false, error: err.message }; }
     // A tile with a working copy starts there; a missing one is an error, never the project folder.
     let cwd = project.path;
     if (workspaceId) {
       const wt = await worktrees.resolveCwd(String(workspaceId), project.id, project.path);
-      if (!wt.ok) return { ok: false, error: wt.error };
+      if (!wt.ok) { agentTasks?.startFailed(id, wt.error); return { ok: false, error: wt.error }; }
       cwd = wt.cwd;
     }
     // Resolve Memory before registering a token: a damaged store fails visibly, without leaking registration.
     let launchCommand;
     let harnessStart = null; // set for a catalog start (launch) or a prepared harness context start
-    if (launch !== undefined && launch !== null) {
+    if (taskStart) {
+      launchCommand = taskStart.command; // privately prepared context; never decorate twice
+    } else if (launch !== undefined && launch !== null) {
       // Harness start: validated public fields only; the line is built here exactly once.
       const spec = sanitizeLaunch(launch);
       if (!spec) return { ok: false, error: 'Ungültige Harness-Startvorgabe.' };
@@ -430,7 +443,7 @@ function registerIpc() {
       launchCommand = command; // already built by the start service; never decorated twice
     } else {
       try { launchCommand = memoryLaunch.decorateCommand({ command, projectId: project.id }); }
-      catch (err) { return { ok: false, error: 'Memory konnte nicht geladen werden: ' + err.message }; }
+      catch (err) { agentTasks?.startFailed(id, err.message); return { ok: false, error: 'Memory konnte nicht geladen werden: ' + err.message }; }
     }
     if (terminalMeta.has(String(id))) return { ok: false, error: 'Terminal bereits vorhanden.' };
     // The working directory always comes from the stored project, never from the page.
@@ -462,14 +475,19 @@ function registerIpc() {
       }
     }
     let result;
-    try { result = ptys.create({ id, projectId: project.id, cwd, cols, rows, command: launchCommand, extraEnv, workspaceId: workspaceId ? String(workspaceId) : undefined }); }
-    catch (err) { if (browserBridge) browserBridge.unregister(String(id)); return { ok: false, error: err.message }; }
+    try {
+      if (taskStart) agentTasks.validateStart({ id, projectId: project.id, command, workspaceId, launch });
+      result = ptys.create({ id, projectId: project.id, cwd, cols, rows, command: launchCommand, extraEnv, workspaceId: workspaceId ? String(workspaceId) : undefined });
+    }
+    catch (err) { if (browserBridge) browserBridge.unregister(String(id)); agentTasks?.startFailed(id, err.message); return { ok: false, error: err.message }; }
     if (!result.ok && browserBridge) browserBridge.unregister(String(id));
     if (result.ok) {
-      const meta = { projectId: project.id, accountId: claude ? claude.id : null, provider: harnessStart ? harnessStart.provider : (builtinProvider(command) || 'custom'), cwd, ...(workspaceId ? { workspaceId: String(workspaceId) } : {}) };
+      const meta = { projectId: project.id, accountId: claude ? claude.id : null, provider: taskStart ? taskStart.provider : harnessStart ? harnessStart.provider : (builtinProvider(command) || 'custom'), cwd, ...(workspaceId ? { workspaceId: String(workspaceId) } : {}) };
       terminalMeta.set(String(id), meta);
+      agentTasks?.started(String(id));
       try { memoryCapture.attach({ terminalId: String(id), ...meta }); } catch (err) { reportMemoryError(err, id); }
     }
+    if (!result.ok) agentTasks?.startFailed(String(id), result.error);
     if (result.ok && harnessStart) return { ...result, accounts: applied, launchInfo: harnessStart.info };
     return result.ok ? { ...result, accounts: applied } : result;
   });
@@ -752,6 +770,7 @@ function registerIpc() {
 function finishQuit() {
   if (quitting) return;
   quitting = true;
+  if (agentTasks) agentTasks.dispose();
   if (dictation) dictation.shutdown();
   if (memoryCapture) memoryCapture.dispose();
   ptys.killAll();
@@ -900,6 +919,10 @@ async function startBrowserBridge(dataDir) {
   fs.copyFileSync(path.join(__dirname, 'mt-memory-cli.js'), memoryCliPath);
   fs.writeFileSync(path.join(binDir, 'mt-memory'), mtMemoryCli.wrapperScript({ execPath: process.execPath, scriptPath: memoryCliPath }), { mode: 0o755 });
   fs.chmodSync(path.join(binDir, 'mt-memory'), 0o755);
+  const agentCliPath = path.join(dataDir, 'mt-agent-cli.js');
+  fs.copyFileSync(path.join(__dirname, 'mt-agent-cli.js'), agentCliPath);
+  fs.writeFileSync(path.join(binDir, 'mt-agent'), mtAgentCli.wrapperScript({ execPath: process.execPath, scriptPath: agentCliPath }), { mode: 0o755 });
+  fs.chmodSync(path.join(binDir, 'mt-agent'), 0o755);
 
   // Agent status: `mt-event` for the hooks and a `claude` wrapper for hand-typed starts.
   // Both are rewritten at every start; the wrapper only changes anything while the status is switched on.
@@ -929,7 +952,8 @@ async function startBrowserBridge(dataDir) {
       mainWindow.moveTop();
     },
   });
-  const bridge = createBrowserBridge({ socketPath, handler: control, eventHandler: agentEventHandler, memoryHandler: handleAgentMemory, isAllowedUrl: isWebUrl });
+  const bridge = createBrowserBridge({ socketPath, handler: control, eventHandler: agentEventHandler, memoryHandler: handleAgentMemory,
+    taskHandler: (id, operation, input) => agentTasks.handleCli(id, operation, input), isAllowedUrl: isWebUrl });
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   removeStaleSockets(dir);
   await bridge.start();
@@ -1113,6 +1137,14 @@ if (!app.requestSingleInstanceLock()) {
     ports = createPortService({ getTerminals: () => ptys.snapshot() });
     agentStore = createAgentStatusStore({ onChange: (list) => sendToWindow('agents:changed', pm.withoutManagers(list)) }); // PM
     agentSettings = createAgentSettings({ dataDir, mtEventPath: path.join(dataDir, 'bin', 'mt-event') });
+    agentTasks = createAgentTaskMain({ dataDir, worktrees, launchContext,
+      getTerminal: id => terminalMeta.has(id) ? { ...terminalMeta.get(id), terminalId: id } : null,
+      listTerminals: pid => ptys.snapshot().filter(item => item.projectId === pid && terminalMeta.has(item.terminalId))
+        .map(item => ({ ...terminalMeta.get(item.terminalId), terminalId: item.terminalId, title: item.terminalId,
+          ...(sessions.load().projects[pid]?.terminals.find(term => term.id === item.terminalId)?.title ? { title: sessions.load().projects[pid].terminals.find(term => term.id === item.terminalId).title } : {}) })),
+      getProject: id => projects.get(String(id)),
+      sendToWindow: (channel, payload) => { if (!mainWindow || mainWindow.isDestroyed()) return false; sendToWindow(channel, payload); return true; },
+    });
     try { agentSettings.sync(); } catch (err) { console.error('Agentenstatus: Hook-Datei nicht aktuell:', err.message); }
     browserReady = startBrowserBridge(dataDir).catch((err) => console.error('mt-browser nicht verfügbar:', err.message));
     // PM: Projektmanager-Brücke erst, wenn bin-Ordner und Wrapper stehen

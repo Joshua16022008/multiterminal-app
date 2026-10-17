@@ -1,0 +1,18 @@
+.agent-tasks-panel { position: fixed; z-index: 150; top: 52px; right: 12px; bottom: 12px; width: min(460px, calc(100vw - 24px)); box-sizing: border-box; overflow: auto; padding: 18px; background: var(--panel, #1d2028); color: var(--text, #e9ecf2); border: 1px solid var(--border, #434956); border-radius: 12px; box-shadow: 0 16px 50px #0008; font-size: 13px; }
+.agent-tasks-panel[hidden] { display: none; }
+.agent-tasks-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.agent-tasks-head h2 { flex: 1; margin: 0; font-size: 18px; }
+.agent-tasks-panel button, .agent-tasks-panel select { padding: 6px 9px; color: inherit; background: #292e3a; border: 1px solid #555e70; border-radius: 5px; }
+.agent-tasks-panel button { cursor: pointer; }
+.agent-tasks-panel button:disabled, .agent-tasks-panel select:disabled { opacity: .55; cursor: default; }
+.agent-tasks-panel :focus-visible { outline: 2px solid #94b8ff; outline-offset: 2px; }
+.agent-tasks-permissions { border-block: 1px solid #434956; padding-bottom: 14px; margin: 14px 0; }
+.agent-tasks-permissions label { display: flex; align-items: center; gap: 8px; margin: 10px 0 5px; }
+.agent-tasks-permissions > select { max-width: 100%; }
+.agent-tasks-help { color: var(--muted, #b3bccb); line-height: 1.5; }
+.agent-tasks-error { color: #ffb6b6; white-space: pre-wrap; }
+.agent-task-card { border: 1px solid #434956; border-radius: 7px; padding: 10px; margin-block: 10px; overflow-wrap: anywhere; }
+.agent-task-card h4 { margin: 0 0 6px; }
+.agent-task-status { font-weight: 600; }
+.agent-tasks-panel pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; user-select: text; padding: 8px; background: #11151c; border-radius: 4px; }
+.agent-tasks-panel summary { cursor: pointer; padding-block: 7px; }

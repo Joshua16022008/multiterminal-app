@@ -108,7 +108,37 @@ function validateEvent(args) {
   return clean;
 }
 
-function createBrowserBridge({ socketPath, handler, eventHandler, memoryHandler, isAllowedUrl, requestTimeoutMs, handlerTimeoutMs } = {}) {
+const TASK_OPERATIONS = Object.freeze(['peers', 'list', 'get', 'send', 'accept', 'reply', 'cancel']);
+function validateTaskInput(operation, input) {
+  if (!TASK_OPERATIONS.includes(operation)) throw new Error('Unbekannter Task-Befehl.');
+  const a = input === undefined ? {} : input;
+  if (!a || typeof a !== 'object' || Array.isArray(a)) throw new Error('Ungültige Task-Felder.');
+  const fields = { peers: [], list: ['box'], get: ['id'], accept: ['id'], cancel: ['id'], send: ['to', 'provider', 'title', 'text', 'parentId', 'dependsOn', 'requestId'], reply: ['id', 'status', 'text'] }[operation];
+  if (Object.keys(a).some(k => !fields.includes(k))) throw new Error('Unbekannte Task-Felder; Identitäts- und Projekt-Overrides sind nicht erlaubt.');
+  const clean = {};
+  function str(key, max, required = true) {
+    if (!required && a[key] === undefined) return;
+    if (typeof a[key] !== 'string' || !a[key].trim() || a[key].length > max || a[key].includes('\0')) throw new Error('Ungültiges Task-Feld: ' + key);
+    if (['id', 'to', 'parentId', 'requestId'].includes(key) && (a[key].length > 128 || !/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(a[key]) || ['constructor', 'prototype', '__proto__'].includes(a[key]))) throw new Error('Ungültige Task-ID: ' + key);
+    clean[key] = a[key];
+  }
+  if (['get', 'accept', 'reply', 'cancel'].includes(operation)) str('id', 160);
+  if (operation === 'list') { if (a.box !== undefined && !['all', 'inbox', 'outbox'].includes(a.box)) throw new Error('Ungültige Task-Box.'); if (a.box !== undefined) clean.box = a.box; }
+  if (operation === 'send') {
+    if ((a.to !== undefined) === (a.provider !== undefined)) throw new Error('Genau to oder provider erforderlich.');
+    str('to', 160, false); str('provider', 16, false);
+    if (a.provider !== undefined && !['claude', 'codex'].includes(a.provider)) throw new Error('Nur claude oder codex erlaubt.');
+    str('title', 160); str('text', 3000); str('parentId', 160, false); str('requestId', 160);
+    if (a.dependsOn !== undefined) {
+      if (!Array.isArray(a.dependsOn) || a.dependsOn.length > 5 || new Set(a.dependsOn).size !== a.dependsOn.length || a.dependsOn.some(v => typeof v !== 'string' || !v.trim() || v.length > 128 || !/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(v) || ['constructor', 'prototype', '__proto__'].includes(v))) throw new Error('Ungültige Task-Abhängigkeiten.');
+      clean.dependsOn = a.dependsOn.slice();
+    }
+  }
+  if (operation === 'reply') { if (!['completed', 'failed'].includes(a.status)) throw new Error('Expliziter Ergebnisstatus completed oder failed erforderlich.'); clean.status = a.status; str('text', 16000); }
+  return clean;
+}
+
+function createBrowserBridge({ socketPath, handler, eventHandler, memoryHandler, taskHandler, isAllowedUrl, requestTimeoutMs, handlerTimeoutMs } = {}) {
   if (typeof socketPath !== 'string' || !path.isAbsolute(socketPath)) throw new Error('socketPath muss ein absoluter Pfad sein.');
   if (typeof handler !== 'function') throw new Error('handler fehlt.');
   const allowed = typeof isAllowedUrl === 'function' ? isAllowedUrl : defaultIsAllowedUrl;
@@ -158,7 +188,13 @@ function createBrowserBridge({ socketPath, handler, eventHandler, memoryHandler,
       return null;
     }
     let args, run;
-    if (request.cmd === 'memory-read' || request.cmd === 'memory-save') {
+    if (typeof request.cmd === 'string' && request.cmd.startsWith('task-')) {
+      if (Object.keys(request).some(k => !['token', 'cmd', 'args'].includes(k))) throw new Error('Unbekannte Task-Anfragefelder.');
+      if (typeof taskHandler !== 'function') throw new Error('Task-Handler nicht verfügbar.');
+      const operation = request.cmd.slice(5);
+      args = validateTaskInput(operation, request.args);
+      run = () => taskHandler(terminalId, operation, args);
+    } else if (request.cmd === 'memory-read' || request.cmd === 'memory-save') {
       if (typeof memoryHandler !== 'function') throw new Error('Memory-Handler nicht verfügbar.');
       if (request.cmd === 'memory-read') {
         const input = request.args === undefined ? {} : request.args;
@@ -261,4 +297,4 @@ function createBrowserBridge({ socketPath, handler, eventHandler, memoryHandler,
   return { start, stop, register, unregister, envFor, socketPath };
 }
 
-module.exports = { createBrowserBridge, normalizeUrl, COMMANDS, EVENT_NAMES, MAX_SOCKET_PATH_BYTES, MAX_REQUEST_BYTES };
+module.exports = { validateTaskInput, TASK_OPERATIONS, createBrowserBridge, normalizeUrl, COMMANDS, EVENT_NAMES, MAX_SOCKET_PATH_BYTES, MAX_REQUEST_BYTES };

@@ -15,6 +15,14 @@ const featureOn = (name) => Boolean(edition && edition.features && edition.featu
 
 contextBridge.exposeInMainWorld('deck', {
   edition,
+  agentTasks: {
+    snapshot: projectId => ipcRenderer.invoke('agentTasks:snapshot', projectId),
+    grant: (projectId, terminalId, patch) => ipcRenderer.invoke('agentTasks:grant', projectId, terminalId, patch),
+    cancel: (projectId, taskId) => ipcRenderer.invoke('agentTasks:cancel', projectId, taskId),
+    onChanged: callback => subscribe('agentTasks:changed', callback),
+    onLaunch: callback => subscribe('agentTasks:launch', callback),
+    launchResult: result => ipcRenderer.invoke('agentTasks:launchResult', result),
+  },
   memory: {
     read: projectId => ipcRenderer.invoke('memory:read', projectId),
     saveNotes: (projectId, text, revision) => ipcRenderer.invoke('memory:saveNotes', projectId, text, revision),
