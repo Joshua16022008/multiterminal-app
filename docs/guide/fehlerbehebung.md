@@ -20,6 +20,24 @@ Jedes Terminal der App ist eine interaktive **Login-Shell** (deine `SHELL`, sons
 
 Die Meldung „claude wurde nicht gefunden (kein 'claude' im PATH ausserhalb von Multiterminal)“ kommt von einem kleinen Hilfsprogramm, das die App für den [Agentenstatus](terminals-und-agenten.md#agentenstatus) vor `claude` schaltet. Es meldet damit dasselbe Problem: Kein echtes `claude` im `PATH`.
 
+## Ein Harness wird nicht gefunden
+
+Steht auf einer Karte unter „Harnesses & Modelle“ „Fehlt“, obwohl das Programm installiert ist, liegt es nicht im `PATH` deiner Login-Shell. Gehe vor wie oben unter „Der Agent wird nicht gefunden“, öffne ein neues Terminal und klicke auf der Karte auf „Installation / Version prüfen“. Mehr dazu unter [Harnesses und Modelle](harnesses-modelle.md).
+
+## Der Endpunkt-Schlüssel ist nicht lesbar
+
+Meldungen wie „Endpunkt-Schlüssel konnte nicht geladen werden.“ oder „Für diesen Endpunkt ist kein Schlüssel gespeichert.“ heißen: Im macOS-Schlüsselbund fehlt der Schlüssel des Profils, er ist leer, oder macOS hat den Zugriff nicht erlaubt.
+
+1. Öffne das Profil unter „Endpunkt-Profile“ und prüfe, ob „Schlüssel gespeichert“ dort steht.
+2. Gib den Schlüssel neu ein und speichere das Profil.
+3. Bestätigt macOS eine Schlüsselbund-Abfrage, erlaube sie.
+
+Siehe [Endpunkte](endpunkte.md).
+
+## Claude ignoriert den Endpunkt
+
+Hast du „Claude-Konfiguration pro Endpunkt isolieren“ ausgeschaltet, liest Claude Code deine normale `settings.json`. Stehen dort `ANTHROPIC_*`-Einträge, können sie die Werte des Profils überstimmen, und der Agent spricht mit dem falschen Anbieter. Schalte die Isolation im Profil wieder ein oder entferne die Einträge aus der `settings.json`. Siehe [Endpunkte](endpunkte.md).
+
 ## Der Agentenstatus erscheint nicht
 
 - Der Status ist nach der Installation aus. Schalte ihn im Panel „Rückmeldungen“ unter „Agentenstatus anzeigen (Claude)“ oder im Panel „Komfort“ unter „Agentenstatus empfangen“ ein.

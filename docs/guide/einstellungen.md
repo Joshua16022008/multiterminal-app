@@ -17,6 +17,7 @@ Die Bereiche:
 | Skills, Plugins, Mods, Bibliotheken | Übersicht über lokale Ressourcen der Anbieter |
 | Memory | gemeinsame Notizen, siehe [Memory](memory.md) |
 | Hotkeys | Tastenkürzel ändern |
+| Harnesses & Modelle | Agentenprogramme, Modelle und Anbieter-Endpunkte, siehe [Harnesses und Modelle](harnesses-modelle.md) und [Endpunkte](endpunkte.md) |
 
 ## Profil
 
