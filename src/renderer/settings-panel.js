@@ -1,9 +1,12 @@
 /* Local profiles and discovered provider resources. Never activates native instructions. */
 (function () {
   'use strict';
+  // „?“-Link zur Hilfe (gemeinsamer Zugang in help-panel.js); ohne Hilfe-Panel bleibt er weg.
+  const helpLink = (key, opts) => (typeof window !== 'undefined' && window.DeckHelp && window.DeckHelp.linkFor ? window.DeckHelp.linkFor(key, opts) : null);
   const D = (window.DeckApp = window.DeckApp || {}), h = D.h;
   const labels = { claude: 'Claude Code', codex: 'Codex', kimi: 'Kimi' };
   const tabs = { profile: 'Profil', quota: 'Kontingente', skills: 'Skills', plugins: 'Plugins', mods: 'Mods', libraries: 'Bibliotheken', memory: 'Memory', hotkeys: 'Hotkeys' };
+  const SETTINGS_ANCHORS = { profile: 'profil', quota: 'kontingente', libraries: 'bibliotheken' }; // übrige Tabs: gleiche Namen wie Überschriften
   const HK = window.DeckHotkeys;
   let hotkeyDraft = null, hotkeyOriginal = null, hotkeyDefaults = null, hotkeyPlatform = 'darwin', recording = null, recordingGeneration = 0;
   const copyBindings = value => Object.fromEntries(Object.entries(value).map(([id, bindings]) => [id, [...bindings]]));
@@ -461,7 +464,7 @@
     }));
     const main = h('section', { class: 'settings-main' });
     const appWide = tab === 'hotkeys' || tab === 'memory';
-    main.append(h('div', { class: 'settings-top' }, h('strong', { class: 'settings-top-title', text: tabs[tab] + (appWide ? ' · gesamte App' : '') }), appWide ? null : button('Übersicht aktualisieren', reloadOverview), button('Schließen', () => toggle(false), { 'aria-label': 'Einstellungen schließen' })));
+    main.append(h('div', { class: 'settings-top' }, h('strong', { class: 'settings-top-title', text: tabs[tab] + (appWide ? ' · gesamte App' : '') }), helpLink('einstellungen#' + (SETTINGS_ANCHORS[tab] || tab)), appWide ? null : button('Übersicht aktualisieren', reloadOverview), button('Schließen', () => toggle(false), { 'aria-label': 'Einstellungen schließen' })));
     if (!appWide) {
       const providerIds = Object.keys(labels);
       const tablist = h('div', { class: 'settings-tabs', role: 'tablist', 'aria-label': 'Anbieter' });

@@ -3,6 +3,8 @@
    Beim bloßen Öffnen der Vorschau wird nichts ausgeführt – erst „Starten“ erzeugt Kacheln über die vorhandenen Wege. */
 (function () {
   'use strict';
+  // „?“-Link zur Hilfe (gemeinsamer Zugang in help-panel.js); ohne Hilfe-Panel bleibt er weg.
+  const helpLink = (key, opts) => (typeof window !== 'undefined' && window.DeckHelp && window.DeckHelp.linkFor ? window.DeckHelp.linkFor(key, opts) : null);
 
   /* ---------- Modell (ohne DOM) ---------- */
 
@@ -176,7 +178,7 @@
     };
     render(templates);
     showModal(h('form', { class: 'tpl-form', onsubmit: (e) => e.preventDefault() },
-      h('h2', { text: 'Aufbau starten' }),
+      h('div', { class: 'tpl-head', style: 'display:flex;align-items:center;gap:8px' }, h('h2', { text: 'Aufbau starten' }), helpLink('terminals-und-agenten', { beforeOpen: closeModal })),
       h('p', { class: 'tpl-note', text: `Neue Terminals in „${project.name}“. Zuerst gibt es eine Vorschau – es wird nichts ausgeführt, bevor du „Starten“ wählst.` }),
       list,
       h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn-small', text: 'Schließen', onclick: closeModal }))));

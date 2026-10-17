@@ -1,6 +1,8 @@
 /* F04: Projektänderungen lesend ansehen; ausgewählte Zeilen mit Kommentar gehen über die Promptvorschau (F06). */
 (function () {
   'use strict';
+  // „?“-Link zur Hilfe (gemeinsamer Zugang in help-panel.js); ohne Hilfe-Panel bleibt er weg.
+  const helpLink = (key, opts) => (typeof window !== 'undefined' && window.DeckHelp && window.DeckHelp.linkFor ? window.DeckHelp.linkFor(key, opts) : null);
   const MAX_EXCERPT_LINES = 40;
   const MAX_EXCERPT_CHARS = 3000;
   const STATUS = { M: 'geändert', A: 'neu', D: 'gelöscht', R: 'umbenannt', C: 'kopiert', T: 'Typ geändert', U: 'Konflikt' };
@@ -171,6 +173,7 @@
       const scope = list && list.scope ? list.scope.label : '';
       root.replaceChildren(h('div', { class: 'diff-head' },
         h('strong', { text: 'Projektänderungen' }),
+        helpLink('diff-und-git'),
         h('span', { class: 'diff-scope', text: [ctx && ctx.projectName, scope, list && list.ok && list.branch ? 'Branch ' + list.branch : ''].filter(Boolean).join(' · ') }),
         h('span', { class: 'spacer' }),
         h('button', { class: 'ib', text: '⟳', title: 'Änderungen neu lesen', disabled: loading, onclick: refresh }),

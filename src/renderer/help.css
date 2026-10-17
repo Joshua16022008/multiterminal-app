@@ -40,3 +40,4 @@
 .help-link { width: 18px; height: 18px; padding: 0; line-height: 16px; text-align: center; border: 1px solid var(--border); border-radius: 50%; background: none; color: var(--dim); font-size: 11px; cursor: pointer; }
 .help-link:hover { color: var(--accent); border-color: var(--accent); }
 @media (max-width: 900px) { .help-nav { width: 120px; } }
+.help-notice { color: var(--dim); padding: 8px; margin: 0 0 8px; border-left: 2px solid var(--border); }

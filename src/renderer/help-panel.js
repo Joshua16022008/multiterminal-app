@@ -198,12 +198,12 @@
       if (prev) await show(prev.slug, prev.anchor);
     }
 
-    async function open(slug, anchor) {
+    async function open(slug, anchor, meta) {
       if (!isOpen) {
         opener = document && document.activeElement ? document.activeElement : null;
         isOpen = true;
         el.hidden = false;
-        if (onToggle) onToggle(true);
+        if (onToggle) onToggle(true, meta || {});
       }
       /* The index is reloaded on every open (cheap; the service caches by mtime), so pages added
          in dev mode show up without a reload. A failed refresh keeps the previous index. */
@@ -229,6 +229,9 @@
         const keepAnchor = slug && has(slug) ? anchor : null;
         if (current) await go(target, keepAnchor || null); else await show(target, keepAnchor || null);
         if (!current) renderNav();
+        if (slug && !has(slug) && isOpen && content.prepend) {
+          content.prepend(h('p', { class: 'help-notice', role: 'status', text: 'Zu diesem Thema gibt es noch keine Hilfeseite.' }));
+        }
       }
       renderNav();
       if (search.focus) search.focus();
@@ -245,14 +248,16 @@
       opener = null;
     }
 
-    function link(key) {
+    function link(key, opts) {
+      const beforeOpen = opts && typeof opts.beforeOpen === 'function' ? opts.beforeOpen : null;
       return h('button', {
         class: 'help-link', type: 'button', text: '?', title: 'Hilfe zu diesem Thema', 'aria-label': 'Hilfe zu diesem Thema', 'data-help': key,
         onclick: (e) => {
           if (e && e.preventDefault) e.preventDefault();
           if (e && e.stopPropagation) e.stopPropagation();
+          if (beforeOpen) beforeOpen(); // z. B. einen Modaldialog schließen, der das Panel verdecken würde
           const parsed = parseKey(key) || {};
-          open(parsed.slug, parsed.anchor);
+          open(parsed.slug, parsed.anchor, { viaLink: true });
         },
       });
     }
@@ -260,7 +265,14 @@
     return { el, open, close, link, toggle: (force) => ((force === undefined ? !isOpen : force) ? open() : close()), isOpen: () => isOpen };
   }
 
-  const api = { create, buildSearchEntries, resolveKey, resolveLink, parseKey, LAST_KEY };
+  /* Gemeinsamer Zugang für alle Module mit „?“-Link: liefert den Knopf erst beim Aufruf (also auch
+     für Dialoge, die vor dem Hilfe-Panel gebaut wurden) und null, wenn es kein Hilfe-Panel gibt. */
+  function linkFor(key, opts) {
+    const help = typeof window !== 'undefined' && window.DeckApp && window.DeckApp.help;
+    return help && help.link ? help.link(key, opts) : null;
+  }
+
+  const api = { create, buildSearchEntries, resolveKey, resolveLink, parseKey, linkFor, LAST_KEY };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.DeckHelp = api;
 })();

@@ -2,6 +2,8 @@
    D.worktreePicker.open({ project, onChoose(workspace | null) }) – null heißt Projektordner. */
 (function () {
   'use strict';
+  // „?“-Link zur Hilfe (gemeinsamer Zugang in help-panel.js); ohne Hilfe-Panel bleibt er weg.
+  const helpLink = (key, opts) => (typeof window !== 'undefined' && window.DeckHelp && window.DeckHelp.linkFor ? window.DeckHelp.linkFor(key, opts) : null);
   const D = (window.DeckApp = window.DeckApp || {});
   const { h, guard, notify } = D;
   const api = window.deck;
@@ -60,7 +62,7 @@
     }
 
     const form = h('form', null,
-      h('h2', { text: 'Arbeitskopie für „' + project.name + '“' }),
+      h('div', { class: 'wt-head', style: 'display:flex;align-items:center;gap:8px' }, h('h2', { text: 'Arbeitskopie für „' + project.name + '“' }), helpLink('worktrees', { beforeOpen: close })),
       list,
       h('h3', { text: 'Neue Arbeitskopie' }),
       h('label', { text: 'Branch (wird neu angelegt)' }, branch),
