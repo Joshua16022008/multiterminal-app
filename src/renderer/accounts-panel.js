@@ -1,8 +1,6 @@
 /* Seitenpanel für die Konten je KI-Anbieter: aktivieren, hinzufügen, umbenennen, entfernen, anmelden. */
 (function () {
   'use strict';
-  // „?“-Link zur Hilfe (gemeinsamer Zugang in help-panel.js); ohne Hilfe-Panel bleibt er weg.
-  const helpLink = (key, opts) => (typeof window !== 'undefined' && window.DeckHelp && window.DeckHelp.linkFor ? window.DeckHelp.linkFor(key, opts) : null);
   const D = (window.DeckApp = window.DeckApp || {});
   const h = D.h;
 
@@ -175,7 +173,6 @@
       root.append(
         h('div', { class: 'pp-head' },
           h('strong', { text: 'Konten' }),
-          helpLink('einstellungen'),
           h('span', { class: 'spacer' }),
           h('button', { class: 'ib', title: 'Neu laden und Verbrauch aktualisieren', text: '⟳', onclick: reload }),
           h('button', { class: 'ib', title: 'Schließen', text: '✕', onclick: () => opts.onClose() })),

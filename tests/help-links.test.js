@@ -17,7 +17,7 @@ const EXPECTED = {
   'worktree-picker.js': ['worktrees'],
   'worktree-tree.js': ['worktrees'],
   'agent-launch.js': ['terminals-und-agenten'],
-  'accounts-panel.js': ['einstellungen'],
+  // accounts-panel.js follows once ACCOUNT-RENAME-CODEX-20261017-01 is committed.
   'ports-panel.js': ['ports'],
   'diff-panel.js': ['diff-und-git'],
   'workspace-templates.js': ['terminals-und-agenten'],
