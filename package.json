@@ -1,7 +1,7 @@
 {
   "name": "multiterminal-app",
   "productName": "Multiterminal",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Multiterminal: Projekte in der Seitenleiste, pro Projekt echte Terminals im Raster mit eigenem Mini-Browser.",
   "private": true,
   "main": "src/main/main.js",

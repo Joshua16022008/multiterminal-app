@@ -17,6 +17,7 @@ function packagerIdentity(current = edition) {
 const IGNORE = [
   /^\/dist($|\/)/,
   /^\/tests($|\/)/,
+  /^\/export($|\/)/,
   /^\/\.git($|\/)/,
   /^\/scripts\/build\.js$/,
   /^\/node_modules\/node-pty\/prebuilds\/win32-/,
