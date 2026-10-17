@@ -13,3 +13,13 @@
 .wt-note { font-size: 12px; opacity: 0.7; margin: 8px 0; }
 .wt-error { color: #e06c6c; font-size: 12px; margin: 6px 0; }
 .wt-chip.bad { color: #e06c6c; border-color: #e06c6c; }
+
+/* Kachelkopf: Branch-Chip (Paket K). Projektordner gedämpft, Arbeitskopie in Astfarbe (--wt-color). */
+.wt-chip { display: inline-flex; align-items: center; gap: 4px; color: var(--wt-color, var(--accent)); border-color: var(--wt-color, var(--border)); }
+.wt-chip.trunk { color: var(--dim); border-color: var(--border); opacity: 0.85; }
+.wt-chip.clickable { cursor: pointer; }
+.wt-chip.clickable:hover, .wt-chip.clickable:focus-visible { border-color: var(--accent); color: var(--text); outline: none; }
+.wt-chip .wt-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wt-chip .wt-dot { flex: none; font-size: 8px; line-height: 1; color: var(--warn); }
+.wt-chip.bad .wt-dot { display: none; }
+.launch-chip { color: var(--dim); }

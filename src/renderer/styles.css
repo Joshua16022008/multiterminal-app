@@ -221,3 +221,9 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .proj-pm { visibility: hidden; border: 0; background: none; color: #a98be8; padding: 0 2px; font-size: 11px; }
 .proj:hover .proj-pm, .proj.active .proj-pm { visibility: visible; }
 .proj-pm:hover { color: #e0a458; }
+
+/* Platzregel im Kachelkopf: Konto-, Branch- und Start-Chip teilen sich den Rest hinter dem Titel.
+   Der Branch-Chip behält am längsten Platz, der Start-Chip weicht zuerst (kann ganz verschwinden). */
+.tile-head .acct-chip { max-width: 24%; flex-shrink: 3; }
+.tile-head .acct-chip.wt-chip { max-width: 34%; flex-shrink: 1; }
+.tile-head .acct-chip.launch-chip { max-width: 22%; flex-shrink: 6; }

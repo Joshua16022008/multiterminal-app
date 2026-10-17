@@ -106,6 +106,108 @@
     return title.charAt(0).toUpperCase() + title.slice(1);
   };
 
+  /* ---------- Branch-Chip (Paket K) ---------- */
+  const BRANCH_MAX = 22;
+  const BRANCH_REFRESH_MS = 4000;
+
+  /* Cuts from the left so the distinguishing end of "feature/long-name" stays visible. */
+  D.shortBranch = function (name, max) {
+    const s = String(name == null ? '' : name);
+    max = max || BRANCH_MAX;
+    return s.length <= max ? s : '…' + s.slice(s.length - (max - 1));
+  };
+
+  /* Pure view model of the chip. info: { branch, workspace (bool), exists, changes, cwd } or null (= unknown). */
+  D.branchChipModel = function (info) {
+    if (!info) return { hidden: true };
+    if (info.error) return { hidden: false, text: '⑂ unbekannt', title: 'Arbeitskopie nicht lesbar', bad: true, trunk: false, dot: false, branch: null };
+    const branch = info.branch || '';
+    if (!branch) return { hidden: true };
+    if (!info.workspace) {
+      return { hidden: false, text: '⑂ ' + D.shortBranch(branch), title: 'Projektordner, Branch ' + branch + ' (Klick: Stammbaum)', bad: false, trunk: true, dot: false, branch };
+    }
+    const changes = Number(info.changes) || 0;
+    return {
+      hidden: false,
+      text: '⑂ ' + D.shortBranch(branch) + (info.exists === false ? ' (fehlt)' : ''),
+      title: 'Arbeitskopie ' + branch + (info.cwd ? ': ' + info.cwd : '') + (changes ? ' – ' + changes + ' Änderungen' : '') + ' (Klick: Stammbaum)',
+      bad: info.exists === false, trunk: false, dot: changes > 0, branch,
+    };
+  };
+
+  /* Chip for every repository tile plus the optional launch chip. Data comes from api.worktrees.branchOf/inspect.
+     opts: { h, api, desc, project, onClick(), colorFor(branch), now(), throttleMs } */
+  D.createBranchChip = function (opts) {
+    const { h, api, desc, project } = opts;
+    const now = opts.now || Date.now;
+    const throttleMs = opts.throttleMs == null ? BRANCH_REFRESH_MS : opts.throttleMs;
+    const textEl = h('span', { class: 'wt-text' });
+    const dotEl = h('span', { class: 'wt-dot', hidden: true, 'aria-label': 'Ungesicherte Änderungen', text: '●' });
+    const el = h('span', { class: 'acct-chip wt-chip', hidden: true, role: 'button', tabindex: '0' }, textEl, dotEl);
+    const launchEl = h('span', { class: 'acct-chip launch-chip', hidden: true });
+    let last = 0, token = 0, inflight = false, disposed = false, known = false;
+
+    // The head is draggable: a drag must never start from the chip.
+    el.addEventListener('dragstart', (e) => { e.preventDefault(); e.stopPropagation(); });
+    const click = (e) => { if (e && e.stopPropagation) e.stopPropagation(); if (opts.onClick) opts.onClick(); };
+    el.addEventListener('click', click);
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { if (e.preventDefault) e.preventDefault(); click(e); } });
+
+    function apply(model) {
+      el.hidden = !!model.hidden;
+      if (model.hidden) return;
+      known = true;
+      textEl.textContent = model.text;
+      el.title = model.title;
+      dotEl.hidden = !model.dot;
+      el.classList.toggle('bad', !!model.bad);
+      el.classList.toggle('trunk', !!model.trunk);
+      el.classList.toggle('clickable', !!opts.onClick);
+      const color = !model.trunk && !model.bad && model.branch && opts.colorFor ? opts.colorFor(model.branch) : null;
+      if (color) el.style.setProperty('--wt-color', color);
+      else if (el.style.removeProperty) el.style.removeProperty('--wt-color');
+    }
+
+    async function read() {
+      if (desc.workspaceId) {
+        if (!api.worktrees || !api.worktrees.inspect) return null;
+        const i = await api.worktrees.inspect(desc.workspaceId);
+        if (!i || !i.ok) return { error: true };
+        return { workspace: true, branch: i.worktree ? i.worktree.branch : i.branch, exists: i.exists, changes: i.changes, cwd: i.worktree ? i.worktree.cwd : '' };
+      }
+      if (!api.worktrees || !api.worktrees.branchOf) return null;
+      const b = await api.worktrees.branchOf(project.id);
+      return b ? { workspace: false, branch: b } : null;
+    }
+
+    /* Throttled; force = true skips the throttle (e.g. right after the shell started). */
+    async function refresh(force) {
+      if (disposed || inflight) return;
+      const t = now();
+      if (!force && last && t - last < throttleMs) return;
+      last = t;
+      inflight = true;
+      const my = ++token;
+      try {
+        if (!known && desc.workspaceId) { el.hidden = false; textEl.textContent = '⑂ …'; }
+        const info = await read();
+        if (!disposed && my === token) apply(D.branchChipModel(info));
+      } catch (_) {
+        // A failed read keeps the last known text; a never-read workspace chip says so.
+        if (!disposed && my === token && !known && desc.workspaceId) apply(D.branchChipModel({ error: true }));
+      } finally { inflight = false; }
+    }
+
+    function setLaunchInfo(info) {
+      if (!info || (!info.harnessLabel && !info.model && !info.endpointLabel)) { launchEl.hidden = true; launchEl.textContent = ''; launchEl.title = ''; return; }
+      launchEl.hidden = false;
+      launchEl.textContent = [info.harnessLabel, info.model].filter(Boolean).join(' · ') || info.endpointLabel;
+      launchEl.title = ['Harness: ' + (info.harnessLabel || '–'), info.model ? 'Modell: ' + info.model : null, info.endpointLabel ? 'Endpunkt: ' + info.endpointLabel : null].filter(Boolean).join('\n');
+    }
+
+    return { el, launchEl, refresh, setLaunchInfo, dispose() { disposed = true; } };
+  };
+
   /* ---------- Kachel ---------- */
   /* hooks: onChange, onActivate(pane, focus), onClose, onMaximize, onStatus, presetLabel(desc)
      opts: { restored: bool, runCommand: bool } */
@@ -142,7 +244,13 @@
     const numEl = h('span', { class: 'tile-num', title: 'Taste zum Anspringen: Strg/Cmd + diese Ziffer', hidden: true });
     const titleEl = h('span', { class: 'tile-title', title: 'Doppelklick zum Umbenennen', text: desc.title, ondblclick: startRename });
     const acctChip = h('span', { class: 'acct-chip', hidden: true });
-    const wtChip = h('span', { class: 'acct-chip wt-chip', hidden: true });
+    const branchChip = D.createBranchChip({
+      h, api, desc, project,
+      onClick: () => { if (hooks.onBranchClick) hooks.onBranchClick(pane); },
+      colorFor: (b) => (window.DeckTreeLayout && window.DeckTreeLayout.colorFor ? window.DeckTreeLayout.colorFor(b) : null),
+    });
+    const wtChip = branchChip.el;
+    const launchChip = branchChip.launchEl;
     const resumeBtn = h('button', { class: 'btn-resume', hidden: true, onclick: resume });
     const bMic = h('button', { class: 'ib mic', title: 'Diktieren (Flüsterflow)', text: '🎙', onclick: onMic });
     const bDictCancel = h('button', { class: 'btn-dict-cancel', hidden: true, title: 'Diktat verwerfen', text: 'Abbrechen', onclick: () => { D.dictation.cancel(); term.focus(); } });
@@ -184,7 +292,7 @@
     const taskLink = window.DeckTaskLink && api.secondBrain
       ? window.DeckTaskLink.createTaskLink({ desc, api, h, onChange: () => hooks.onChange(), focusTerminal: () => term.focus() })
       : null;
-    const head = h('div', { class: 'tile-head' }, numEl, titleEl, statusDot ? statusDot.el : null, acctChip, wtChip, taskLink ? taskLink.el : null, resumeBtn, h('span', { class: 'spacer' }), bDictCancel, bMic, seg, bBrowser, bSnap, bMax, bClose);
+    const head = h('div', { class: 'tile-head' }, numEl, titleEl, statusDot ? statusDot.el : null, acctChip, wtChip, launchChip, taskLink ? taskLink.el : null, resumeBtn, h('span', { class: 'spacer' }), bDictCancel, bMic, seg, bBrowser, bSnap, bMax, bClose);
 
     const termEl = h('div', { class: 'term' });
     const exitMsg = h('span', { text: 'beendet' });
@@ -274,6 +382,7 @@
       }
       lastCols = term.cols; lastRows = term.rows;
       setStatus('running');
+      pane.refreshBranch(true);
       return true;
     }
 
@@ -289,18 +398,10 @@
       start();
     };
 
-    /* Arbeitskopie-Chip (F07): Branch und Ordner der getrennten Arbeitskopie, "fehlt" wenn der Ordner weg ist */
-    if (desc.workspaceId && api.worktrees) {
-      wtChip.hidden = false;
-      wtChip.textContent = '⑂ …';
-      D.guard(() => api.worktrees.inspect(desc.workspaceId)).then((i) => {
-        if (!i || !i.ok) { wtChip.textContent = '⑂ unbekannt'; wtChip.classList.add('bad'); return; }
-        const b = i.worktree ? i.worktree.branch : i.branch;
-        wtChip.textContent = '⑂ ' + b + (i.exists ? '' : ' (fehlt)');
-        wtChip.title = 'Arbeitskopie: ' + (i.worktree ? i.worktree.cwd : '') + (i.changes ? ` – ${i.changes} Änderungen` : '');
-        wtChip.classList.toggle('bad', !i.exists);
-      });
-    }
+    /* Branch-Chip (F07/K): alle Repository-Kacheln; Projektordner gedämpft, Arbeitskopie in Astfarbe, "fehlt" wenn der Ordner weg ist */
+    pane.refreshBranch = (force) => branchChip.refresh(force === true);
+    pane.setLaunchInfo = (info) => branchChip.setLaunchInfo(info);
+    pane.refreshBranch(true);
 
     /* Konto-Chip: nur für Schnellstarts claude/codex und nur, wenn der Anbieter mehrere Konten hat */
     pane.refreshAccount = function () {
@@ -472,6 +573,7 @@
     }
     pane.setActive = function (v, focus) {
       el.classList.toggle('active', v);
+      if (v) pane.refreshBranch(); // throttled: a checkout in the shell becomes visible on the next focus
       if (v && focus) focusMain();
     };
     pane.focus = focusMain;
@@ -652,6 +754,7 @@
     /* Aufräumen */
     pane.dispose = function () {
       pane.disposed = true;
+      branchChip.dispose();
       if (taskLink) taskLink.close(false); // F10
       if (feedback) feedback.dispose(); // F05
       clearTimeout(roTimer);
