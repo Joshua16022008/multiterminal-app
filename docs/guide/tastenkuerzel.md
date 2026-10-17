@@ -45,7 +45,7 @@ Eigene Kürzel stellst du in den [Einstellungen](einstellungen.md#hotkeys) ein. 
 | Terminal 9 | ⌘ + 9 / ⌃ + 9 |
 | Terminal 10 | ⌘ + 0 / ⌃ + 0 |
 
-Zeichen: ⌘ Befehl, ⇧ Umschalt, ⌥ Wahl (Alt), ⌃ Control.
+Zeichen: ⌘ Befehl, ⇧ Umschalt, ⌥ Wahl (Alt), Control (⌃).
 
 ## Hinweise
 
@@ -53,4 +53,4 @@ Zeichen: ⌘ Befehl, ⇧ Umschalt, ⌥ Wahl (Alt), ⌃ Control.
 - ⌘F sucht im Verlauf der aktiven Kachel. Mit Esc schließt du die Suche.
 - Der Projektmanager hat sein eigenes Fenster. Dort blendet ⌘\\ das Lagebild ein und aus.
 - ⌘H allein blendet unter macOS die App aus und ist deshalb für die Hilfe nicht frei. Die Hilfe liegt auf ⌘⇧H.
-- Kürzel mit ⌘ oder Strg sind nötig, damit Buchstaben im Terminal nicht verschluckt werden. Bearbeitungs- und Systemkürzel wie ⌘C, ⌘V, ⌘X, ⌘Z, ⌘A, ⌘Q oder ⌘M kannst du nicht belegen.
+- Kürzel mit ⌘ oder Control (⌃) sind nötig, damit Buchstaben im Terminal nicht verschluckt werden. Bearbeitungs- und Systemkürzel wie ⌘C, ⌘V, ⌘X, ⌘Z, ⌘A, ⌘Q oder ⌘M kannst du nicht belegen.

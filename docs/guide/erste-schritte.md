@@ -41,7 +41,7 @@ Weitere Befehle aus der `package.json`:
 npm run build
 ```
 
-Das Ergebnis liegt in `dist/Multiterminal-darwin-arm64/Multiterminal.app` (auf Intel-Macs heißt der Ordner entsprechend anders). Kopiere die App nach „Programme“, zum Beispiel mit `ditto`. Spätere Updates beschreibt die Seite [App aktualisieren](updates.md).
+Das Ergebnis liegt in `dist/Multiterminal-darwin-arm64/Multiterminal.app` (auf Intel-Macs heißt der Ordner entsprechend anders). Kopiere die App nach „Programme“, zum Beispiel mit `ditto "dist/Multiterminal-darwin-arm64/Multiterminal.app" /Applications/Multiterminal.app`. Spätere Updates beschreibt die Seite [App aktualisieren](updates.md).
 
 ## Projekt hinzufügen
 
@@ -51,7 +51,7 @@ Ein Projekt ist ein Ordner auf deinem Mac. Klicke in der Seitenleiste auf „+ P
 - **Ordner wählen…** fügt einen vorhandenen Ordner hinzu.
 - **Von GitHub…** zeigt deine Repositories. Ein Klick klont das Repository und fügt es als Projekt hinzu. Dafür brauchst du `gh`.
 
-Wenn bereits ein Projekt aktiv ist, steht im Menü außerdem „Aktives Projekt auf GitHub anlegen…“.
+Wenn bereits ein Projekt aktiv ist, steht im Menü außerdem „Aktives Projekt auf GitHub anlegen…“ sowie „Aufbau speichern…“ und „Aufbau starten…“ (siehe [Arbeitsaufbauten](uebergaben-und-anhaenge.md#arbeitsaufbauten-vorlagen)).
 
 ## Erstes Terminal
 

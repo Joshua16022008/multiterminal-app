@@ -64,7 +64,7 @@ Im Bereich „Hotkeys“ änderst du die Tastenkürzel der ganzen App:
 2. Pro Aktion sind bis zu zwei Kürzel möglich. „+ Kürzel“ fügt eines hinzu, „×“ entfernt eines, „Standard“ stellt die Voreinstellung der Aktion wieder her.
 3. „Hotkeys speichern“ macht die Änderung wirksam. „Alle auf Standard zurücksetzen“ stellt alles zurück.
 
-Kürzel müssen ⌘ oder Strg enthalten. Nur Funktionstasten (F1 bis F24) gehen auch mit Umschalt oder Alt allein. Bearbeitungs- und Systemkürzel wie ⌘C, ⌘V oder ⌘Q bleiben reserviert. Doppelt vergebene Kürzel werden abgelehnt. Die Standardbelegung steht auf der Seite [Tastenkürzel](tastenkuerzel.md).
+Kürzel müssen ⌘ oder Control (⌃) enthalten. Nur Funktionstasten (F1 bis F24) gehen auch mit Umschalt oder Alt allein. Bearbeitungs- und Systemkürzel wie ⌘C, ⌘V oder ⌘Q bleiben reserviert. Doppelt vergebene Kürzel werden abgelehnt. Die Standardbelegung steht auf der Seite [Tastenkürzel](tastenkuerzel.md).
 
 ## Komfort
 

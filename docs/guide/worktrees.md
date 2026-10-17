@@ -41,6 +41,7 @@ Bei jedem Git-Projekt zeigt der Kachelkopf den Chip „⑂ Branch“. Er sagt di
 - „⑂ unbekannt“ heißt, die Arbeitskopie war nicht lesbar. „(fehlt)“ heißt, der Ordner existiert nicht mehr.
 
 Ein Klick auf den Chip öffnet den Stammbaum.
+
 ## Stammbaum
 
 Der Stammbaum zeigt alle Arbeitskopien eines Projekts als Äste an einem Stamm. Du öffnest ihn mit dem Knopf „⑂“ in der Kopfleiste, mit ⌘⇧Y, über das Menü „Funktionen“ oder über „Arbeitskopien-Stammbaum…“ im Menü „▾“. Der Knopf „⑂ N“ erscheint bei Git-Projekten, N ist die Zahl der Arbeitskopien einschließlich des Projektordners. „← Zurück zu den Terminals“ schließt die Ansicht.

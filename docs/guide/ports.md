@@ -28,4 +28,4 @@ Das Panel liest nur. Es beendet keine Prozesse.
 | Zum Terminal | springt zur zugeordneten Kachel |
 | HTTP im Browser | öffnet die Adresse im [Mini-Browser](mini-browser.md) dieser Kachel |
 
-Ein offener Port belegt nicht automatisch einen Webserver. „HTTP im Browser“ probiert die Adresse nur aus. Ist die Zuordnung zwischenzeitlich veraltet, bittet die App dich, das Panel zu aktualisieren.
+Nicht jeder offene Port ist ein Webserver. „HTTP im Browser“ probiert die Adresse nur aus. Ist die Zuordnung zwischenzeitlich veraltet, bittet die App dich, das Panel zu aktualisieren.

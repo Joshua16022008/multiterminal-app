@@ -54,7 +54,7 @@ Die App ordnet einen Port nur einer Kachel zu, wenn sie den Prozess sicher in ei
 
 ## „mt-browser“, „mt-memory“ oder „mt-pm“ nicht gefunden
 
-Diese Befehle gibt es nur in Terminals der App (`mt-pm` nur im Projektmanager-Fenster). In einem normalen Terminalfenster sind sie nicht verfügbar. Kann die App die Brücke für `mt-browser` nicht starten, etwa weil der Pfad des Datenordners für einen Unix-Socket zu lang ist (höchstens 100 Bytes), läuft sie trotzdem weiter, und die Kacheln bekommen dann kein `mt-browser`.
+Diese Befehle gibt es nur in Terminals der App (`mt-pm` nur im Projektmanager-Fenster). In einem normalen Terminalfenster sind sie nicht verfügbar. Kann die App die Brücke für `mt-browser` nicht starten, etwa weil der Socket im temporären Ordner nicht angelegt werden kann, läuft sie trotzdem weiter, und die Kacheln bekommen dann kein `mt-browser`.
 
 ## Die Update-Funktion ist nicht verfügbar
 

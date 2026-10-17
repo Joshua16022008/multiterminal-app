@@ -45,11 +45,13 @@ Wenn du die App schließt und wieder öffnest, kommen deine Kacheln zurück: mit
 - **Fortsetzen: letztes Gespräch**: Es gibt keine feste Zuordnung. Der Fortsetzen-Befehl des Anbieters nimmt das zuletzt geänderte Gespräch in diesem Ordner. Der Mauszeiger über dem Knopf nennt den Grund und den Befehl.
 - **Neu starten: Name**: Für diesen Schnellstart gibt es keinen Fortsetzen-Befehl. Der Knopf startet den normalen Befehl neu.
 
+Hat ein eigener Schnellstart einen Fortsetzen-Befehl, steht ebenfalls einfach „Fortsetzen“. Der Knopf führt dann genau diesen Befehl aus.
+
 Wenn ein Terminalprozess endet, zeigt die Kachel unten „beendet“ mit dem Knopf „Neu starten“.
 
 ## Agentenstatus
 
-Die App kann für Claude Code anzeigen, was der Agent gerade tut. Dafür trägt sie Status-Hooks in neu gestartete Claude-Sitzungen ein. Deine eigenen Claude-Einstellungen bleiben dabei unverändert. Für Codex wird der Status noch nicht unterstützt.
+Die App kann für Claude Code anzeigen, was der Agent gerade tut. Dafür trägt sie Status-Hooks in neu gestartete Claude-Sitzungen ein. Deine eigenen Claude-Einstellungen bleiben dabei unverändert. Für Codex und Kimi wird der Status noch nicht unterstützt.
 
 Einschalten: Panel „Rückmeldungen“ (⌘⇧J) und dort „Agentenstatus anzeigen (Claude)“, oder im Panel „Komfort“ (⌘⇧K) „Agentenstatus empfangen“. Der Status wirkt erst bei Sitzungen, die danach neu gestartet werden. Beende laufende Sitzungen einmal mit `/exit` und setze sie fort.
 
