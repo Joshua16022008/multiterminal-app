@@ -120,6 +120,12 @@
     const entry = harnessSnapshot && harnessSnapshot.entries.find((e) => e.id === launch.harnessId);
     return entry ? entry.accounts || undefined : PRESET_PROVIDER[launch.harnessId];
   }
+  // A tile with its own endpoint config runs without the Claude account (CLAUDE_CONFIG_DIR stays unset, also on resume).
+  function withoutIsolated(accounts, launch) {
+    if (!accounts || !launch || !launch.endpointId || !('claude' in accounts)) return accounts || undefined;
+    const rest = { ...accounts }; delete rest.claude;
+    return Object.keys(rest).length ? rest : undefined;
+  }
   const providerOf = (key) => S.accounts.find((p) => p.provider === key) || null;
   /* Zeigt sich nur, wenn der Anbieter mehr als das Standardkonto kennt. */
   const multi = (p) => !!p && (p.accounts.length > 1 || p.accounts.some((a) => !a.builtin));
@@ -317,7 +323,7 @@
       command: preset && !launch ? preset.command : null,
       resumeCommand: preset && !launch ? preset.resumeCommand || null : null,
       browserUrl: null, browserOpen: false,
-      accounts: accounts || undefined,
+      accounts: withoutIsolated(accounts, launch),
       workspaceId: workspace ? workspace.workspaceId : undefined,
       // Anmelde-Terminals (Vorgabe ohne id) behalten ihren Namen
       titleLocked: preset && !preset.id && !launch ? true : undefined,
@@ -586,6 +592,8 @@
       color: Number.isInteger(spec.color) ? spec.color : undefined,
       titleLocked: true,
     };
+    const launch = presetLaunch(spec.launch);
+    if (launch) { desc.launch = launch; desc.command = null; desc.resumeCommand = null; }
     const pane = addPane(project, desc, { restored: false, runCommand: !!spec.run });
     if (pid === S.activeId) requestAnimationFrame(() => pane.ensureStarted());
     scheduleSave();
@@ -711,7 +719,7 @@
       presetId: d.presetId || null, command: d.command || null, resumeCommand: d.resumeCommand || null,
       browserUrl: d.browserUrl || null, browserOpen: !!d.browserOpen,
       browserMode: d.browserMode === 'terminal' || d.browserMode === 'browser' ? d.browserMode : undefined,
-      accounts: d.accounts && typeof d.accounts === 'object' ? d.accounts : undefined,
+      accounts: withoutIsolated(d.accounts && typeof d.accounts === 'object' ? d.accounts : undefined, d.launch && typeof d.launch === 'object' ? d.launch : null),
       workspaceId: typeof d.workspaceId === 'string' && d.workspaceId ? d.workspaceId : undefined,
       color: Number.isInteger(d.color) ? d.color : undefined,
       titleLocked: d.titleLocked === true ? true : undefined,

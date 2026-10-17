@@ -47,13 +47,17 @@
       // Fehlendes Schnellstart-Preset: normale Shell, ohne Befehl.
       const command = missingPreset ? null : (tile.startCommand || (preset ? preset.command : null) || null);
       const devServer = isDevServerCommand(command);
+      // Harness-Schnellstart: kein Befehl, sondern ein öffentlicher Start (nur die drei erlaubten Felder).
+      const launch = !missingPreset && preset && typeof preset.harnessId === 'string' && preset.harnessId
+        ? { harnessId: preset.harnessId, ...(preset.model ? { model: preset.model } : {}), ...(preset.endpointId ? { endpointId: preset.endpointId } : {}) } : null;
       const agent = !!preset && (preset.builtin ? AGENT_PRESETS.has(preset.id) : false) && !devServer;
       return {
         title: tile.title, presetId: tile.presetId, preset, command, color: tile.color,
         browserUrl: tile.browserUrl || null,
-        kind: devServer ? 'devserver' : (agent ? 'agent' : (command ? 'command' : 'shell')),
+        kind: devServer ? 'devserver' : ((agent || launch) ? 'agent' : (command ? 'command' : 'shell')),
+        launch,
         devServer, missingPreset,
-        run: !!command && !devServer,
+        run: (!!command && !devServer) || !!launch,
         note: missingPreset ? 'Schnellstart nicht mehr vorhanden – wird als normale Shell angelegt.' : null,
       };
     });
@@ -72,7 +76,7 @@
     if (preview.overLimit) return [];
     return preview.items.map((it, i) => ({
       title: it.title, preset: it.missingPreset ? null : it.preset, command: it.command,
-      run: !!it.command && !!runFlags[i], color: it.color, browserUrl: it.browserUrl,
+      run: (!!it.command || !!it.launch) && !!runFlags[i], launch: it.launch || null, color: it.color, browserUrl: it.browserUrl,
     }));
   }
 
@@ -193,14 +197,14 @@
     const flags = preview.items.map((it) => it.run);
     const rows = preview.items.map((it, i) => {
       const run = checkRow('Startbefehl ausführen', it.run, it.devServer ? 'Devserver laufen dauerhaft – bewusst einschalten' : null);
-      run.box.disabled = !it.command;
+      run.box.disabled = !it.command && !it.launch;
       run.box.addEventListener('change', () => { flags[i] = run.box.checked; });
       return h('div', { class: 'tpl-row' + (it.missingPreset ? ' warn' : '') },
         h('div', { class: 'tpl-main' },
           h('span', { class: 'tpl-name' }, it.title,
             it.devServer ? h('span', { class: 'tpl-badge', text: 'Devserver' }) : null,
             it.browserUrl ? h('span', { class: 'tpl-badge', text: 'Browser' }) : null),
-          it.command ? h('code', { class: 'tpl-cmd', text: it.command, title: it.command }) : h('small', { class: 'tpl-dim', text: 'normale Shell, kein Startbefehl' }),
+          it.command ? h('code', { class: 'tpl-cmd', text: it.command, title: it.command }) : it.launch ? h('small', { class: 'tpl-dim', text: 'Harness-Start: ' + [it.launch.harnessId, it.launch.model].filter(Boolean).join(' · ') }) : h('small', { class: 'tpl-dim', text: 'normale Shell, kein Startbefehl' }),
           it.note ? h('small', { class: 'tpl-warn', text: it.note }) : null),
         run.el);
     });

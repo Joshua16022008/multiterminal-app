@@ -65,6 +65,9 @@ s.on('error',()=>process.exit(1));
   fs.writeFileSync(path.join(bin, 'security'), '#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec ' + quote(process.execPath) + ' ' + quote(securityClient) + ' "$@"\n', { mode: 0o755 });
   const qaShell = path.join(root, 'qa-shell');
   fs.writeFileSync(qaShell, '#!/bin/sh\nexport PATH=' + quote(bin + ':/usr/bin:/bin:/usr/sbin:/sbin') + '\nexec /bin/bash --noprofile --norc -i\n', { mode: 0o755 });
+  // MT_HARNESS_QA_SHELL=zsh: the real path. basename is 'zsh', so the ZDOTDIR shim and the claude wrapper (--settings hooks) apply.
+  fs.mkdirSync(path.join(root, 'zshbin'));
+  fs.writeFileSync(path.join(root, 'zshbin', 'zsh'), '#!/bin/sh\nexec /bin/zsh -i\n', { mode: 0o755 });
   // Detection intentionally uses the approved /bin/zsh -lc path. It must see the
   // fixture PATH and never load the user's startup files, even with ZDOTDIR set.
   const startup = 'export PATH=' + quote(bin + ':/usr/bin:/bin:/usr/sbin:/sbin') + '\n';
@@ -163,7 +166,8 @@ function runPhase() {
   process.env.XDG_CONFIG_HOME = path.join(home, '.config');
   delete process.env.ANTHROPIC_AUTH_TOKEN; delete process.env.ANTHROPIC_API_KEY;
   delete process.env.MT_ENDPOINT_KEY; delete process.env.CLAUDE_CONFIG_DIR; delete process.env.CODEX_HOME;
-  process.env.SHELL = path.join(root, 'qa-shell'); process.env.PATH = bin + ':/usr/bin:/bin:/usr/sbin:/sbin';
+  const zshMode = process.env.MT_HARNESS_QA_SHELL === 'zsh';
+  process.env.SHELL = zshMode ? path.join(root, 'zshbin', 'zsh') : path.join(root, 'qa-shell'); process.env.PATH = bin + ':/usr/bin:/bin:/usr/sbin:/sbin';
   app.setName('Multiterminal Harness QA ' + process.pid); app.setPath('userData', data);
   let stage = 'bootstrap';
   app.on('browser-window-created', (_event, win) => {
@@ -186,11 +190,14 @@ function runPhase() {
         assert.equal(await run('!!window.deck.harness && !!window.deck.endpoints && !!window.DeckHarnessPanel'), true, 'Harness integration missing');
         if (phase === 'initial') {
           await run('window.deck.memory.setSettings({enabled:false})');
+          if (zshMode) await run('window.deck.agents.setSettings({statusEnabled:true})');
           stage = 'legacy direct starts';
           for (const [provider, label] of [['claude', 'Claude Code'], ['codex', 'Codex'], ['kimi', 'Kimi Code']]) {
             await menu(label); await wait(() => records().some(record => record.provider === provider), provider);
             const record = records().find(item => item.provider === provider);
-            assert.deepEqual(record.args, provider === 'codex' ? ['--dangerously-bypass-approvals-and-sandbox'] : []);
+            const plainArgs = zshMode && provider === 'claude' ? record.args.filter((value, i, all) => value !== '--settings' && all[i - 1] !== '--settings') : record.args;
+            if (zshMode && provider === 'claude') assert.ok(record.args.includes('--settings'), 'zsh wrapper adds hooks');
+            assert.deepEqual(plainArgs, provider === 'codex' ? ['--dangerously-bypass-approvals-and-sandbox'] : []);
             assert.equal(record.keyHash, null);
           }
           stage = 'endpoint editor';
@@ -218,6 +225,8 @@ function runPhase() {
           await wait(() => records().some(item => item.keyHash === expectedHash), 'child env receives key');
           const launched = records().find(item => item.keyHash === expectedHash);
           assert.ok(launched.args.includes('qa-model'));
+          // Real zsh path: the wrapper still adds the status hooks while the isolated CLAUDE_CONFIG_DIR is kept.
+          if (zshMode) assert.ok(launched.args.includes('--settings'), 'zsh wrapper hooks on endpoint start');
           // Endpoint start: own isolated Claude config per endpoint, base URL from the profile.
           assert.equal(launched.configDir, path.join(data, 'endpoint-configs', 'claude', endpoint.id));
           assert.equal(launched.baseUrl, 'https://qa.example.invalid/anthropic');

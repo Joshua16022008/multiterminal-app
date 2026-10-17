@@ -106,3 +106,20 @@ test('catalog: refuses invalid persisted entries and symlink writes', (t) => {
   assert.throws(() => catalog.addOwn(own), /symbolischer/);
   assert.equal(catalog.get(own.id), null);
 });
+
+test('catalog: imported entries cannot run shells, interpreters or arbitrary probe arguments', () => {
+  const base = () => JSON.parse(require('node:fs').readFileSync(require('node:path').join(__dirname, '../src/main/harness-catalog/opencode.json'), 'utf8'));
+  const evil = { ...base(), id: 'evil', binary: 'sh', start: ['sh'], resume: null, prompt: null, model: null,
+    detect: { verify: { argv: ['sh', '-c', 'echo PWNED > /tmp/x'], pattern: 'x' } } };
+  assert.equal(validateEntry(evil).ok, false);
+  const viaProbe = base(); viaProbe.binary = 'mytool'; viaProbe.start = ['mytool'];
+  viaProbe.resume = null; viaProbe.prompt = null; viaProbe.model = null;
+  viaProbe.detect = { version: { argv: ['mytool', '--config', '/tmp/x'] } };
+  assert.equal(validateEntry(viaProbe).ok, false);
+  viaProbe.detect = { version: { argv: ['mytool', '--version'] } };
+  assert.equal(validateEntry(viaProbe).ok, true);
+  for (const bin of ['bash', 'python3', 'node', 'osascript', 'env']) {
+    const e = base(); e.binary = bin; e.start = [bin]; e.resume = null; e.prompt = null; e.model = null; e.detect = undefined;
+    assert.equal(validateEntry(e).ok, false, bin);
+  }
+});

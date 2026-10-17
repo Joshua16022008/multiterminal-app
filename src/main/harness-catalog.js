@@ -8,6 +8,10 @@ const crypto = require('node:crypto');
 const MODEL_RE = /^[A-Za-z0-9._:/@\[\]+-]{1,200}$/;
 const ID_RE = /^[a-z][a-z0-9-]{0,63}$/;
 const BINARY_RE = /^[A-Za-z0-9][A-Za-z0-9._+-]{0,79}$/;
+// Interpreters, shells and generic launchers: a catalog entry must never be able to run arbitrary code through them.
+const DENY_BINARY_RE = /^(sh|bash|zsh|dash|fish|ksh|csh|tcsh|env|sudo|su|doas|xargs|nohup|exec|eval|command|open|osascript|curl|wget|nc|ncat|ssh|scp|perl|ruby|php|lua|node|nodejs|deno|bun|npx|npm|pnpm|yarn|python[0-9.]*|pip[0-9.]*|uv|uvx|pwsh|powershell|cmd|java|swift|make|git)$/i;
+// Probe invocations (detect.verify/version, model.query) may only use fixed harmless arguments.
+const PROBE_ARGS = Object.freeze(['--version', '-v', '-V', 'version', '--help', '-h', 'help', 'models']);
 const PLACEHOLDERS = Object.freeze(['model', 'sessionId', 'prompt', 'baseUrl', 'opencodeProviderJson']);
 const TYPES = ['anthropic', 'openai', 'ollama', 'deepseek'];
 const MAX_FILE = 1024 * 1024;
@@ -40,16 +44,18 @@ function validateEntry(entry) {
     });
     if (/[{}]/.test(stripped)) fail(key, 'ungültiger Platzhalter');
   }
-  function argv(value, key, executable = false) {
+  function argv(value, key, executable = false, probe = false) {
     if (!Array.isArray(value) || value.length > 64 || (executable && !value.length)) { fail(key, 'argv-Array erwartet'); return; }
     value.forEach((arg, i) => template(arg, `${key}[${i}]`));
     if (executable && value[0] !== entry.binary) fail(key, 'erstes Argument muss binary sein');
+    if (probe && value.slice(1).some((arg) => !PROBE_ARGS.includes(arg))) fail(key, 'nur feste Prüfargumente erlaubt (--version, --help, models)');
   }
   if (!object(entry, 'entry', ['schema', 'id', 'label', 'binary', 'kind', 'evidence', 'verifiedWith', 'docsUrl', 'install', 'start', 'model', 'resume', 'prompt', 'endpoints', 'profileInjection', 'supportsHooks', 'accounts', 'fullAccess', 'detect', 'defaultModel', 'webUrl', 'hint'])) return { ok: false, errors };
   if (entry.schema !== 1) fail('schema', 'Version 1 erwartet');
   if (typeof entry.id !== 'string' || !ID_RE.test(entry.id)) fail('id', 'ungültige ID');
   string(entry.label, 'label', 120);
   if (typeof entry.binary !== 'string' || !BINARY_RE.test(entry.binary)) fail('binary', 'einfacher Programmname ohne Pfad erwartet');
+  else if (DENY_BINARY_RE.test(entry.binary)) fail('binary', 'Shells, Interpreter und Launcher sind nicht erlaubt');
   if (!['tui', 'web', 'headless'].includes(entry.kind)) fail('kind', 'unbekannte Startart');
   if (!['local', 'doc', 'third-party', 'unconfirmed'].includes(entry.evidence)) fail('evidence', 'unbekannte Belegstufe');
   string(entry.verifiedWith, 'verifiedWith', 200);
@@ -76,7 +82,7 @@ function validateEntry(entry) {
     if (!['name', 'provider/model'].includes(entry.model.format)) fail('model.format', 'unbekanntes Format');
     if (!Array.isArray(entry.model.static) || entry.model.static.length > 2000 || entry.model.static.some((m) => !isValidModel(m))) fail('model.static', 'ungültige Modellliste');
     if (entry.model.query != null && object(entry.model.query, 'model.query', ['argv', 'parse'])) {
-      argv(entry.model.query.argv, 'model.query.argv', true);
+      argv(entry.model.query.argv, 'model.query.argv', true, true);
       if (!['lines', 'ollama', 'openrouter'].includes(entry.model.query.parse)) fail('model.query.parse', 'unbekannter Parser');
       if (Array.isArray(entry.model.query.argv) && entry.model.query.argv.some((arg) => typeof arg === 'string' && /[{}]/.test(arg))) fail('model.query.argv', 'Abfragen erlauben keine Platzhalter');
     }
@@ -118,7 +124,7 @@ function validateEntry(entry) {
       const spec = entry.detect[key];
       if (spec == null) continue;
       if (object(spec, `detect.${key}`, key === 'verify' ? ['argv', 'pattern'] : ['argv'])) {
-        argv(spec.argv, `detect.${key}.argv`, true);
+        argv(spec.argv, `detect.${key}.argv`, true, true);
         if (Array.isArray(spec.argv) && spec.argv.some((arg) => typeof arg === 'string' && /[{}]/.test(arg))) fail(`detect.${key}.argv`, 'keine Platzhalter erlaubt');
         if (key === 'verify') string(spec.pattern, 'detect.verify.pattern', 120);
       }
