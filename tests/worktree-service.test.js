@@ -182,3 +182,112 @@ test('session store keeps a valid workspaceId and drops a malformed one', () => 
     assert.strictEqual('workspaceId' in t[2], false);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+// ---- adopt / linked records -------------------------------------------------
+
+async function externalWorktree(f, name) {
+  const dir = path.join(f.root, `ext-${name}`);
+  git(f.repo, 'worktree', 'add', '-q', '-b', name, dir);
+  return fs.realpathSync(dir);
+}
+
+test('adopt links a foreign worktree as managed:false and is idempotent', async () => {
+  const f = fixture();
+  try {
+    const dir = await externalWorktree(f, 'codex-job');
+    const r = await f.svc.adopt({ projectId: 'p1', cwd: dir, projectPath: f.repo });
+    assert.ok(r.ok, JSON.stringify(r));
+    assert.strictEqual(r.workspace.managed, false);
+    assert.strictEqual(r.workspace.cwd, dir);
+    assert.strictEqual(r.workspace.branch, 'codex-job');
+    assert.strictEqual(r.workspace.projectId, 'p1');
+    assert.match(r.workspace.workspaceId, /^wt-[0-9a-f]{8}$/);
+    assert.strictEqual(typeof r.workspace.createdAt, 'number');
+
+    // same folder via a symlink spelling: still one record
+    const link = path.join(f.root, 'link-to-ext');
+    fs.symlinkSync(dir, link);
+    const again = await f.svc.adopt({ projectId: 'p1', cwd: link, projectPath: f.repo });
+    assert.ok(again.ok);
+    assert.strictEqual(again.workspace.workspaceId, r.workspace.workspaceId);
+    assert.strictEqual(f.svc.list('p1').length, 1);
+
+    // survives a restart and resolves like any other record
+    const restarted = createWorktreeService({ dataDir: f.dataDir });
+    assert.strictEqual(restarted.get(r.workspace.workspaceId).managed, false);
+    assert.ok((await restarted.resolveCwd(r.workspace.workspaceId, 'p1', f.repo)).ok);
+  } finally { f.cleanup(); }
+});
+
+test('adopt uses getProjectPath when no projectPath is passed', async () => {
+  const f = fixture();
+  try {
+    const dir = await externalWorktree(f, 'viaresolver');
+    const svc = createWorktreeService({ dataDir: f.dataDir, getProjectPath: (id) => (id === 'p1' ? f.repo : null) });
+    assert.ok((await svc.adopt({ projectId: 'p1', cwd: dir })).ok);
+    assert.strictEqual((await svc.adopt({ projectId: 'p2', cwd: dir })).ok, false);
+    assert.strictEqual((await f.svc.adopt({ projectId: 'p1', cwd: dir })).ok, false, 'no resolver, no path');
+  } finally { f.cleanup(); }
+});
+
+test('adopt refuses unknown folders, the project folder, prunable entries and bad input', async () => {
+  const f = fixture();
+  try {
+    const stranger = path.join(f.root, 'stranger');
+    fs.mkdirSync(stranger);
+    assert.strictEqual((await f.svc.adopt({ projectId: 'p1', cwd: stranger, projectPath: f.repo })).ok, false);
+    assert.strictEqual((await f.svc.adopt({ projectId: 'p1', cwd: f.repo, projectPath: f.repo })).ok, false);
+    assert.strictEqual((await f.svc.adopt({ projectId: 'p1', cwd: path.join(f.root, 'nope'), projectPath: f.repo })).ok, false);
+    assert.strictEqual((await f.svc.adopt({ projectId: '../x', cwd: stranger, projectPath: f.repo })).ok, false);
+    assert.strictEqual((await f.svc.adopt({ projectId: 'p1', projectPath: f.repo })).ok, false);
+    assert.strictEqual((await f.svc.adopt()).ok, false);
+
+    // git still lists it, but the folder is gone: cannot be adopted
+    const gone = path.join(f.root, 'gone-wt');
+    git(f.repo, 'worktree', 'add', '-q', '-b', 'gone', gone);
+    fs.rmSync(gone, { recursive: true, force: true });
+    assert.strictEqual((await f.svc.adopt({ projectId: 'p1', cwd: gone, projectPath: f.repo })).ok, false);
+    assert.strictEqual(f.svc.list('p1').length, 0);
+  } finally { f.cleanup(); }
+});
+
+test('remove of a linked record only forgets it and never runs git worktree remove', async () => {
+  const f = fixture();
+  try {
+    const dir = await externalWorktree(f, 'keepme');
+    fs.writeFileSync(path.join(dir, 'dirty.txt'), 'ungesichert\n');
+    const calls = [];
+    const spy = async (args, cwd) => {
+      calls.push(args.join(' '));
+      return new Promise((resolve) => {
+        require('node:child_process').execFile('git', args, { cwd }, (error, stdout, stderr) => {
+          resolve({ ok: !error, stdout: String(stdout), stderr: String(stderr) });
+        });
+      });
+    };
+    const svc = createWorktreeService({ dataDir: f.dataDir, run: spy });
+    const adopted = await svc.adopt({ projectId: 'p1', cwd: dir, projectPath: f.repo });
+    assert.ok(adopted.ok);
+    calls.length = 0;
+
+    const r = await svc.remove(adopted.workspace.workspaceId, f.repo);
+    assert.ok(r.ok, JSON.stringify(r));
+    assert.strictEqual(r.forgotten, true);
+    assert.deepStrictEqual(calls, [], 'no git call at all for a linked record');
+    assert.strictEqual(svc.get(adopted.workspace.workspaceId), null);
+    assert.ok(fs.existsSync(path.join(dir, 'dirty.txt')), 'folder and its work are untouched');
+    assert.ok(git(f.repo, 'worktree', 'list', '--porcelain').includes('keepme'), 'git still lists it');
+    assert.ok(git(f.repo, 'branch', '--list', 'keepme').includes('keepme'));
+  } finally { f.cleanup(); }
+});
+
+test('remove of a managed record still runs git worktree remove (regression)', async () => {
+  const f = fixture();
+  try {
+    const a = await f.svc.create({ project: f.project, branch: 'mine' });
+    const r = await f.svc.remove(a.worktree.workspaceId, f.repo);
+    assert.ok(r.ok);
+    assert.strictEqual(r.branchKept, 'mine');
+    assert.ok(!fs.existsSync(a.worktree.cwd));
+  } finally { f.cleanup(); }
+});
