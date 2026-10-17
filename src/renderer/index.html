@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="search.css"><!-- F03 -->
   <link rel="stylesheet" href="workspace-templates.css"><!-- F08 -->
   <link rel="stylesheet" href="browser-feedback.css">
-  <link rel="stylesheet" href="task-link.css"><!-- F10 -->
+  <link rel="stylesheet" href="task-link.css"><!-- F10 dev-only -->
 </head>
 <body>
   <div id="app">
@@ -55,13 +55,12 @@
         <button id="btn-help" class="btn-small" aria-expanded="false" aria-controls="help-panel" aria-label="Hilfe" title="Hilfe">?</button>
         <button id="btn-toolbar" class="btn-small" aria-expanded="false" aria-controls="toolbar-options" title="Alle Optionen anzeigen">☰ Menü</button>
         <div id="toolbar-options" role="toolbar" aria-label="Optionen" aria-orientation="vertical" hidden>
-        <button id="btn-qol" class="btn-small" aria-expanded="false" aria-controls="qol-panel" title="Komfort: Markierungen, Animationen, Sortierung und Aufgaben-Chip ein- und ausschalten">Komfort</button>
+        <button id="btn-qol" class="btn-small" aria-expanded="false" aria-controls="qol-panel" title="Komfort: Markierungen, Animationen und Sortierung ein- und ausschalten">Komfort</button>
         <button id="btn-attention" class="btn-small" aria-expanded="false" aria-controls="attention-panel" title="Rückmeldungen der Agenten: wartet auf dich, Antwort fertig, Fehler (⌘J springt zur nächsten)">Rückmeldungen <span id="attention-count" class="attn-badge" hidden></span></button>
         <button id="btn-diff" class="btn-small" aria-expanded="false" aria-controls="diff-panel" title="Lokale Git-Änderungen ansehen und kommentieren">Änderungen</button><!-- F04 -->
         <button id="btn-pm" class="btn-small" title="Projektmanager für dieses Projekt in eigenem Fenster öffnen">◆ Projektmanager</button><!-- PM -->
         <button id="btn-ports" class="btn-small" aria-expanded="false" aria-controls="ports-panel" title="Lokale Devserver und lauschende Ports">Ports</button>
         <div id="project-options" class="toolbar-group">
-          <button id="btn-live" class="btn-small" aria-pressed="false" title="Live-Diktat: an – Text erscheint schon beim Sprechen; aus – Text erscheint nach dem Stoppen am Stück">Live-Diktat</button>
           <button id="btn-accounts" class="btn-small" title="Konten der KI-Anbieter verwalten">Konten</button>
           <button id="btn-progress" class="btn-small" title="PROGRESS.md anzeigen">📋 Fortschritt</button>
           <button id="btn-handoff" class="btn-small" title="Kontrollierte Übergabe an ein anderes Terminal">⇄ Übergabe</button><!-- F09 -->
@@ -98,11 +97,11 @@
   <script src="hotkeys.js"></script>
   <script src="reorder.js"></script>
   <script src="browser-view.js"></script>
-  <script src="dictation.js"></script>
+  <script src="dictation.js"></script><!-- dev-only -->
   <script src="attention-panel.js"></script>
   <script src="activity.js"></script>
   <script src="qol-panel.js"></script>
-  <script src="task-link.js"></script><!-- F10 -->
+  <script src="task-link.js"></script><!-- F10 dev-only -->
   <script src="tree-layout.js"></script>
   <script src="terminal-pane.js"></script>
   <script src="worktree-tree.js"></script>

@@ -25,7 +25,7 @@ Aufruf:
   mt-pm docs                      PROGRESS.md, WORK_IN_PROGRESS.md, PROJECT_STATUS.md und
                                   Git-Verlauf/Branches.
   mt-pm send <kachel> <text...>   Auftrag an eine Kachel. Er erscheint dort nur als Vorschau;
-                                  Joshua bestätigt, erst dann wird etwas eingefügt.
+                                  der Nutzer bestätigt, erst dann wird etwas eingefügt.
   mt-pm help                      Dieser Text.
 
 Option --json gibt die Rohdaten aus. Ausgabe auf stdout; Fehler auf stderr mit Exit-Code 1.

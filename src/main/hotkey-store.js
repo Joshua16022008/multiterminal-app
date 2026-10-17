@@ -8,7 +8,9 @@ const hotkeys = require('../renderer/hotkeys');
 function withNewDefaults(saved, platform) {
   if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return saved;
   const merged = { ...saved };
-  const used = new Set(Object.values(saved).filter(Array.isArray).flat());
+  // Actions of a feature this edition does not have (file from the other edition) are dropped.
+  for (const id of hotkeys.disabled || []) delete merged[id];
+  const used = new Set(Object.values(merged).filter(Array.isArray).flat());
   for (const [id, combos] of Object.entries(hotkeys.defaults(platform))) {
     if (Object.prototype.hasOwnProperty.call(merged, id)) continue;
     merged[id] = combos.filter(combo => !used.has(combo));

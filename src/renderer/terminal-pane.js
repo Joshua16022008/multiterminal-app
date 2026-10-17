@@ -255,8 +255,11 @@
     const wtChip = branchChip.el;
     const launchChip = branchChip.launchEl;
     const resumeBtn = h('button', { class: 'btn-resume', hidden: true, onclick: resume });
-    const bMic = h('button', { class: 'ib mic', title: 'Diktieren (Flüsterflow)', text: '🎙', onclick: onMic });
-    const bDictCancel = h('button', { class: 'btn-dict-cancel', hidden: true, title: 'Diktat verwerfen', text: 'Abbrechen', onclick: () => { D.dictation.cancel(); term.focus(); } });
+    // Diktat gibt es nur, wenn das Diktat-Modul geladen ist und die Edition es erlaubt.
+    const dictAvailable = Boolean(D.dictation && D.dictation.available);
+    const micLabel = (dictAvailable && D.dictation.label) || 'Diktieren';
+    const bMic = dictAvailable ? h('button', { class: 'ib mic', title: micLabel, text: '🎙', onclick: onMic }) : null;
+    const bDictCancel = dictAvailable ? h('button', { class: 'btn-dict-cancel', hidden: true, title: 'Diktat verwerfen', text: 'Abbrechen', onclick: () => { D.dictation.cancel(); term.focus(); } }) : null;
     const bBrowser = h('button', { class: 'ib', title: 'Mini-Browser ein/aus', text: '🌐', onclick: () => setBrowserOpen(!desc.browserOpen) });
     // View switch (only while the mini browser is open): terminal only / both / browser only
     const SEG = [['terminal', 'Nur Agent'], ['split', 'Agent und Browser'], ['browser', 'Nur Browser']];
@@ -291,7 +294,7 @@
       if (a) { pane.head.dataset.activity = a; pane.head.dataset.agentState = agentEntry.state; }
       else { delete pane.head.dataset.activity; delete pane.head.dataset.agentState; }
     }
-    // F10: verknüpfte Second-Brain-Aufgabe (nur Lesen; gespeichert wird die ID)
+    // F10: verknüpfte Aufgabe (nur Entwicklerversion; nur Lesen, gespeichert wird die ID)
     const taskLink = window.DeckTaskLink && api.secondBrain
       ? window.DeckTaskLink.createTaskLink({ desc, api, h, onChange: () => hooks.onChange(), focusTerminal: () => term.focus() })
       : null;
@@ -520,13 +523,14 @@
     /* Diktat: Zustand kommt aus D.dictation, die Kachel spiegelt ihn nur */
     let dictPhase = 'idle';
     const MIC_TIPS = {
-      idle: 'Diktieren (Flüsterflow)',
+      idle: micLabel,
       starting: 'Diktat startet …',
       loading: 'Sprachmodell wird geladen – du kannst schon sprechen. Klick zum Stoppen',
       recording: 'Aufnahme läuft – Klick zum Stoppen',
       processing: 'Text wird erzeugt …',
     };
     function refreshMic() {
+      if (!bMic) return;
       const rec = dictPhase === 'starting' || dictPhase === 'loading' || dictPhase === 'recording';
       bMic.classList.toggle('rec', rec);
       bMic.classList.toggle('busy', dictPhase === 'processing');
@@ -543,7 +547,7 @@
       D.dictation.click(id);
       term.focus();
     }
-    const dictUnregister = D.dictation ? D.dictation.register(id, {
+    const dictUnregister = dictAvailable ? D.dictation.register(id, {
       title: () => desc.title,
       update: (phase) => { dictPhase = phase; refreshMic(); },
     }) : null;

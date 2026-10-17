@@ -76,10 +76,10 @@ test('list skips entries that are not valid projects', () => {
 test('add stores a project with a UUID id and trimmed name', () => {
   const { dir, filePath, store } = setup();
   try {
-    const project = store.add({ name: '  Mein Projekt  ', path: '/Users/joshua/proj' });
+    const project = store.add({ name: '  Mein Projekt  ', path: '/Users/nutzer/proj' });
     assert.match(project.id, UUID_RE);
     assert.strictEqual(project.name, 'Mein Projekt');
-    assert.strictEqual(project.path, '/Users/joshua/proj');
+    assert.strictEqual(project.path, '/Users/nutzer/proj');
     assert.deepStrictEqual(store.list(), [project]);
     assert.deepStrictEqual(JSON.parse(fs.readFileSync(filePath, 'utf8')), [project]);
   } finally {
@@ -90,9 +90,9 @@ test('add stores a project with a UUID id and trimmed name', () => {
 test('add uses the last path segment when the name is empty after trimming', () => {
   const { dir, store } = setup();
   try {
-    assert.strictEqual(store.add({ name: '   ', path: '/Users/joshua/alpha' }).name, 'alpha');
-    assert.strictEqual(store.add({ path: '/Users/joshua/beta/' }).name, 'beta');
-    assert.strictEqual(store.add({ name: '', path: '/Users/joshua/gamma' }).name, 'gamma');
+    assert.strictEqual(store.add({ name: '   ', path: '/Users/nutzer/alpha' }).name, 'alpha');
+    assert.strictEqual(store.add({ path: '/Users/nutzer/beta/' }).name, 'beta');
+    assert.strictEqual(store.add({ name: '', path: '/Users/nutzer/gamma' }).name, 'gamma');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -112,8 +112,8 @@ test('add cuts the name to 80 characters', () => {
 test('add returns the existing project when the path is already known', () => {
   const { dir, store } = setup();
   try {
-    const first = store.add({ name: 'Eins', path: '/Users/joshua/same' });
-    const second = store.add({ name: 'Zwei', path: '/Users/joshua/same' });
+    const first = store.add({ name: 'Eins', path: '/Users/nutzer/same' });
+    const second = store.add({ name: 'Zwei', path: '/Users/nutzer/same' });
     assert.deepStrictEqual(second, first);
     assert.strictEqual(store.list().length, 1);
   } finally {

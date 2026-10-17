@@ -229,7 +229,7 @@ app.on('browser-window-created', (_event, win) => {
       assert.deepEqual(inputs(), []);
       r = await mtpm("mt-pm send Beta 'Bitte die Tests ausführen und berichten'");
       assert.equal(r.code, 0, r.stderr);
-      assert.match(r.stdout, /In Promptvorschau von Beta gelegt – wartet auf Bestätigung durch Joshua\./);
+      assert.match(r.stdout, /In Promptvorschau von Beta gelegt – wartet auf Bestätigung durch den Nutzer\./);
       const d = await draft();
       assert.equal(d.terminalId, 'qa-beta');
       assert.equal(d.text, '[Projektmanager] Bitte die Tests ausführen und berichten');

@@ -56,6 +56,7 @@
 
   const dict = (D.dictation = {
     available: !!api,
+    label: 'Diktieren (Flüsterflow)', // Tooltip des Mikrofons im Kachelkopf
 
     /* Kachel anmelden; gibt die Abmeldefunktion zurück. */
     register(id, tile) {
@@ -108,9 +109,25 @@
     }
   }
 
+  /* Schalter „Live-Diktat“ im Menü: gehört zu dieser (nur in der Entwicklerversion vorhandenen) Datei. */
+  function liveButton() {
+    const existing = document.getElementById('btn-live');
+    if (existing || !api) return existing;
+    const group = document.getElementById('project-options');
+    if (!group) return null;
+    const btn = document.createElement('button');
+    btn.id = 'btn-live';
+    btn.className = 'btn-small';
+    btn.setAttribute('aria-pressed', 'false');
+    btn.title = 'Live-Diktat: an – Text erscheint schon beim Sprechen; aus – Text erscheint nach dem Stoppen am Stück';
+    btn.textContent = 'Live-Diktat';
+    group.prepend(btn);
+    return btn;
+  }
+
   function init() {
     st.live = readLive();
-    const btn = document.getElementById('btn-live');
+    const btn = liveButton();
     if (btn) {
       btn.classList.toggle('on', st.live);
       btn.setAttribute('aria-pressed', String(st.live));

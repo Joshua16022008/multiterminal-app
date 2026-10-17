@@ -4,7 +4,17 @@
 (function () {
   const ACTION_PREFIX = 'focus-terminal:';
   const SLOTS = 10;
-  const actions = [
+  // Edition (dev/public): the page gets it from the preload, the main process from edition.js.
+  // Unknown edition (tests without either) means every action, as in the developer version.
+  const node = typeof module !== 'undefined' && module.exports && typeof require === 'function';
+  const edition = (function () {
+    if (typeof window !== 'undefined' && window.deck && window.deck.edition) return window.deck.edition;
+    if (node) { try { return require('../main/edition'); } catch (_) { return null; } }
+    return null;
+  })();
+  const features = edition && edition.features ? edition.features : null;
+  const enabled = (action) => !action.feature || !features || features[action.feature] !== false;
+  const allActions = [
     { id: 'settings', label: 'Einstellungen öffnen' },
     { id: 'new-terminal', label: 'Neues Terminal' },
     { id: 'close-terminal', label: 'Terminal schließen' },
@@ -20,7 +30,7 @@
     { id: 'progress-panel', label: 'Fortschritt anzeigen' },
     { id: 'handoff', label: 'Übergabe an anderes Terminal' },
     { id: 'browser-pick', label: 'Element im Browser kommentieren' },
-    { id: 'task-link', label: 'Second-Brain-Aufgabe der Kachel' },
+    { id: 'task-link', label: 'Aufgabe der Kachel', feature: 'taskLink' }, // Bezeichnung der Entwicklerversion: dev-features.js
     { id: 'layout-start', label: 'Aufbau starten' },
     { id: 'layout-save', label: 'Aufbau speichern' },
     { id: 'qol-panel', label: 'Komfort-Einstellungen' },
@@ -30,6 +40,13 @@
     { id: 'help', label: 'Hilfe öffnen' },
     ...Array.from({ length: SLOTS }, (_, i) => ({ id: actionFor(i), label: `Terminal ${i + 1}` }))
   ];
+  // Actions of switched-off features do not exist in this edition (no menu, no binding, no conflict).
+  const actions = allActions.filter(enabled);
+  const disabled = allActions.filter(action => !enabled(action)).map(action => action.id);
+  function setLabel(id, label) {
+    const action = actions.find(item => item.id === id);
+    if (action && typeof label === 'string' && label) action.label = label;
+  }
   const modifiers = ['Cmd', 'Ctrl', 'Alt', 'Shift'];
   const aliases = { command: 'Cmd', cmd: 'Cmd', meta: 'Cmd', control: 'Ctrl', ctrl: 'Ctrl', option: 'Alt', alt: 'Alt', shift: 'Shift' };
   const keyAliases = {
@@ -77,6 +94,7 @@
       'worktree-tree': extra('Y'), help: extra('H'), // Y wie eine Gabelung; ⌘H allein bleibt „Ausblenden“
     });
     for (let i = 0; i < SLOTS; i++) result[actionFor(i)] = platform === 'darwin' ? [`Cmd+${keyForIndex(i)}`, `Ctrl+${keyForIndex(i)}`] : [`Ctrl+${keyForIndex(i)}`];
+    for (const id of disabled) delete result[id];
     return result;
   }
   function normalizeKey(key) {
@@ -170,7 +188,9 @@
     const combo = eventAccelerator(event);
     return combo !== null && active.has(combo);
   }
-  const api = { SLOTS, actions, defaults, validate, eventAccelerator, format, setBindings, keyForIndex, indexForKey, actionFor, indexForAction, targetFor, isHotkeyEvent };
+  const api = { SLOTS, actions, disabled, defaults, validate, eventAccelerator, format, setBindings, keyForIndex, indexForKey, actionFor, indexForAction, targetFor, isHotkeyEvent, setLabel };
+  // Developer version in Node (menus): its own labels come from the developer-only module.
+  if (node && edition && edition.devFeatures && edition.devFeatures.applyHotkeyLabels) edition.devFeatures.applyHotkeyLabels(api);
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.DeckHotkeys = api;
 })();

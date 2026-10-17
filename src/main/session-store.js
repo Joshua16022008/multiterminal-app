@@ -61,7 +61,7 @@ function sanitizeTerminal(t) {
   // F02: belegte native Gesprächs-ID (nur aus Agentenereignissen); ungültige Werte werden verworfen
   const ns = sanitizeNativeSession(t.nativeSession);
   if (ns) out.nativeSession = ns;
-  // F10: verknüpfte Second-Brain-Aufgabe (nur die ID; Titel/Status werden live gelesen)
+  // F10: verknüpfte Aufgabe (nur die ID; Titel/Status werden live gelesen; nur Entwicklerversion legt sie an)
   if (validId(t.secondBrainTodoId)) out.secondBrainTodoId = t.secondBrainTodoId;
   // Harness start: only the public whitelist { harnessId, model?, endpointId? } is kept.
   // The finished line (environment, keychain lookup, prompt) is rebuilt in main on resume

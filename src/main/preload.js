@@ -8,7 +8,13 @@ function subscribe(channel, callback) {
   return () => ipcRenderer.removeListener(channel, listener);
 }
 
+// Edition (dev/public) once, synchronously: hotkeys, menus and tiles know it from the start.
+// Without an answer everything stays as in the developer version.
+const edition = (() => { try { return ipcRenderer.sendSync('edition:get') || null; } catch (_) { return null; } })();
+const featureOn = (name) => !edition || !edition.features || edition.features[name] !== false;
+
 contextBridge.exposeInMainWorld('deck', {
+  edition,
   memory: {
     read: projectId => ipcRenderer.invoke('memory:read', projectId),
     saveNotes: (projectId, text, revision) => ipcRenderer.invoke('memory:saveNotes', projectId, text, revision),
@@ -47,10 +53,10 @@ contextBridge.exposeInMainWorld('deck', {
     list: (projectId, workspaceId) => ipcRenderer.invoke('diff:list', projectId, workspaceId || null),
     file: (projectId, workspaceId, file, mode) => ipcRenderer.invoke('diff:file', projectId, workspaceId || null, file, mode),
   },
-  secondBrain: { // F10
+  ...(featureOn('taskLink') ? { secondBrain: { // F10, nur Entwicklerversion
     listTasks: () => ipcRenderer.invoke('secondBrain:listTasks'),
     getTask: id => ipcRenderer.invoke('secondBrain:getTask', id),
-  },
+  } } : {}),
   ports: {
     list: () => ipcRenderer.invoke('ports:list'),
     resolve: id => ipcRenderer.invoke('ports:resolve', id),
@@ -167,12 +173,12 @@ contextBridge.exposeInMainWorld('deck', {
     pull: (projectId) => ipcRenderer.invoke('git:pull', projectId),
     sync: (projectId) => ipcRenderer.invoke('git:sync', projectId),
   },
-  dictation: {
+  ...(featureOn('dictation') ? { dictation: { // nur Entwicklerversion
     start: (terminalId, live) => ipcRenderer.invoke('dictation:start', terminalId, live),
     stop: () => ipcRenderer.invoke('dictation:stop'),
     cancel: () => ipcRenderer.invoke('dictation:cancel'),
     onEvent: (callback) => subscribe('dictation:event', callback),
-  },
+  } } : {}),
   // Agent control of the mini browser (mt-browser): the main process asks, the page answers.
   browser: {
     onRequest: (callback) => subscribe('browser:request', callback),

@@ -22,7 +22,7 @@ async function fixture(t) {
     platform: 'darwin', targetPath: target, dataDir: path.join(root, 'data'),
     app: { isPackaged: true, getPath: () => path.join(target, 'Contents', 'MacOS', 'Multiterminal'), getVersion: () => '0.2.0', quit: () => quits++ },
     dialog: { showOpenDialog: async parent => { windows.push(parent); return { canceled: false, filePaths: [folder] }; }, showMessageBox: async parent => { windows.push(parent); return confirmation; } },
-    readPlist: async (_, key) => key === 'CFBundleIdentifier' ? 'de.joshua.multiterminal' : '0.2.0',
+    readPlist: async (_, key) => key === 'CFBundleIdentifier' ? require('../src/main/edition').bundleId : '0.2.0',
     copyBundle: (a, b) => fs.cp(a, b, { recursive: true, verbatimSymlinks: true }),
     launchHelper: () => ({ pid: 123, exitCode: null }), waitReady: async () => {}
   };

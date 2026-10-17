@@ -47,7 +47,7 @@ test('normalizeRemote treats https, ssh and .git alike', () => {
 });
 
 test('REPO_NAME rejects anything that is not owner/name', () => {
-  assert.ok(REPO_NAME.test('Joshua16022008/multiterminal-app'));
+  assert.ok(REPO_NAME.test('Nutzer2008/multiterminal-app'));
   for (const bad of ['foo', '../x/y', 'a/b/c', 'a/b c', '-o/--upload-pack=x y', '']) assert.ok(!REPO_NAME.test(bad), bad);
 });
 

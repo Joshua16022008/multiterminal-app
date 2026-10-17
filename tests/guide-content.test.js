@@ -180,16 +180,14 @@ test('Tastenkürzel-Tabelle entspricht hotkeys.defaults("darwin")', () => {
     .filter((a) => !HOTKEYS_NOT_DOCUMENTED.includes(a.id))
     .map((a) => [a.label, defaults[a.id].map(HK.format).join(' / ')]);
   assert.deepEqual(actual, expected);
-  for (const id of HOTKEYS_NOT_DOCUMENTED) assert.ok(HK.actions.some((a) => a.id === id), 'Ausnahme für unbekannte Aktion ' + id);
+  for (const id of HOTKEYS_NOT_DOCUMENTED) assert.ok(HK.actions.some((a) => a.id === id) || HK.disabled.includes(id), 'Ausnahme für unbekannte Aktion ' + id);
 });
 
+/* Persönliche Begriffe stehen nur in der Entwicklerversion (tests/private-terms.js, nicht exportiert). */
+const PRIVATE = (() => { try { return require('./private-terms'); } catch (_) { return []; } })();
+const RELEASE = [[/\/Users\//, '/Users/-Pfad'], ...PRIVATE];
 const FORBIDDEN = [
-  [/\/Users\//, '/Users/-Pfad'],
-  [/Second_Brain/i, 'Second_Brain'],
-  [/Second[ -]Brain/i, 'Second Brain'],
-  [/Fl(?:ü|ue)sterflow/i, 'Flüsterflow'],
-  [/gulla/i, 'gulla'],
-  [/Joshua/i, 'Joshua'],
+  ...RELEASE,
   [/Diktat|Diktier/i, 'Diktat'],
   [/Mikrofon/i, 'Mikrofon'],
   [/Aufgaben-Chip|task-?link/i, 'Aufgaben-Link'],
@@ -202,7 +200,14 @@ test('Datenschutz- und Release-Wächter: docs/guide enthält keine privaten oder
   }
 });
 
+/* Dateien, die nur in der Entwicklerversion liegen, prüft der Wächter nicht (scripts/export-manifest.json). */
+function devOnly() {
+  try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts', 'export-manifest.json'), 'utf8')).devOnly; } catch (_) { return []; }
+}
+
 function grepTree(dirs) {
+  const skip = devOnly();
+  const excluded = (rel) => skip.some((entry) => (entry.endsWith('/') ? rel.startsWith(entry) : rel === entry));
   const hits = [];
   const files = [];
   const walk = (p) => {
@@ -213,14 +218,14 @@ function grepTree(dirs) {
   };
   for (const d of dirs) walk(path.join(ROOT, d));
   for (const f of files) {
+    const rel = path.relative(ROOT, f).split(path.sep).join('/');
+    if (excluded(rel)) continue;
     const text = fs.readFileSync(f, 'utf8');
-    for (const [re, label] of FORBIDDEN.slice(0, 6)) if (re.test(text)) hits.push(path.relative(ROOT, f) + ': ' + label);
+    for (const [re, label] of RELEASE) if (re.test(text)) hits.push(rel + ': ' + label);
   }
   return hits;
 }
 
-test('Release-Wächter für src/ und scripts/', { skip: 'wird in Etappe 5 scharf geschaltet (dort existieren noch Treffer)' }, () => {
+test('Release-Wächter für src/ und scripts/ (ohne Dateien der Entwicklerversion)', () => {
   assert.deepEqual(grepTree(['src', 'scripts']), []);
 });
-
-test.todo('Release-Wächter für src/ und scripts/ schalten (Etappe 5): keine /Users/-Pfade, Second Brain, Flüsterflow, gulla, Joshua');

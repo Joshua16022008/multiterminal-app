@@ -84,7 +84,7 @@ test('Textausgabe weiterer Befehle und --json', () => {
   const d = cli.formatResponse({ cmd: 'docs' }, { ok: true, result: { projectStatus: 'S', workInProgress: null, progress: 'P', gitLog: 'l', gitBranches: null } }).out;
   assert.match(d, /=== PROJECT_STATUS.md ===\nS/);
   assert.match(d, /=== WORK_IN_PROGRESS.md ===\n\(nicht vorhanden\)/);
-  assert.strictEqual(cli.formatResponse({ cmd: 'send' }, { ok: true, result: 'In Promptvorschau von X gelegt – wartet auf Bestätigung durch Joshua.' }).out.startsWith('In Promptvorschau'), true);
+  assert.strictEqual(cli.formatResponse({ cmd: 'send' }, { ok: true, result: 'In Promptvorschau von X gelegt – wartet auf Bestätigung durch den Nutzer.' }).out.startsWith('In Promptvorschau'), true);
   assert.deepStrictEqual(JSON.parse(cli.formatResponse({ cmd: 'status', json: true }, { ok: true, result: STATUS }).out), STATUS);
   assert.deepStrictEqual(cli.formatResponse({ cmd: 'x' }, { ok: false, error: 'kaputt' }), { error: 'kaputt' });
   assert.ok(cli.formatResponse({ cmd: 'x' }, null).error);
@@ -146,7 +146,7 @@ test('Prozess gegen die Brücke: Text, --json, Fehler mit Exit 1', async () => {
     assert.strictEqual(o.out, 'x\ny\n');
     const s = await runCli(['send', 'Backend', 'Bitte', 'prüfen'], env);
     assert.strictEqual(s.code, 0);
-    assert.strictEqual(s.out, 'In Promptvorschau von Backend gelegt – wartet auf Bestätigung durch Joshua.\n');
+    assert.strictEqual(s.out, 'In Promptvorschau von Backend gelegt – wartet auf Bestätigung durch den Nutzer.\n');
     assert.deepStrictEqual(sends, [{ projectId: 'p1', terminalId: 't1', text: 'Bitte prüfen' }]);
     const bad = await runCli(['output', 'Nix'], env);
     assert.strictEqual(bad.code, 1);

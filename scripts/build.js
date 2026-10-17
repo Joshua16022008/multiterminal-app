@@ -1,10 +1,18 @@
 'use strict';
-// Packages the app into dist/Multiterminal-darwin-<arch>/Multiterminal.app
+// Packages the app into dist/<App>-darwin-<arch>/<App>.app; name and bundle id come from the edition (edition.json).
 const fs = require('node:fs');
 const path = require('node:path');
+const edition = require('../src/main/edition');
 
 const ROOT = path.resolve(__dirname, '..');
-const APP_NAME = 'Multiterminal';
+const APP_NAME = edition.appName;
+
+// Info.plist texts: the microphone is only used by the developer version's dictation.
+function packagerIdentity(current = edition) {
+  const dev = current.devFeatures;
+  const microphone = current.features.dictation && dev && dev.MICROPHONE_USAGE;
+  return { appBundleId: current.bundleId, ...(microphone ? { usageDescription: { Microphone: microphone } } : {}) };
+}
 // Paths are relative to the project root with a leading slash, as @electron/packager tests them.
 const IGNORE = [
   /^\/dist($|\/)/,
@@ -47,9 +55,7 @@ async function main() {
     asar: false, // node-pty needs real files (prebuilds, spawn-helper with exec bit)
     overwrite: true,
     prune: true, // drops devDependencies (default, stated explicitly)
-    appBundleId: 'de.joshua.multiterminal',
-    // Diktat: Flüsterflow nimmt als Kindprozess dieser App über das Mikrofon auf.
-    usageDescription: { Microphone: 'Für das Diktat in ein Terminal (Flüsterflow, lokal auf diesem Mac).' },
+    ...packagerIdentity(),
     ignore: IGNORE,
     quiet: false,
   });
@@ -84,4 +90,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { IGNORE };
+module.exports = { IGNORE, packagerIdentity };

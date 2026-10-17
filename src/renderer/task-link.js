@@ -203,5 +203,12 @@
   }
 
   if (typeof module !== 'undefined' && module.exports) module.exports = { statusOf, chipText, filterTasks, shorten, dueText, createTaskLink, STATUS_TEXT };
-  if (typeof window !== 'undefined') window.DeckTaskLink = { createTaskLink, statusOf, chipText, filterTasks };
+  if (typeof window !== 'undefined') {
+    // Nur Entwicklerversion: diese Datei bringt auch ihre Texte für Komfort, Hotkeys und Menüknopf mit.
+    const QOL_ITEM = ['taskChip', '„+ Aufgabe“ im Kachelkopf', 'Verknüpfung mit Second-Brain-Aufgaben'];
+    window.DeckTaskLink = { createTaskLink, statusOf, chipText, filterTasks, QOL_ITEM };
+    if (window.DeckHotkeys && window.DeckHotkeys.setLabel) window.DeckHotkeys.setLabel('task-link', 'Second-Brain-Aufgabe der Kachel');
+    const qolButton = typeof document !== 'undefined' && window.deck && window.deck.secondBrain ? document.getElementById('btn-qol') : null;
+    if (qolButton) qolButton.title = 'Komfort: Markierungen, Animationen, Sortierung und Aufgaben-Chip ein- und ausschalten';
+  }
 })();
