@@ -13,7 +13,7 @@ Desktop-App für macOS, die Projekte in einer Seitenleiste zeigt und pro Projekt
 
 ## Aktueller Stand
 
-UPDATE-PUSH-CODEX-20261018-01: Alle fertigen neuen Features einschließlich Edition/Export und Agentenaufgaben gemeinsam in main; Produktstand `e15b946`, Update **0.3.1**. Eigener Gesamtlauf **963/963**, Aufgaben-Unterauftrag **64/64**, unabhängiger Review ohne Befund. Build und getrenntes Update-Paket grün: **932 Dateien**, 158 Quelldateien bytegleich, strikter Validator/Installer --check bestanden. Öffentliche Probe **298 Dateien/930 Tests**, Datenschutz grün. Hinweise/Installationsbefehl in `UPDATE_VERSION.md`. Kein App-Ende/Installation; native GUI-/DMG-Abnahme offen. Genau nächste Auftragsaktion: freigegebenen main-Stand pushen und Remote-Commit bestätigen.
+UPDATE-PUSH-CODEX-20261018-01: Alle fertigen neuen Features einschließlich Edition/Export und Agentenaufgaben gemeinsam in main; Produktstand `e15b946`, Update **0.3.1**, Update-Doku lokal `829759e`. Eigener Gesamtlauf **963/963**, Aufgaben-Unterauftrag **64/64**, Review ohne Befund. Build/Paket grün: **932 Dateien**, 158 Quelldateien bytegleich, strikter Validator/Installer --check bestanden. Öffentliche Probe **298 Dateien/930 Tests**, Datenschutz grün. **Push versucht, durch GitHub-Anmeldung blockiert** (Exit 128, Schlüsselbund -50/Device not configured); Remote unverändert `f77f01e`. Kein App-Ende/Installation; native GUI-/DMG-Abnahme offen. Genau nächste Aktion: nativen authentifizierten Push laut `UPDATE_VERSION.md` ausführen.
 
 OSS-RESUME-CODEX-20261018-01: Edition/Export auf Branch `claude/oss-edition-export` in `10c59f0` + `6d30dc6` fertiggestellt und quellenbezogen geprüft. Final **921/921**; Probe-Export **287 Dateien, 888/888 Tests, Datenschutz-Wächter grün**, unabhängiger Begriffscan ohne Treffer; Abschlussreview ohne offene Codebefunde. Erhaltene Probe und Startbefehl in `docs/dev/HANDOFF-OSS.md`. Native Abnahme offen: direktes Electron SIGABRT, LaunchServices -10827/kLSNoExecutableErr, kleine DMG-Probe `Device not configured`. Kein Screenshot, DMG, Merge/Push/Installation oder echtes Exportziel. Eigene Quelldateireservierungen frei. Genau nächste Auftragsaktion: öffentliche QA im Probeordner aus startfähiger nativer macOS-Sitzung ausführen und Screenshot ansehen.
 
@@ -95,7 +95,7 @@ Agentenkommunikation als Projektdokumentation eingerichtet: `WORK_IN_PROGRESS.md
 Version 0.1.0: Terminal-Raster, Diktat, Kontenverwaltung, Verbrauchsanzeige, Terminal-Namen und Farben sind im Quellstand vorhanden. Tastenkürzel, Drag-and-drop, Mini-Browser-Steuerung und Settings liegen als lokale Änderungen vor. Bisherige Prüfungen stehen unter Nachweise; Alltagstests und Joshuas Abnahme bleiben offen. Der installierte Build wurde in COMMIT-CHECK-20261014-01 lesend mit den aktuellen Produktdateien abgeglichen; keine neue App-Bedienung in dieser Prüfrunde. Entwicklungsentwurf: `ENTWICKLUNGSPLAN.md`.
 
 ## Nächster Schritt
-Den freigegebenen, geprüften Update-Stand 0.3.1 auf das bestehende `origin/main` pushen und den Remote-Commit bestätigen.
+Den geprüften Update-Stand 0.3.1 aus einem nativ authentifizierten macOS-Terminal mit `git push origin main` pushen (`UPDATE_VERSION.md`).
 
 ## Aktive Aufgaben
 - F11-Build/Installation abgeschlossen; Joshuas manuelle Abnahme offen. RELEASE-20261015-01 meldet Joshuas Aufhebung der verwaisten F06-/CLAUDE-PROFILE-Reservierungen; deren historische Einträge erhalten. Unabhängige Claude-Profil-Abnahme bleibt fachlich unvollständig. Kein Ausbau für andere Nutzer. Flüsterflow ruht weiterhin.
@@ -105,6 +105,7 @@ Den freigegebenen, geprüften Update-Stand 0.3.1 auf das bestehende `origin/main
 - CODEXLABEL-CLAUDE-20261015-01 abgeschlossen (15.10.2026): Codex-Nutzungsbeschriftung ehrlich korrigiert, 350/350 Tests; Sichtprüfung nach nächstem Build offen. Details in `PROGRESS.md`.
 
 ## Blocker
+- UPDATE-PUSH-CODEX-20261018-01: GitHub-Push mangels Anmeldung in dieser Umgebung gescheitert: `osxkeychain` -50, Username nicht lesbar/Device not configured; CLI-Anmeldung hier ungültig, kein nutzbarer SSH-Agent. Remote unverändert, lokaler Stand/Paket vollständig gesichert. Authentifizierte native Terminalsitzung erforderlich.
 - OSS-RESUME-CODEX-20261018-01: Quell-/Exporttests grün; öffentlicher Screenshot fehlt wegen Electron-SIGABRT bzw. LaunchServices -10827/kLSNoExecutableErr. Native DMG-Probe scheitert mit `hdiutil: create failed - Device not configured`. Kein Merge-/Veröffentlichungsnachweis daraus ableiten.
 - MEMORY-CODEX-20261017-01: native GUI-/Zwei-Prozess-/Screenshot-Abnahme durch Electron-SIGABRT vor Bootstrap blockiert; Node-Main-/Socket-/CLI-/DOM-Nachweise vorhanden. Memory noch nicht im Paket oder installiert; keine echte Modellantwort geprüft.
 - Keine Build-/Installationsblockade mehr: gemeinsamer Produktstand `f6b0f81` liegt auf GitHub und installiert vor. Offene Produktgrenzen bleiben separat: Plugins, Kimi-Quellen, echte CLI-Nachweise und eine grobe Codex-Nutzungsnäherung (Beschriftung am 15.10.2026 korrigiert, CODEXLABEL-CLAUDE-20261015-01). Nachfolgende Prüf-/Statusnotizen sind noch lokal geändert.

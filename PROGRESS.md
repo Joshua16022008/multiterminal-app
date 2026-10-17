@@ -4,6 +4,13 @@
 
 ## Aktueller Stand
 
+### 18.10.2026 – UPDATE-PUSH-CODEX-20261018-01: Push durch Anmeldung blockiert
+
+- Nach vollständiger Integration, 963/963 Quelltests, 930/930 Exporttests, sauberem Review und streng geprüftem Update-Paket erfolgte der ausdrücklich autorisierte `git push origin main` aus sauberem main bei `829759e14998535ae5987b42adb2318fe801d406`.
+- Tatsächlicher Push: Exit 128, `failed to get: -50`, `fatal: could not read Username for 'https://github.com': Device not configured`. Vorhandener Git-Helper `osxkeychain`; `gh auth status` meldet die Anmeldung hier ungültig, SSH-Agent nicht erreichbar und SSH kann keinen Benutzer für UID 502 finden. Keine Zugangsdaten ausgegeben, keine globale Git-/Auth-/TLS-/SSH-Konfiguration verändert und keine alternative Veröffentlichung mit abweichender Historie vorgenommen.
+- Remote nach dem Fehlversuch lesend per `git ls-remote` bestätigt: `f77f01e847db76d9907c423446830333deefd967`, unverändert. Die gesicherten Feature-Commits wurden nicht veröffentlicht. Paket und Quellstand bleiben lokal erhalten; Nutzer-App unverändert. Keine zentrale Statusmeldung behauptet (Projekt nicht in aktueller Registry).
+- Eigene Quell-/Buildbereiche frei, kein Push-Erfolg behauptet. Genau nächste Aktion: den in `UPDATE_VERSION.md` vorbereiteten `git push origin main` aus Joshuas nativem authentifiziertem macOS-Terminal ausführen; nötigenfalls dort die bestehende GitHub-Anmeldung erneuern.
+
 ### 18.10.2026, 00:56 +02:00 – UPDATE-PUSH-CODEX-20261018-01: Gemeinsames Feature-Update 0.3.1 geprüft
 
 - Agent/Sitzung: Codex `/root`; Joshuas Folgeauftrag gibt Integration/Merge, Commit, Build und Push aller fertigen neuen Features frei. Keine Installation, kein Nutzer-App-Neustart und kein neues öffentliches OSS-Repository.

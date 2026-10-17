@@ -1,6 +1,21 @@
 # Update-Version 0.3.1 – 18.10.2026 (Entwicklerversion)
 
-**Gemeinsam integriert, gebaut und paketbezogen geprüft; noch nicht installiert.** Auftrag `UPDATE-PUSH-CODEX-20261018-01`: alle fertigen neuen Features bündeln und auf das bestehende `origin/main` pushen. Der Git-Push folgt auf diesen Prüf-/Dokumentationsstand; er installiert die App nicht.
+**Gemeinsam integriert, gebaut und paketbezogen geprüft; noch nicht gepusht oder installiert.** Auftrag `UPDATE-PUSH-CODEX-20261018-01`: alle fertigen neuen Features bündeln und auf das bestehende `origin/main` pushen. Der autorisierte Push wurde versucht, scheitert aber an der nicht verfügbaren GitHub-Anmeldung dieser Umgebung.
+
+## Noch offener Push
+
+Geprüfter Stand einschließlich Update-Dokumentation lokal in `829759e` gesichert; der folgende lokale Protokollcommit hält den Anmeldeblocker fest. `git push origin main` endete mit Exit 128: `failed to get: -50`, `could not read Username for 'https://github.com': Device not configured`. Vorhandener Git-Helper: `osxkeychain`. `gh auth status` meldet die Anmeldung hier als ungültig; keine SSH-Agent-Verbindung und kein lokaler SSH-Benutzer für UID 502. GitHub-Zugangsdaten wurden weder ausgegeben noch verändert.
+
+Remote `main` ist weiterhin `f77f01e847db76d9907c423446830333deefd967`; der Push hat nichts veröffentlicht. Nächster Schritt aus Joshuas nativem, angemeldetem macOS-Terminal:
+
+```bash
+cd '/Volumes/M4MegaDiva/Projekte/Lokale-Projekte/Desktop/Second_Brain/Arbeit/Ai Builds and projekts/Claude_code_tasks/Projekte/multiterminal-app'
+git push origin main
+```
+
+Falls auch dort die Anmeldung fehlschlägt, zuerst die vorhandene GitHub-Anmeldung erneuern (`gh auth login --hostname github.com`), anschließend denselben Push erneut ausführen. Kein Force-Push nötig. Die Installation ist ein separater späterer Schritt.
+
+## Umfang und Prüfungen
 
 Enthalten sind Worktree-Stammbaum, User Guide und Hilfe-Links, Harness-/Modellkatalog mit Endpunkt-Profilen, Kontoumbenennung, Update-Helfer, gemeinsames Memory, Sidebar-Popups, Edition-Schalter und OSS-Export-Pipeline sowie jetzt auch **Agentenaufgaben**: Aufgaben/Teilaufgaben/Ergebnisse zwischen Claude-/Codex-Terminals und begrenzte neue Arbeitsagenten nach sichtbarer Quellfreigabe. Entwickler-Diktat und Second-Brain-Aufgaben bleiben in der Entwicklerversion erhalten. Nicht freigegebene/unfertige Zusatzvorhaben wurden nicht übernommen.
 
