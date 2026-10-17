@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "id": "qwen",
+  "label": "Qwen Code",
+  "binary": "qwen",
+  "kind": "tui",
+  "evidence": "unconfirmed",
+  "verifiedWith": "2026-10-17: Rechercheplan; keine lokale CLI-Prüfung",
+  "docsUrl": "https://qwenlm.github.io/qwen-code-docs/",
+  "install": [
+    {
+      "method": "npm",
+      "display": "npm install -g @qwen-code/qwen-code@latest"
+    }
+  ],
+  "start": [
+    "qwen"
+  ],
+  "model": null,
+  "resume": null,
+  "prompt": null,
+  "endpoints": {},
+  "profileInjection": null,
+  "supportsHooks": false,
+  "accounts": null
+}

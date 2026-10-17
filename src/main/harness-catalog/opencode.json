@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "id": "opencode",
+  "label": "OpenCode",
+  "binary": "opencode",
+  "kind": "tui",
+  "evidence": "third-party",
+  "verifiedWith": "2026-10-17: bestehender Rechercheplan mit offizieller CLI-Referenz; weder lokale CLI noch erneuter Dokumentabruf verfügbar",
+  "docsUrl": "https://opencode.ai/docs/en/cli/",
+  "install": [
+    {
+      "method": "script",
+      "display": "curl -fsSL https://opencode.ai/install | bash"
+    }
+  ],
+  "start": [
+    "opencode"
+  ],
+  "model": {
+    "args": [
+      "-m",
+      "{model}"
+    ],
+    "format": "provider/model",
+    "static": [],
+    "query": {
+      "argv": [
+        "opencode",
+        "models"
+      ],
+      "parse": "lines"
+    }
+  },
+  "resume": {
+    "last": [
+      "opencode",
+      "--continue"
+    ],
+    "byId": [
+      "opencode",
+      "--session",
+      "{sessionId}"
+    ]
+  },
+  "prompt": {
+    "args": [
+      "--prompt",
+      "{prompt}"
+    ]
+  },
+  "endpoints": {},
+  "profileInjection": null,
+  "supportsHooks": false,
+  "accounts": null,
+  "detect": {
+    "version": {
+      "argv": [
+        "opencode",
+        "--version"
+      ]
+    }
+  }
+}

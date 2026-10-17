@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "id": "copilot",
+  "label": "GitHub Copilot CLI",
+  "binary": "copilot",
+  "kind": "tui",
+  "evidence": "unconfirmed",
+  "verifiedWith": "2026-10-17: Rechercheplan; keine lokale CLI-Prüfung",
+  "docsUrl": "https://docs.github.com/en/copilot/how-tos/copilot-cli/install-copilot-cli",
+  "install": [
+    {
+      "method": "npm",
+      "display": "npm install -g @github/copilot"
+    }
+  ],
+  "start": [
+    "copilot"
+  ],
+  "model": null,
+  "resume": null,
+  "prompt": null,
+  "endpoints": {},
+  "profileInjection": null,
+  "supportsHooks": false,
+  "accounts": null
+}

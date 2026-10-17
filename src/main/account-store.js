@@ -70,6 +70,18 @@ function isValidOwnAccount(entry) {
   );
 }
 
+function linkShared(provider, target, { homeDir = os.homedir(), isolateClaudeConfig = false } = {}) {
+  checkProvider(provider);
+  const source = path.join(homeDir, PROVIDERS[provider].defaultDir);
+  for (const name of PROVIDERS[provider].shared) {
+    if (provider === 'claude' && isolateClaudeConfig && name === 'settings.json') continue;
+    try {
+      fs.lstatSync(path.join(source, name));
+      fs.symlinkSync(path.join(source, name), path.join(target, name));
+    } catch { /* Missing source or an existing destination remains unchanged. */ }
+  }
+}
+
 function createAccountStore({ filePath, profilesDir, homeDir = os.homedir() }) {
   function defaultDirOf(provider) {
     return path.join(homeDir, PROVIDERS[provider].defaultDir);
@@ -152,18 +164,8 @@ function createAccountStore({ filePath, profilesDir, homeDir = os.homedir() }) {
 
   // Links the shared settings into a new account folder. Failures are ignored:
   // the account is still usable, just without that shared entry.
-  function linkShared(provider, target) {
-    const source = defaultDirOf(provider);
-    for (const name of PROVIDERS[provider].shared) {
-      const from = path.join(source, name);
-      const to = path.join(target, name);
-      try {
-        fs.lstatSync(from);
-        fs.symlinkSync(from, to);
-      } catch (err) {
-        // Missing in the source or link not possible.
-      }
-    }
+  function share(provider, target, options = {}) {
+    return linkShared(provider, target, { ...options, homeDir });
   }
 
   function list() {
@@ -191,7 +193,7 @@ function createAccountStore({ filePath, profilesDir, homeDir = os.homedir() }) {
     const account = { id: `${provider}-${crypto.randomBytes(4).toString('hex')}`, provider, label: trimmed };
     const folder = folderOf(provider, account.id);
     fs.mkdirSync(folder, { recursive: true });
-    linkShared(provider, folder);
+    share(provider, folder);
     state.accounts.push(account);
     write(state);
     return { ...account, builtin: false, folder, active: false };
@@ -260,7 +262,7 @@ function createAccountStore({ filePath, profilesDir, homeDir = os.homedir() }) {
     return PROVIDERS[provider].loginCommand;
   }
 
-  return { list, add, rename, setActive, remove, envFor, loginCommand };
+  return { list, add, rename, setActive, remove, envFor, loginCommand, linkShared: share };
 }
 
-module.exports = { createAccountStore, PROVIDERS };
+module.exports = { createAccountStore, PROVIDERS, linkShared };

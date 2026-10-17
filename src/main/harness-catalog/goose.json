@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "id": "goose",
+  "label": "Goose",
+  "binary": "goose",
+  "kind": "tui",
+  "evidence": "unconfirmed",
+  "verifiedWith": "2026-10-17: Rechercheplan; keine lokale CLI-Prüfung",
+  "docsUrl": "https://goose-docs.ai/docs/getting-started/installation",
+  "install": [
+    { "method": "manual", "display": "https://goose-docs.ai/docs/getting-started/installation" }
+  ],
+  "start": [
+    "goose"
+  ],
+  "model": null,
+  "resume": null,
+  "prompt": null,
+  "endpoints": {},
+  "profileInjection": null,
+  "supportsHooks": false,
+  "accounts": null
+}

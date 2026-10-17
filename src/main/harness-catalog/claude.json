@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "id": "claude",
+  "label": "Claude Code",
+  "binary": "claude",
+  "kind": "tui",
+  "evidence": "local",
+  "verifiedWith": "2026-10-17: Claude Code 2.1.302 --help (Modell, Prompt, Resume); Installer aus Rechercheplan, nicht ausgeführt",
+  "docsUrl": "https://code.claude.com/docs/en/cli-reference",
+  "install": [
+    { "method": "script", "display": "curl -fsSL https://claude.ai/install.sh | bash" }
+  ],
+  "start": [
+    "claude"
+  ],
+  "model": {
+    "args": [
+      "--model",
+      "{model}"
+    ],
+    "format": "name",
+    "static": [
+      "sonnet",
+      "opus",
+      "haiku"
+    ],
+    "query": null
+  },
+  "resume": {
+    "last": [
+      "claude",
+      "--continue"
+    ],
+    "byId": [
+      "claude",
+      "--resume",
+      "{sessionId}"
+    ]
+  },
+  "prompt": {
+    "args": [
+      "--",
+      "{prompt}"
+    ]
+  },
+  "endpoints": {
+    "anthropic": {
+      "env": {
+        "ANTHROPIC_BASE_URL": "{baseUrl}",
+        "ANTHROPIC_API_KEY": "",
+        "ANTHROPIC_MODEL": "{model}"
+      },
+      "secretEnv": "ANTHROPIC_AUTH_TOKEN"
+    },
+    "ollama": {
+      "env": {
+        "ANTHROPIC_BASE_URL": "{baseUrl}",
+        "ANTHROPIC_API_KEY": "",
+        "ANTHROPIC_MODEL": "{model}"
+      },
+      "secretEnv": "ANTHROPIC_AUTH_TOKEN"
+    }
+  },
+  "profileInjection": "claude-append",
+  "supportsHooks": true,
+  "accounts": "claude",
+  "detect": {
+    "version": {
+      "argv": [
+        "claude",
+        "--version"
+      ]
+    }
+  }
+}

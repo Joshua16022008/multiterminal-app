@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "id": "kimi",
+  "label": "Kimi Code",
+  "binary": "kimi",
+  "kind": "tui",
+  "evidence": "local",
+  "verifiedWith": "2026-10-17: Kimi 2.1.1 --help (Modell, Continue/Session); offizieller Installer aus Rechercheplan, nicht ausgeführt",
+  "docsUrl": "https://www.kimi.com/code/docs/en/kimi-code-cli/guides/getting-started.html",
+  "install": [
+    { "method": "script", "display": "curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash" }
+  ],
+  "start": [
+    "kimi"
+  ],
+  "model": {
+    "args": [
+      "-m",
+      "{model}"
+    ],
+    "format": "name",
+    "static": [],
+    "query": null
+  },
+  "resume": {
+    "last": [
+      "kimi",
+      "--continue"
+    ],
+    "byId": [
+      "kimi",
+      "--session",
+      "{sessionId}"
+    ]
+  },
+  "prompt": null,
+  "endpoints": {},
+  "profileInjection": "kimi-agent-file",
+  "supportsHooks": false,
+  "accounts": null,
+  "detect": {
+    "verify": {
+      "argv": [
+        "kimi",
+        "--help"
+      ],
+      "pattern": "Kimi Code"
+    },
+    "version": {
+      "argv": [
+        "kimi",
+        "--version"
+      ]
+    }
+  }
+}

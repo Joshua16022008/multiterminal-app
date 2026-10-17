@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "id": "cline",
+  "label": "Cline",
+  "binary": "cline",
+  "kind": "tui",
+  "evidence": "unconfirmed",
+  "verifiedWith": "2026-10-17: Rechercheplan; keine lokale CLI-Prüfung",
+  "docsUrl": "https://docs.cline.bot/cline-cli/installation",
+  "install": [
+    {
+      "method": "npm",
+      "display": "npm install -g cline"
+    }
+  ],
+  "start": [
+    "cline"
+  ],
+  "model": null,
+  "resume": null,
+  "prompt": null,
+  "endpoints": {},
+  "profileInjection": null,
+  "supportsHooks": false,
+  "accounts": null
+}
