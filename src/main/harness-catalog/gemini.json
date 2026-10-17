@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "id": "gemini",
+  "label": "Gemini CLI",
+  "binary": "gemini",
+  "kind": "tui",
+  "evidence": "unconfirmed",
+  "verifiedWith": "2026-10-17: Rechercheplan; keine lokale CLI-Prüfung",
+  "docsUrl": "https://geminicli.com/docs/",
+  "install": [
+    {
+      "method": "npm",
+      "display": "npm install -g @google/gemini-cli"
+    }
+  ],
+  "start": [
+    "gemini"
+  ],
+  "model": null,
+  "resume": null,
+  "prompt": null,
+  "endpoints": {},
+  "profileInjection": null,
+  "supportsHooks": false,
+  "accounts": null
+}

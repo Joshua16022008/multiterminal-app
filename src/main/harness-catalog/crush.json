@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "id": "crush",
+  "label": "Crush",
+  "binary": "crush",
+  "kind": "tui",
+  "evidence": "unconfirmed",
+  "verifiedWith": "2026-10-17: Rechercheplan; keine lokale CLI-Prüfung",
+  "docsUrl": "https://next-docs.charm.land/crush/cli/",
+  "install": [
+    {
+      "method": "brew",
+      "display": "brew install charmbracelet/tap/crush"
+    }
+  ],
+  "start": [
+    "crush"
+  ],
+  "model": null,
+  "resume": null,
+  "prompt": null,
+  "endpoints": {},
+  "profileInjection": null,
+  "supportsHooks": false,
+  "accounts": null
+}

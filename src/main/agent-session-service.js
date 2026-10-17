@@ -37,6 +37,16 @@ function buildResume(provider, nativeSessionId) {
   return { argv, line: argv.map(quote).join(' ') };
 }
 
+// Catalog templates stay argv data. Entries without verified resume support
+// deliberately fall back to their bare binary in harness-launch instead.
+function resumeFromCatalog(entry, id) {
+  if (!entry || entry.evidence === 'unconfirmed' || !isValidSessionId(id)
+      || !Array.isArray(entry.resume?.byId) || entry.resume.byId[0] !== entry.binary) return null;
+  const argv = entry.resume.byId.map(word => typeof word === 'string' ? word.replaceAll('{sessionId}', id) : null);
+  if (argv.some(word => word === null || /[\r\n\0{}]/.test(word))) return null;
+  return { argv, line: argv.map(quote).join(' ') };
+}
+
 // Stored/IPC value -> clean record or null. projectId/accountId may be null.
 function sanitizeNativeSession(v) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
@@ -99,4 +109,4 @@ function createAgentSessionService() {
   return { observe, get, forget };
 }
 
-module.exports = { PROVIDERS, SESSION_ID_RE, isValidSessionId, buildResume, sanitizeNativeSession, resumePlan, createAgentSessionService };
+module.exports = { PROVIDERS, SESSION_ID_RE, isValidSessionId, buildResume, resumeFromCatalog, sanitizeNativeSession, resumePlan, createAgentSessionService };

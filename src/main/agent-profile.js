@@ -157,13 +157,28 @@ function createAgentProfile({ dataDir, readProfile }) {
     return `${decorated} --dangerously-bypass-approvals-and-sandbox`;
   }
 
+  // argv interface for catalog callers. Legacy decorators retain their exact
+  // file-backed shell spelling; these values are data, never shell fragments.
+  function argsFor(provider, { resume = false } = {}) {
+    if (!PROVIDERS.includes(provider) || !isEnabled(provider) || (resume && !RESUME_TAKES_FLAG[provider])) return [];
+    let profile;
+    try { profile = readProfile(provider); } catch { return []; }
+    if (!profile || typeof profile.text !== 'string' || !profile.text.trim()) return [];
+    if (provider === 'claude') return ['--append-system-prompt', profile.text];
+    if (provider === 'codex') return ['-c', `developer_instructions=${tomlString(profile.text)}`];
+    try {
+      const body = `---\nname: multiterminal-profil\ndescription: Persönliches Profil aus Multiterminal\n---\n\n\${base_prompt}\n\n${profile.text}\n`;
+      return ['--agent-file', writeDerived(derivedPath('kimi', 'agent.md'), body)];
+    } catch { return []; }
+  }
+
   // The line the app types for its own command (decorated, ending in Enter); null for anything unusable.
   function builtinLine(command) {
     if (typeof command !== 'string' || command.trim() === '' || /[\r\n]/.test(command)) return null;
     return decorateCommand({ command }) + '\r';
   }
 
-  return { isEnabled, setEnabled, state, decorate, decorateCommand, builtinLine };
+  return { isEnabled, setEnabled, state, decorate, decorateCommand, builtinLine, argsFor };
 }
 
 module.exports = { createAgentProfile, shellQuote, tomlString, kimiPlaceholders, KIMI_VARS, PROVIDERS };
