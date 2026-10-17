@@ -4,6 +4,15 @@
 
 ## Aktueller Stand
 
+### 17.10.2026 – OSS-E0-OPUS-20261017-01: Open-Source-Vorbereitung geplant, Etappe 0 (Sicherung, Vertrag)
+
+- Agent/Sitzung: Claude Code (Opus 5.5), Planung per Agent-Workflow (3 Fachplaner + Kritiker, nur lesend), Auftrag Joshua.
+- Plan: `~/.claude/plans/sharded-strolling-reef.md`. Vorhaben: W Worktree-Branch an jeder Kachel + Stammbaum-Ansicht (Topbar-Knopf `⑂ n`, ⌘⇧Y), H Harness-/Modellkatalog mit Endpunkt-Profilen (geht an Codex, Auftrag `docs/dev/CODEX-AUFTRAG-HARNESS.md`), G User Guide `docs/guide/` + Hilfe-Panel (⌘⇧H), R Release-Hygiene. Etappen 0–5.
+- Entscheidungen Joshua: fremde Worktrees nach Warnung übernehmbar (`managed:false`, Entfernen vergisst nur); Claude mit Fremd-Endpunkt → isolierter `CLAUDE_CONFIG_DIR`; MIT, frisches Repo; Diktat und Second-Brain-Aufgaben nicht in V1 und nicht namentlich nennen.
+- Erledigt: Fremdstand (Memory, Update-Helper, Sidebar-Tooltips) nach eigenem `npm test` **650/650** als `c4f6091` committet; `.gitignore` um `.multiterminal/`, `.qa-*/`; verwaisten Worktree-Eintrag per `git worktree prune` entfernt; IPC-Vertrag `docs/dev/ipc-contract.md`, Recherche `docs/dev/harness-plan.md`, Codex-Auftrag als `b27faf8`. Kein Push.
+- Offen: Electron-SIGABRT (S2), Codex-Zweig `codex/worktree-context-start` (`7f1a839`) unangetastet, Klärung später.
+- Nächste Aktion: Etappe 1+2 (Strang W und G, S2-Diagnose) per Claude-Workflow; parallel Joshua startet Codex mit dem Auftrag.
+
 ### 17.10.2026, 01:12 +02:00 – UPDATE-HELPER-CODEX-20261017-01: Unabhängigen lokalen Updater integriert
 
 - Agent/Sitzung: Codex `/root`, Joshuas ausdrücklicher Auftrag; Sol-6.1-Unteragenten `update_backend` und `update_ui` mit getrennter Dateihoheit, unabhängiger Reviewer `update_review`. Gemeinsamer Checkout `main`, Basis `cd0a79d`; fremde Memory-/Sidebar-Änderungen vollständig erhalten.
