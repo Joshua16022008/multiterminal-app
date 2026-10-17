@@ -5,6 +5,20 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const APP_NAME = 'Multiterminal';
+// Paths are relative to the project root with a leading slash, as @electron/packager tests them.
+const IGNORE = [
+  /^\/dist($|\/)/,
+  /^\/tests($|\/)/,
+  /^\/\.git($|\/)/,
+  /^\/scripts\/build\.js$/,
+  /^\/node_modules\/node-pty\/prebuilds\/win32-/,
+  // Local test fixtures/caches can contain dangling account-setting symlinks.
+  /^\/node_modules\/\.cache($|\/)/,
+  // Lokale Werkzeug- und Arbeitsdaten (Agent-Sitzungen, Browser-Protokolle, Terminal-Mitschnitte, QA-Reste) gehören nicht ins Paket.
+  /^\/\.(claude|claude-flow|gstack|multiterminal|qa-[^/]*)($|\/)/,
+  // Von docs/ gehört nur der User Guide ins Paket (Hilfe-Panel); Entwicklerpläne bleiben draußen.
+  /^\/docs\/(?!guide($|\/))/,
+];
 
 function findAllFiles(dir, name, out = [], depth = 0) {
   if (depth > 10 || !fs.existsSync(dir)) return out;
@@ -36,17 +50,7 @@ async function main() {
     appBundleId: 'de.joshua.multiterminal',
     // Diktat: Flüsterflow nimmt als Kindprozess dieser App über das Mikrofon auf.
     usageDescription: { Microphone: 'Für das Diktat in ein Terminal (Flüsterflow, lokal auf diesem Mac).' },
-    ignore: [
-      /^\/dist($|\/)/,
-      /^\/tests($|\/)/,
-      /^\/\.git($|\/)/,
-      /^\/scripts\/build\.js$/,
-      /^\/node_modules\/node-pty\/prebuilds\/win32-/,
-      // Local test fixtures/caches can contain dangling account-setting symlinks.
-      /^\/node_modules\/\.cache($|\/)/,
-      // Lokale Werkzeug- und Arbeitsdaten (Agent-Sitzungen, Browser-Protokolle, Terminal-Mitschnitte, QA-Reste) gehören nicht ins Paket.
-      /^\/\.(claude|claude-flow|gstack|multiterminal|qa-[^/]*)($|\/)/,
-    ],
+    ignore: IGNORE,
     quiet: false,
   });
 
@@ -73,7 +77,11 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error('Build failed:', err && err.stack ? err.stack : err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error('Build failed:', err && err.stack ? err.stack : err);
+    process.exit(1);
+  });
+}
+
+module.exports = { IGNORE };

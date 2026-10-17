@@ -23,6 +23,8 @@ const mtMemoryCli = require('./mt-memory-cli');
 const progressFiles = require('./progress-files');
 const { createGitService } = require('./git-service');
 const { createWorktreeService } = require('./worktree-service');
+const { createWorktreeTree } = require('./worktree-tree');
+const { createGuideService } = require('./guide-service');
 const { createLaunchContextService } = require('./launch-context');
 const { createAttachmentStore, MAX_IMAGE_BYTES } = require('./attachment-store');
 const { createDictation } = require('./dictation');
@@ -65,6 +67,8 @@ let sessions;
 let ptys;
 let git;
 let worktrees;
+let worktreeTree; // Stammbaum: read-only picture of a project's working copies
+let guide; // User Guide from docs/guide
 let launchContext;
 let attachments;
 let dictation;
@@ -537,11 +541,35 @@ function registerIpc() {
     const rec = worktrees.get(String(workspaceId));
     if (!rec) return { ok: false, error: 'Arbeitskopie unbekannt.' };
     const project = requireProject(rec.projectId);
+    // Also guards forgetting a linked (managed:false) record: a saved tile would lose its folder.
     if (sessionUsesWorkspace(rec.workspaceId)) {
       return { ok: false, error: 'Die Arbeitskopie wird noch von einer Kachel verwendet.' };
     }
-    return worktrees.remove(rec.workspaceId, project.path);
+    const result = await worktrees.remove(rec.workspaceId, project.path);
+    if (result && result.ok) worktreeTree.invalidate(project.id);
+    return result;
   });
+  // Stammbaum: read-only tree, adopting a foreign worktree as a linked record, branch for tile chips.
+  handle('worktrees:tree', (projectId) => {
+    const project = requireProject(projectId);
+    return worktreeTree.tree({ id: project.id, path: project.path });
+  });
+  handle('worktrees:adopt', async (projectId, cwd) => {
+    const project = requireProject(projectId);
+    const result = await worktrees.adopt({ projectId: project.id, cwd: typeof cwd === 'string' ? cwd : '' });
+    if (result && result.ok) worktreeTree.invalidate(project.id);
+    return result;
+  });
+  handle('worktrees:branchOf', (projectId, workspaceId) => {
+    const project = requireProject(projectId);
+    if (workspaceId === undefined || workspaceId === null || workspaceId === '') return worktreeTree.branchOf(project.path);
+    const rec = worktrees.get(String(workspaceId));
+    return rec && rec.projectId === project.id ? worktreeTree.branchOf(rec.cwd) : null;
+  });
+
+  // User Guide (read-only; the service checks every slug against its index).
+  handle('guide:index', () => guide.index());
+  handle('guide:read', (slug) => guide.read(typeof slug === 'string' ? slug : ''));
 
   handle('dictation:start', (terminalId, live) => dictation.start(terminalId, live));
   handle('dictation:stop', () => dictation.stop());
@@ -635,6 +663,7 @@ function buildMenu() {
         ...shortcutItems('ports-panel', 'Ports'),
         ...shortcutItems('attention-panel', 'Rückmeldungen'),
         ...shortcutItems('progress-panel', 'Fortschritt'),
+        ...shortcutItems('worktree-tree', 'Arbeitskopien-Stammbaum…'),
         { type: 'separator' },
         ...shortcutItems('handoff', 'Übergabe an anderes Terminal…'),
         ...shortcutItems('browser-pick', 'Element im Browser kommentieren'),
@@ -661,6 +690,8 @@ function buildMenu() {
       ],
     },
     { role: 'windowMenu' },
+    // macOS adds its menu search field to the help menu by itself.
+    { role: 'help', submenu: [...shortcutItems('help', 'Multiterminal-Hilfe')] },
   ]));
 }
 
@@ -821,7 +852,11 @@ if (!app.requestSingleInstanceLock()) {
     projects = createProjectStore(path.join(dataDir, 'projects.json'));
     presets = createPresetStore(path.join(dataDir, 'presets.json'));
     sessions = createSessionStore(path.join(dataDir, 'session'));
-    worktrees = createWorktreeService({ dataDir });
+    // adopt() needs the repository folder of a project; it is looked up, never taken from the page.
+    worktrees = createWorktreeService({ dataDir, getProjectPath: (id) => { const p = projects.get(String(id)); return p ? p.path : null; } });
+    worktreeTree = createWorktreeTree({ worktrees, appDir: path.join(dataDir, 'worktrees') });
+    // docs/guide sits next to src/ in development and in the packaged app (asar: false).
+    guide = createGuideService({ dir: path.join(__dirname, '..', '..', 'docs', 'guide') });
     attachments = createAttachmentStore({
       dataDir,
       decodeImage: bytes => {

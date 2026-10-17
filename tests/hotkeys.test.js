@@ -46,7 +46,7 @@ test('shifted or alt digits are not hotkeys', () => {
 });
 
 test('full platform defaults preserve primary commands and ten terminal aliases', () => {
-  assert.strictEqual(hk.actions.length, 29);
+  assert.strictEqual(hk.actions.length, 31);
   assert.deepStrictEqual(hk.defaults().settings, ['Cmd+,']);
   assert.deepStrictEqual(hk.defaults()['focus-terminal:0'], ['Cmd+0', 'Ctrl+0']);
   assert.deepStrictEqual(hk.defaults('linux')['focus-terminal:0'], ['Ctrl+0']);
@@ -149,4 +149,23 @@ test('printing keys need Cmd or Ctrl; function keys also work with Shift or Alt'
   assert.throws(() => hk.validate({ ...base, settings: ['Shift+X'] }), /F1–F24/);
   assert.throws(() => hk.validate({ ...base, settings: ['F5'] }), /Ungültiges Tastenkürzel/);
   assert.throws(() => hk.validate({ ...base, settings: ['Alt+F4'] }), /reserviert/, 'Alt+F4 stays reserved');
+});
+
+test('Stammbaum and help get Cmd+Shift+Y / Cmd+Shift+H while hide, redo and yank stay reserved', () => {
+  const mac = hk.defaults('darwin'), linux = hk.defaults('linux');
+  assert.deepStrictEqual(mac['worktree-tree'], ['Cmd+Shift+Y']);
+  assert.deepStrictEqual(mac.help, ['Cmd+Shift+H']);
+  assert.deepStrictEqual(linux['worktree-tree'], ['Ctrl+Alt+Y']);
+  assert.deepStrictEqual(linux.help, ['Ctrl+Alt+H']);
+  for (const platform of ['darwin', 'win32', 'linux']) {
+    const d = hk.defaults(platform);
+    assert.deepStrictEqual(hk.validate(d, platform), d, platform + ' defaults pass reserved()');
+    // the renderer validates with the default platform; these defaults must pass there too
+    assert.deepStrictEqual(hk.validate(d), d, platform + ' defaults pass the renderer check');
+  }
+  for (const combo of ['Cmd+H', 'Cmd+Alt+H', 'Ctrl+H', 'Cmd+Y', 'Ctrl+Y', 'Cmd+Shift+Z', 'Ctrl+Shift+Z']) {
+    assert.throws(() => hk.validate({ ...hk.defaults(), settings: [combo] }), /reserviert/, combo);
+  }
+  assert.strictEqual(hk.actions.find((a) => a.id === 'worktree-tree').label, 'Stammbaum / Arbeitskopien');
+  assert.strictEqual(hk.actions.find((a) => a.id === 'help').label, 'Hilfe öffnen');
 });

@@ -26,6 +26,8 @@
     { id: 'qol-panel', label: 'Komfort-Einstellungen' },
     { id: 'auto-sort', label: 'Automatische Sortierung an/aus' },
     { id: 'pm-situation', label: 'Lagebild im Projektmanager ein/aus' },
+    { id: 'worktree-tree', label: 'Stammbaum / Arbeitskopien' },
+    { id: 'help', label: 'Hilfe öffnen' },
     ...Array.from({ length: SLOTS }, (_, i) => ({ id: actionFor(i), label: `Terminal ${i + 1}` }))
   ];
   const modifiers = ['Cmd', 'Ctrl', 'Alt', 'Shift'];
@@ -72,6 +74,7 @@
       handoff: extra('U'), 'browser-pick': extra('E'), 'task-link': extra('L'), 'layout-start': extra('B'),
       'layout-save': [platform === 'darwin' ? 'Cmd+Alt+B' : 'Ctrl+Alt+Shift+B'], 'qol-panel': extra('K'), 'auto-sort': extra('S'),
       'pm-situation': [platform === 'darwin' ? 'Cmd+\\' : 'Ctrl+Alt+\\'], // Strg+Backslash wäre in Terminals SIGQUIT
+      'worktree-tree': extra('Y'), help: extra('H'), // Y wie eine Gabelung; ⌘H allein bleibt „Ausblenden“
     });
     for (let i = 0; i < SLOTS; i++) result[actionFor(i)] = platform === 'darwin' ? [`Cmd+${keyForIndex(i)}`, `Ctrl+${keyForIndex(i)}`] : [`Ctrl+${keyForIndex(i)}`];
     return result;
@@ -111,8 +114,12 @@
     const parts = accelerator.split('+');
     const key = parts.pop();
     // Keep standard editing, app/system management and zoom shortcuts intact.
-    if (['Q', 'H', 'M', 'Space', 'Tab', '=', '-'].includes(key)) return true;
-    if (['A', 'C', 'V', 'X', 'Z', 'Y'].includes(key) && !parts.includes('Alt')) return true;
+    // H: Cmd+H / Cmd+Alt+H hide the app; with Shift or as Ctrl+Alt it is free for the help.
+    if (key === 'H') return !(parts.includes('Shift') || (parts.includes('Ctrl') && parts.includes('Alt')));
+    if (['Q', 'M', 'Space', 'Tab', '=', '-'].includes(key)) return true;
+    // Y: Cmd/Ctrl+Y is redo or readline yank; with Shift or Alt it is free (Z with Shift stays redo).
+    if (key === 'Y') return !parts.includes('Alt') && !parts.includes('Shift');
+    if (['A', 'C', 'V', 'X', 'Z'].includes(key) && !parts.includes('Alt')) return true;
     return ['F4', 'Delete'].includes(key) && parts.includes('Alt');
   }
   function validate(bindings, platform = 'darwin') {

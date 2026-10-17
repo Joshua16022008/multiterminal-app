@@ -205,3 +205,22 @@ test('blank edited context and unsupported provider cannot trigger an agent star
   assert.equal(await f.controller.start(), false);
   assert.equal(f.calls.prepare.length + f.calls.launch.length, 0);
 });
+
+test('open from the Stammbaum preselects the working copy or the project folder', async () => {
+  const f = fixture();
+  await f.controller.open({ project, workspaceId: ws.workspaceId });
+  assert.equal(f.controller.getState().folder, 'existing');
+  assert.equal(f.controller.getState().workspaceId, ws.workspaceId);
+  f.controller.update('task', 'Auftrag');
+  assert.equal(await f.controller.preview(), true);
+  assert.equal(f.calls.preview.at(-1).workspaceId, ws.workspaceId);
+  assert.equal(f.calls.create.length, 0, 'no new working copy for a chosen branch');
+
+  await f.controller.open({ project, workspaceId: null });
+  assert.equal(f.controller.getState().folder, 'project');
+  assert.equal(f.controller.getState().workspaceId, '');
+  await f.controller.open({ project });
+  assert.equal(f.controller.getState().folder, 'new', 'menu start stays unchanged');
+  await f.controller.open({ project, workspaceId: '' });
+  assert.equal(f.controller.getState().folder, 'new');
+});

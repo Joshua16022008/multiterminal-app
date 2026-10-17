@@ -131,6 +131,15 @@ contextBridge.exposeInMainWorld('deck', {
     create: (projectId, options) => ipcRenderer.invoke('worktrees:create', projectId, options),
     inspect: (workspaceId) => ipcRenderer.invoke('worktrees:inspect', workspaceId),
     remove: (workspaceId) => ipcRenderer.invoke('worktrees:remove', workspaceId),
+    // Stammbaum
+    tree: (projectId) => ipcRenderer.invoke('worktrees:tree', projectId),
+    adopt: (projectId, cwd) => ipcRenderer.invoke('worktrees:adopt', projectId, cwd),
+    branchOf: (projectId, workspaceId) => ipcRenderer.invoke('worktrees:branchOf', projectId, workspaceId),
+  },
+  // User Guide
+  guide: {
+    index: () => ipcRenderer.invoke('guide:index'),
+    read: (slug) => ipcRenderer.invoke('guide:read', slug),
   },
   launch: {
     preview: input => ipcRenderer.invoke('launch:preview', input),

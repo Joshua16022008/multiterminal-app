@@ -13,6 +13,8 @@
   <link rel="stylesheet" href="attachments.css">
   <link rel="stylesheet" href="handoff.css"><!-- F09 -->
   <link rel="stylesheet" href="worktree.css">
+  <link rel="stylesheet" href="worktree-tree.css">
+  <link rel="stylesheet" href="help.css">
   <link rel="stylesheet" href="agent-launch.css">
   <link rel="stylesheet" href="attention.css">
   <link rel="stylesheet" href="qol.css">
@@ -41,6 +43,7 @@
       <header id="topbar" class="drag">
         <h1 id="ws-title"></h1>
         <span id="counter" class="counter"></span>
+        <button id="btn-tree" class="btn-small tree-btn" hidden aria-expanded="false" aria-controls="worktree-view" title="Arbeitskopien-Stammbaum">⑂</button>
         <span class="spacer"></span>
         <div id="ws-actions">
           <div class="split">
@@ -48,6 +51,7 @@
             <button id="btn-menu" class="btn-primary split-arrow" aria-label="Agent auswählen" aria-expanded="false" aria-controls="menu" title="Agent auswählen">▾</button>
           </div>
         </div>
+        <button id="btn-help" class="btn-small" aria-expanded="false" aria-controls="help-panel" aria-label="Hilfe" title="Hilfe">?</button>
         <button id="btn-toolbar" class="btn-small" aria-expanded="false" aria-controls="toolbar-options" title="Alle Optionen anzeigen">☰ Menü</button>
         <div id="toolbar-options" role="toolbar" aria-label="Optionen" aria-orientation="vertical" hidden>
         <button id="btn-qol" class="btn-small" aria-expanded="false" aria-controls="qol-panel" title="Komfort: Markierungen, Animationen, Sortierung und Aufgaben-Chip ein- und ausschalten">Komfort</button>
@@ -72,6 +76,7 @@
         <aside id="diff-panel" hidden aria-label="Projektänderungen"></aside><!-- F04 -->
         <aside id="ports-panel" hidden aria-label="Devserver und Ports"></aside>
         <section id="settings-panel" hidden aria-label="Einstellungen"></section>
+        <section id="worktree-view" hidden aria-label="Arbeitskopien-Stammbaum"></section>
         <div id="empty-main" hidden>
           <p>Kein Projekt ausgewählt.</p>
           <button id="empty-add" class="btn-primary">+ Projekt hinzufügen</button>
@@ -97,7 +102,9 @@
   <script src="activity.js"></script>
   <script src="qol-panel.js"></script>
   <script src="task-link.js"></script><!-- F10 -->
+  <script src="tree-layout.js"></script>
   <script src="terminal-pane.js"></script>
+  <script src="worktree-tree.js"></script>
   <script src="attachments.js"></script>
   <script src="prompt-draft.js"></script>
   <script src="progress-panel.js"></script>
@@ -113,6 +120,8 @@
   <script src="agent-launch.js"></script>
   <script src="terminal-search.js"></script><!-- F03 -->
   <script src="command-palette.js"></script><!-- F03 -->
+  <script src="guide-markdown.js"></script>
+  <script src="help-panel.js"></script>
   <script src="workspace-templates.js"></script><!-- F08 -->
   <script src="browser-feedback.js"></script>
   <script src="pm-send.js"></script><!-- PM -->

@@ -75,6 +75,8 @@
       syncGrid(pane.project.id);
     },
     onStatus: () => { renderSidebar(); },
+    // Branch-Chip im Kachelkopf: Stammbaum an genau diesem Ast öffnen.
+    onBranchClick: (pane) => { if (D.openTree) D.openTree(pane.project, pane.desc.workspaceId || null); },
     accountLabel: (desc) => accountLabel(desc),
     presetLabel: (desc) => { const p = S.presets.find((x) => x.id === desc.presetId); return p ? p.label : desc.command || ''; },
   };
@@ -295,10 +297,10 @@
     reportVisible();
   }
 
-  /* Meldet dem Hauptprozess, welche Kachel man gerade sieht (aktives Projekt, aktive Kachel, kein Einstellungsbereich). */
+  /* Meldet dem Hauptprozess, welche Kachel man gerade sieht (aktives Projekt, aktive Kachel, kein Einstellungsbereich, kein Stammbaum). */
   let lastVisibleId;
   function reportVisible() {
-    const settingsOpen = !$('settings-panel').hidden;
+    const settingsOpen = !$('settings-panel').hidden || !$('worktree-view').hidden;
     const pane = S.activeId && !settingsOpen ? activePane() : null;
     const id = pane ? pane.id : null;
     if (id === lastVisibleId && id === null) return;
@@ -338,6 +340,8 @@
 
   /* ---------- Projekte ---------- */
   function selectProject(id) {
+    // Der Stammbaum gehört zu genau einem Projekt: beim Wechsel schließen.
+    if (D.worktreeTree && D.worktreeTree.isOpen() && S.activeId !== id) D.worktreeTree.close();
     S.activeId = id;
     for (const [pid, g] of S.grids) g.hidden = pid !== id;
     const project = activeProject();
@@ -361,6 +365,7 @@
     D.progressPanel.refresh();
     scheduleSave();
     if (project) D.git.onSelect(project);
+    if (D.refreshTreeButton) D.refreshTreeButton();
   }
 
   function adoptProject(p) {
@@ -610,8 +615,14 @@
           closeMenu();
           const project = activeProject();
           if (!project) { notify('Zuerst ein Projekt auswählen.'); return; }
-          D.worktreePicker.open({ project, onChoose: (ws) => newTerminal(project.id, null, undefined, ws || undefined) });
+          D.worktreePicker.open({ project, onChoose: (ws) => { newTerminal(project.id, null, undefined, ws || undefined); if (D.refreshTreeButton) D.refreshTreeButton(); } });
         },
+      }));
+    }
+    if (D.openTree && !$('btn-tree').hidden) {
+      m.append(h('div', {
+        class: 'menu-item', text: 'Arbeitskopien-Stammbaum…', title: 'Alle Arbeitskopien des Projekts als Äste am Stamm',
+        onclick: () => { closeMenu(); const project = activeProject(); if (project) D.openTree(project); },
       }));
     }
     const r = $('btn-menu').getBoundingClientRect();
@@ -692,6 +703,7 @@
       if (open) {
         showAttention(false);
         if (D.diffPanel.isOpen()) showDiff(false); // F04
+        showHelp(false);
         $('btn-accounts').classList.toggle('on', D.accountsPanel.toggle(false));
         $('btn-progress').classList.toggle('on', D.progressPanel.toggle(false));
       }
@@ -699,7 +711,11 @@
     }
     function showSettings(force) {
       const open = D.settingsPanel.toggle(force);
-      if (open) { showPorts(false); showAttention(false); if (D.diffPanel.isOpen()) showDiff(false); } // F04: diff
+      if (open) {
+        showPorts(false); showAttention(false); if (D.diffPanel.isOpen()) showDiff(false); // F04: diff
+        if (D.worktreeTree) D.worktreeTree.close(); // beide Vollflächen schließen sich gegenseitig aus
+        showHelp(false);
+      }
       $('btn-settings').classList.toggle('on', open);
       $('btn-settings').setAttribute('aria-expanded', String(open));
       document.querySelector('.side-head').inert = open;
@@ -769,11 +785,14 @@
       },
     });
     // F04: Projektänderungen (lesend). Bereich = Arbeitskopie der aktiven Kachel, sonst der Projektordner.
+    // Stammbaum „Änderungen ansehen“: einmaliger Kontext dieses Asts, bis das Panel schließt oder das Projekt wechselt.
+    let diffOverride = null;
     function showDiff(force) {
       const open = D.diffPanel.toggle(force);
+      if (!open) diffOverride = null;
       $('btn-diff').classList.toggle('on', open);
       $('btn-diff').setAttribute('aria-expanded', String(open));
-      if (open) { showPorts(false); showAttention(false); }
+      if (open) { showPorts(false); showAttention(false); showHelp(false); }
       requestAnimationFrame(() => panesOf(S.activeId).forEach((p) => p.refit()));
       return open;
     }
@@ -781,6 +800,7 @@
       getContext: () => {
         const project = activeProject(), pane = activePane();
         if (!project) return null;
+        if (diffOverride && diffOverride.projectId === project.id) return { ...diffOverride, projectName: project.name };
         const ws = pane && pane.desc && pane.desc.workspaceId;
         return { projectId: project.id, projectName: project.name, workspaceId: ws || null };
       },
@@ -792,12 +812,13 @@
       openDraft: (opts) => D.promptDraft.open(opts),
       onClose: () => showDiff(false),
     });
-    $('btn-diff').onclick = () => { closeMenu(); showSettings(false); showDiff(); };
+    $('btn-diff').onclick = () => { closeMenu(); showSettings(false); diffOverride = null; showDiff(); };
     /* Rückmeldungen der Agenten: Liste, Zähler am Knopf, Sprung zur Kachel */
     let attSettings = { statusEnabled: false, desktopNotification: false, sound: false };
     let attList = [];
     function jumpToPane(pane) {
       if (!$('settings-panel').hidden) showSettings(false);
+      if (D.worktreeTree) D.worktreeTree.close();
       S.activeByProject[pane.project.id] = pane.id;
       if (S.activeId !== pane.project.id) selectProject(pane.project.id);
       for (const p of panesOf(pane.project.id)) if (p.maxed && p !== pane) p.setMax(false);
@@ -840,9 +861,17 @@
       if (open) {
         showPorts(false);
         if (D.diffPanel.isOpen()) showDiff(false); // F04
+        showHelp(false);
         attPanel.update(attList, attSettings);
       }
       requestAnimationFrame(() => panesOf(S.activeId).forEach((p) => p.refit()));
+      return open;
+    }
+    // Hilfe-Panel (D.help wird weiter unten angelegt); force wie bei den anderen Panels.
+    function showHelp(force) {
+      if (!D.help) return false;
+      const open = force === undefined ? !D.help.isOpen() : Boolean(force);
+      if (open) D.help.open(); else D.help.close();
       return open;
     }
     // Komfort: alle Markierungen, Animation, Sortierung und Aufgaben-Chip schaltbar.
@@ -904,6 +933,123 @@
       readProgress: (pid) => api.progress.read(pid),
     });
 
+    /* Stammbaum der Arbeitskopien: Vollfläche wie die Einstellungen. Die Ansicht liest selbst über
+       worktrees.tree; der letzte Baum wird hier gemerkt, damit Kacheln den Ästen zugeordnet werden können. */
+    let lastTree = null; // { projectId, tree }
+    function applyTreeButton(t) {
+      const btn = $('btn-tree');
+      const n = t && t.isGit && Array.isArray(t.nodes) ? t.nodes.length : 0;
+      btn.hidden = !(t && t.isGit);
+      btn.textContent = '⑂ ' + n;
+      const key = hotkeyLabel('worktree-tree');
+      btn.title = 'Arbeitskopien-Stammbaum: ' + n + (n === 1 ? ' Arbeitskopie' : ' Arbeitskopien') + ' inkl. Projektordner' + (key ? ' (' + key + ')' : '');
+    }
+    const treeApi = {
+      worktrees: {
+        ...api.worktrees,
+        tree: async (pid) => {
+          const t = await api.worktrees.tree(pid);
+          lastTree = { projectId: pid, tree: t };
+          if (pid === S.activeId) applyTreeButton(t);
+          return t;
+        },
+      },
+    };
+    D.refreshTreeButton = async () => {
+      const project = activeProject();
+      if (!project || !api.worktrees.tree) { $('btn-tree').hidden = true; return; }
+      try { await treeApi.worktrees.tree(project.id); } catch (_) { if (S.activeId === project.id) $('btn-tree').hidden = true; }
+    };
+    // Kacheln eines Asts: Arbeitskopie über desc.workspaceId, Kacheln ohne Arbeitskopie am Projektordner.
+    function panesForNode(nodeId) {
+      const t = lastTree && lastTree.tree;
+      const node = t && Array.isArray(t.nodes) ? t.nodes.find((n) => n.id === nodeId) : null;
+      if (!node) return [];
+      const list = panesOf(lastTree.projectId);
+      const mine = node.kind === 'project' ? list.filter((p) => !p.desc.workspaceId)
+        : node.workspaceId ? list.filter((p) => p.desc.workspaceId === node.workspaceId) : [];
+      return mine.map((p) => ({ id: p.id, title: p.desc.title, activity: p.activity ? p.activity() : null }));
+    }
+    function focusProjectOf(project, fn) {
+      if (S.activeId !== project.id) selectProject(project.id);
+      return fn();
+    }
+    if (window.DeckWorktreeTree && api.worktrees.tree) {
+      D.worktreeTree = window.DeckWorktreeTree.create({ document, api: treeApi, h, notify, errText: D.errText });
+      D.worktreeTree.setHooks({
+        panesFor: panesForNode,
+        onJump: (paneId) => { const pane = byId(paneId); if (pane) jumpToPane(pane); else notify('Diese Kachel gibt es nicht mehr.'); },
+        onOpenTerminal: (project, workspace) => focusProjectOf(project, () => newTerminal(project.id, null, undefined, workspace || undefined)),
+        onStartAgent: (project, workspaceId) => {
+          if (!D.agentLaunch) { notify('Der Kontextstart ist nicht verfügbar.'); return; }
+          focusProjectOf(project, () => D.agentLaunch.open({ project, workspaceId: workspaceId || null }));
+        },
+        onShowDiff: (project, workspaceId) => focusProjectOf(project, () => {
+          diffOverride = { projectId: project.id, projectName: project.name, workspaceId: workspaceId || null };
+          if (D.diffPanel.isOpen()) D.diffPanel.refresh(); else showDiff(true);
+        }),
+        onAdopt: () => { D.refreshTreeButton(); },
+        onClose: () => {
+          $('btn-tree').setAttribute('aria-expanded', 'false');
+          $('btn-tree').classList.remove('on');
+          for (const id of ['grids', 'empty-main']) $(id).inert = false;
+          requestAnimationFrame(() => panesOf(S.activeId).forEach((p) => p.refit()));
+          reportVisible();
+          D.refreshTreeButton();
+        },
+      });
+      // focus: workspaceId of a tile, null for a project-folder tile (focuses the project node), undefined = no focus.
+      D.openTree = async (project, focus) => {
+        if (!project) { notify('Zuerst ein Projekt auswählen.'); return; }
+        closeMenu(); closeToolbar();
+        showSettings(false); showHelp(false);
+        if (S.activeId !== project.id) selectProject(project.id);
+        let focusId = typeof focus === 'string' ? focus : null;
+        if (focus === null) {
+          const t = await guard(() => treeApi.worktrees.tree(project.id), null);
+          const node = t && Array.isArray(t.nodes) ? t.nodes.find((n) => n.kind === 'project') : null;
+          focusId = node ? node.id : null;
+        }
+        for (const id of ['grids', 'empty-main']) $(id).inert = true;
+        $('btn-tree').setAttribute('aria-expanded', 'true');
+        $('btn-tree').classList.add('on');
+        const opened = D.worktreeTree.open({ project, focusId });
+        reportVisible();
+        return opened;
+      };
+      $('btn-tree').onclick = () => { if (D.worktreeTree.isOpen()) D.worktreeTree.close(); else D.openTree(activeProject()); };
+    }
+
+    /* Hilfe: rechtes Panel aus docs/guide; schließt die anderen rechten Panels und die Vollflächen. */
+    function hotkeyTable(node) {
+      const rows = window.DeckHotkeys.actions.map((a) => h('tr', null,
+        h('td', { text: a.label }), h('td', { text: (hotkeyBindings[a.id] || []).map(window.DeckHotkeys.format).join(' / ') || 'Nicht belegt' })));
+      node.replaceChildren(h('div', { class: 'guide-table-wrap' }, h('table', { class: 'guide-table' },
+        h('thead', null, h('tr', null, h('th', { text: 'Aktion' }), h('th', { text: 'Tastenkürzel' }))), h('tbody', null, ...rows))));
+    }
+    if (window.DeckHelp && api.guide) {
+      D.help = window.DeckHelp.create({
+        document, api: api.guide, h, palette: window.DeckCommandPalette, storage,
+        hooks: { hotkeys: hotkeyTable },
+        onToggle: (open) => {
+          $('btn-help').classList.toggle('on', open);
+          $('btn-help').setAttribute('aria-expanded', String(open));
+          if (open) {
+            showPorts(false); showAttention(false); if (D.diffPanel.isOpen()) showDiff(false);
+            showSettings(false); if (D.worktreeTree) D.worktreeTree.close();
+            $('btn-accounts').classList.toggle('on', D.accountsPanel.toggle(false));
+            $('btn-progress').classList.toggle('on', D.progressPanel.toggle(false));
+          }
+          requestAnimationFrame(() => panesOf(S.activeId).forEach((p) => p.refit()));
+        },
+        restoreFocus: () => { if (D.settingsPanel.isOpen() || (D.worktreeTree && D.worktreeTree.isOpen())) return; const p = activePane(); if (p) p.focus(); },
+      });
+      $('content').insertBefore(D.help.el, $('settings-panel'));
+      $('btn-help').onclick = () => { closeMenu(); showHelp(); };
+    } else {
+      $('btn-help').hidden = true;
+    }
+
     /* F03: Befehlspalette und Terminalsuche (Module command-palette.js / terminal-search.js) */
     D.terminalSearch = window.DeckTerminalSearch.create({ document, getPane: byId });
     const paletteActions = () => [
@@ -914,7 +1060,7 @@
       { id: 'attention-panel', label: 'Rückmeldungen anzeigen', run: () => { showSettings(false); showAttention(true); } },
       { id: 'settings', label: 'Einstellungen öffnen', run: () => showSettings(true) },
       ...window.DeckHotkeys.actions
-        .filter((a) => ['diff-panel', 'ports-panel', 'progress-panel', 'handoff', 'browser-pick', 'task-link', 'layout-start', 'layout-save', 'qol-panel', 'auto-sort', 'project-manager'].includes(a.id))
+        .filter((a) => ['diff-panel', 'ports-panel', 'progress-panel', 'handoff', 'browser-pick', 'task-link', 'layout-start', 'layout-save', 'qol-panel', 'auto-sort', 'project-manager', 'worktree-tree', 'help'].includes(a.id))
         .map((a) => ({ id: a.id, label: a.label, run: () => (a.id === 'project-manager' ? openProjectManager(S.activeId) : runFeatureAction(a.id)) })),
     ].map((a) => ({ ...a, hotkey: hotkeyLabel(a.id) }));
     let paletteReturn = null;
@@ -964,7 +1110,7 @@
       }
     });
     api.onMenu((action) => {
-      if (D.settingsPanel.isOpen() && action !== 'settings') return;
+      if (D.settingsPanel.isOpen() && action !== 'settings' && action !== 'help') return;
       if (action === 'settings') showSettings(true);
       else if (action === 'new-terminal') newTerminal(S.activeId, null);
       else if (action === 'close-terminal') { const a = activePane(); if (a) closePane(a); }
@@ -1009,6 +1155,14 @@
           return true;
         }
         case 'pm-situation': openProjectManager(S.activeId); return true; // im Hauptfenster: Manager öffnen
+        case 'worktree-tree':
+          if (!D.worktreeTree) return true;
+          if (D.worktreeTree.isOpen()) D.worktreeTree.close();
+          else if (!activeProject()) notify('Zuerst ein Projekt auswählen.');
+          else if ($('btn-tree').hidden) notify('Dieses Projekt ist kein Git-Repository.');
+          else D.openTree(activeProject());
+          return true;
+        case 'help': closeMenu(); showHelp(); return true;
         default: return false;
       }
     }

@@ -17,12 +17,15 @@
       return result;
     };
 
-    async function open({ project } = {}) {
+    // workspaceId (optional, e.g. from the Stammbaum): a string preselects that working copy,
+    // null the project folder; left out, the dialog starts with a new working copy as before.
+    async function open({ project, workspaceId } = {}) {
       if (!project || !project.id || !project.path) return false;
       const token = ++generation;
+      const preset = typeof workspaceId === 'string' && workspaceId ? 'existing' : workspaceId === null ? 'project' : 'new';
       state = {
         opened: true, project, busy: false, loading: true, step: 'edit', error: '',
-        provider: 'claude', folder: 'new', workspaceId: '', workspaces: [],
+        provider: 'claude', folder: preset, workspaceId: preset === 'existing' ? workspaceId : '', workspaces: [],
         branch: '', baseRef: 'HEAD', task: '', scope: '', acceptance: '',
         preview: null, text: '', creationWarning: '', createdBase: '', createdWorkspaceId: '',
       };
