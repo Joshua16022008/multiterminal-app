@@ -105,6 +105,39 @@ test('running tiles hang on their branch with a status dot, and a click jumps an
   assert.equal(s.doc.root.hidden, true);
 });
 
+test('dirty managed branch without a tile: exact removal reason', async () => {
+  const tree = { ...TREE, nodes: [...TREE.nodes, node({ id: 'dirty', changes: 4 })] };
+  const s = setup({ tree });
+  await s.view.open({ project });
+  const b = buttons(card(s.doc, 'dirty'), 'Entfernen')[0];
+  assert.equal(b.disabled, true);
+  assert.equal(b.title, '4 ungesicherte Änderungen. Erst sichern oder verwerfen.');
+});
+
+test('other-origin external folders get the same question; open without any project stays closed', async () => {
+  const tree = { ...TREE, nodes: [...TREE.nodes, node({ id: 'o', kind: 'external', origin: 'other', workspaceId: null })] };
+  const s = setup({ tree });
+  await s.view.open({ project });
+  await button(card(s.doc, 'o'), 'Übernehmen…').onclick();
+  assert.match(s.log.confirms[0], /anderen Werkzeug\. Ein zweiter Agent.*\n\nTrotzdem verknüpfen und fortfahren\?$/s);
+  const e = setup();
+  await e.view.open({});
+  assert.equal(e.view.isOpen(), false);
+  assert.equal(e.doc.listenerCount(), 0);
+  assert.equal(e.log.calls.length, 0);
+});
+
+test('focus works for ids with quotes and backslashes', async () => {
+  const odd = 'fe"at\\x';
+  const tree = { ...TREE, nodes: [...TREE.nodes, node({ id: odd })] };
+  const doc = fakeDoc();
+  const scrolled = [];
+  const hh = (tag, p, ...k) => { const e = h(tag, p, ...k); e.scrollIntoView = () => scrolled.push(e['data-node-id']); return e; };
+  const view = T.create({ document: doc, h: hh, api: { worktrees: { tree: async () => tree } }, notify() {} });
+  await view.open({ project, focusId: odd });
+  assert.deepEqual(scrolled, [odd]);
+});
+
 test('Entfernen exists only for managed branches and is disabled when dirty or in use', async () => {
   const s = setup();
   await s.view.open({ project });
@@ -146,7 +179,7 @@ test('external branch: warning with the exact text, adopt only after consent, th
   const declined = setup({ confirmAnswer: false });
   await declined.view.open({ project });
   await button(card(declined.doc, 'ext'), 'Übernehmen…').onclick();
-  assert.equal(declined.log.confirms[0], 'Dieser Ordner gehört einem anderen Werkzeug (Codex). Ein zweiter Agent im selben Ordner kann dessen Arbeit stören.');
+  assert.equal(declined.log.confirms[0], 'Dieser Ordner gehört einem anderen Werkzeug (Codex). Ein zweiter Agent im selben Ordner kann dessen Arbeit stören.\n\nTrotzdem verknüpfen und fortfahren?');
   assert.equal(declined.log.calls.filter((c) => c[0] === 'adopt').length, 0);
   assert.equal(declined.log.hooks.length, 0);
   assert.ok(declined.view.isOpen());
@@ -161,11 +194,19 @@ test('external branch: warning with the exact text, adopt only after consent, th
   assert.equal(s.view.isOpen(), false);
 });
 
-test('agent start on an external branch warns too, diff does not; a failed adopt stays open with a notice', async () => {
+test('diff and agent start on an external branch warn first; a failed adopt stays open with a notice', async () => {
+  const no = setup({ confirmAnswer: false });
+  await no.view.open({ project });
+  await button(card(no.doc, 'ext'), 'Änderungen ansehen').onclick();
+  assert.equal(no.log.confirms.length, 1);
+  assert.equal(no.log.calls.filter((c) => c[0] === 'adopt').length, 0); // no consent, no adopt
+  assert.equal(no.log.hooks.length, 0);
+  assert.ok(no.view.isOpen());
+
   const s = setup();
   await s.view.open({ project });
   await button(card(s.doc, 'ext'), 'Änderungen ansehen').onclick();
-  assert.equal(s.log.confirms.length, 0);
+  assert.equal(s.log.confirms.length, 1);
   assert.deepEqual(s.log.hooks.map((x) => x[0]), ['adopt', 'diff']);
   assert.equal(s.log.hooks[1][2], 'ws-new');
 

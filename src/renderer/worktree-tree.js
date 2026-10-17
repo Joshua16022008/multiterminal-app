@@ -8,6 +8,7 @@
   const FALLBACK = { x0: 28, y0: 36, row: 168 };
   const EXTERNAL_WARNING = 'Dieser Ordner gehört einem anderen Werkzeug (Codex). Ein zweiter Agent im selben Ordner kann dessen Arbeit stören.';
   const EXTERNAL_WARNING_OTHER = 'Dieser Ordner gehört einem anderen Werkzeug. Ein zweiter Agent im selben Ordner kann dessen Arbeit stören.';
+  const EXTERNAL_QUESTION = '\n\nTrotzdem verknüpfen und fortfahren?';
   const BRANCH_HINT = 'Ein Branch-Wechsel im Terminal (git checkout) wird erst bei der nächsten Aktualisierung sichtbar. Die Zuordnung der Kacheln folgt dem Startordner, ein cd im Terminal wird nicht erkannt.';
   const ACTIVITY_LABEL = { waiting: 'wartet auf dich', working: 'arbeitet', idle: 'inaktiv' };
 
@@ -61,16 +62,17 @@
   }
 
   /* ---------- Ansicht ---------- */
-  function create({ document: doc, api, h, notify, confirm, now, layout, rootId }) {
+  function create({ document: doc, api, h, notify, confirm, now, layout, rootId, errText }) {
     const rootEl = () => doc.getElementById(rootId || 'worktree-view');
     const clock = now || Date.now;
     const ask = confirm || ((m) => (typeof window !== 'undefined' && window.confirm ? window.confirm(m) : false));
     let hooks = {};
-    let isOpenFlag = false, project = null, focusId = null, tree = null, error = '', loading = false, token = 0, busy = false;
+    let isOpenFlag = false, lastCards = [], project = null, focusId = null, tree = null, error = '', loading = false, token = 0, busy = false;
 
     const getLayout = () => layout || (typeof window !== 'undefined' ? window.DeckTreeLayout : null) || (typeof globalThis !== 'undefined' ? globalThis.DeckTreeLayout : null) || null;
     const colorOf = (branch) => { const L = getLayout(); try { return L && L.colorFor && branch ? L.colorFor(branch) : null; } catch (_) { return null; } };
-    const msg = (e) => String(e && e.message ? e.message : e).replace(/^Error invoking remote method '[^']*': (Error: )?/, '');
+    // Prefer the shared helper (DeckApp.errText); the regex is only a fallback for standalone use.
+    const msg = (e) => (typeof errText === 'function' ? errText(e) : String(e && e.message ? e.message : e).replace(/^Error invoking remote method '[^']*': (Error: )?/, ''));
 
     function setHooks(next) { hooks = { ...hooks, ...(next || {}) }; }
     const call = (name, ...args) => (typeof hooks[name] === 'function' ? hooks[name](...args) : undefined);
@@ -101,7 +103,8 @@
     async function prepare(node, warn) {
       if (node.kind === 'project') return '';
       if (node.workspaceId) return node.workspaceId;
-      if (warn && !ask(node.origin === 'codex' ? EXTERNAL_WARNING : EXTERNAL_WARNING_OTHER + '\n\nTrotzdem verknüpfen und fortfahren?')) return false;
+      // Adopting leaves a lasting record, so every path (also "Änderungen ansehen") asks first.
+      if (warn && !ask((node.origin === 'codex' ? EXTERNAL_WARNING : EXTERNAL_WARNING_OTHER) + EXTERNAL_QUESTION)) return false;
       let r;
       try { r = await api.worktrees.adopt(project.id, node.path); } catch (e) { r = { ok: false, error: msg(e) }; }
       if (!r || !r.ok || !r.workspace) { notify((r && r.error) || 'Der Ordner konnte nicht verknüpft werden.'); return false; }
@@ -113,7 +116,7 @@
       if (busy) return;
       busy = true;
       try {
-        const ws = await prepare(node, kind !== 'diff');
+        const ws = await prepare(node, true);
         if (ws === false) return;
         const record = ws ? { workspaceId: ws, branch: node.branch, cwd: node.path } : null;
         close();
@@ -211,7 +214,7 @@
 
     function svgEl(tag, attrs) {
       const e = doc.createElementNS(SVG_NS, tag);
-      for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, String(v));
+      for (const [k, v] of Object.entries(attrs || {})) if (v != null) e.setAttribute(k, String(v)); // null = leave to CSS
       return e;
     }
 
@@ -230,12 +233,12 @@
       for (const e of lay.edges || []) {
         const target = byNodeId.get(e.to);
         const color = target ? colorOf(target.branch) : null;
-        svg.append(svgEl('path', { class: 'wtv-edge', d: e.d, fill: 'none', stroke: color || 'var(--dim)' }));
+        svg.append(svgEl('path', { class: 'wtv-edge', d: e.d, fill: 'none', stroke: color }));
       }
       for (const n of tree.nodes) {
         const p = byId.get(n.id);
         if (!p) continue;
-        svg.append(svgEl('circle', { class: 'wtv-node', cx: p.x, cy: p.y, r: 5, fill: colorOf(n.branch) || 'var(--accent)' }));
+        svg.append(svgEl('circle', { class: 'wtv-node', cx: p.x, cy: p.y, r: 5, fill: colorOf(n.branch) }));
       }
       const box = h('div', { class: 'wtv-stage' }, svg);
       box.style.width = width + 'px';
@@ -245,7 +248,7 @@
         const p = byId.get(n.id);
         if (!p) continue;
         const c = card(n, p);
-        cards.push({ el: c, top: p.y - 14 });
+        cards.push({ id: n.id, el: c, top: p.y - 14 });
         box.append(c);
       }
       return { box, cards, height };
@@ -274,6 +277,7 @@
           h('span', { class: 'dim', text: ' · ' + String(tree.trunk.head || '').slice(0, 7) + ' ' + (tree.trunk.subject || '') + (tree.trunk.time ? ' · ' + relTime(tree.trunk.time, clock()) : '') }))
         : h('p', { class: 'wtv-trunk-line dim', text: 'Kein Stamm-Branch erkannt (noch kein Commit?).' });
       const s = stage();
+      lastCards = s.cards;
       return { nodes: [trunk, h('div', { class: 'wtv-scroll' }, s.box)], stage: s };
     }
 
@@ -296,9 +300,10 @@
     }
 
     function scrollToFocus() {
-      const root = rootEl();
-      if (!root || !focusId || !root.querySelector) return;
-      const target = root.querySelector('[data-node-id="' + String(focusId).replace(/["\\]/g, '') + '"]');
+      if (!focusId) return;
+      // Looked up in the rendered card list, so ids with quotes or backslashes work too.
+      const hit = lastCards.find((c) => c.id === focusId);
+      const target = hit && hit.el;
       if (target && target.scrollIntoView) target.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
 
@@ -310,9 +315,10 @@
     function open(opts) {
       opts = opts || {};
       const same = project && opts.project && project.id === opts.project.id;
+      if (!opts.project && !project) return Promise.resolve(); // nothing to show: stay closed
       project = opts.project || project;
       focusId = opts.focusId || null;
-      if (!same) { tree = null; error = ''; }
+      if (!same) { tree = null; error = ''; lastCards = []; }
       if (!isOpenFlag) doc.addEventListener('keydown', onKey);
       isOpenFlag = true;
       return load();

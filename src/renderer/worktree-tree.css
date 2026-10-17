@@ -46,3 +46,6 @@
 @keyframes wtv-pulse { 0% { opacity: 0.55; } 100% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { #worktree-view .wtv-dot[data-activity="working"], #worktree-view .wtv-card.focus { animation: none; } }
 @media (max-width: 900px) { #worktree-view { left: 0; padding: 0 14px 24px; } }
+/* Colour fallbacks live here; real branch colours arrive as attributes only when colorFor gives one. */
+#worktree-view .wtv-edge { stroke: var(--dim); }
+#worktree-view .wtv-node { fill: var(--accent); }
